@@ -199,5 +199,5 @@ def paper_fix_train_non_self_m_hawkes():
 
 if __name__ == '__main__' :
     # paper_fix_train_total_xiao()
-    paper_fix_train_non_self_m_hawkes()
+    # paper_fix_train_non_self_m_hawkes()
         
