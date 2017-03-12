@@ -1,17 +1,21 @@
 #coding:utf-8
 
-import os,sys
-from processor import Processor
-from mtpp import MTPP
-from single import Single
-from hawkes import MHawkes
+import json
+import operator
+import os
+import sys
+
 import matplotlib
+import numpy
+import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
-import json
-import numpy as np
-import numpy
-import operator
+from hawkes.mtpp import MTPP
+
+from hawkes.hawkes import MHawkes
+from hawkes.single import Single
+from processor import Processor
+
 np.random.seed(137)
 
 import os, sys
@@ -198,6 +202,6 @@ def paper_fix_train_non_self_m_hawkes():
             plt.savefig(root + '/pic/%s'%key)
 
 if __name__ == '__main__' :
-    # paper_fix_train_total_xiao()
-    # paper_fix_train_non_self_m_hawkes()
+    paper_fix_train_total_xiao()
+    paper_fix_train_non_self_m_hawkes()
         

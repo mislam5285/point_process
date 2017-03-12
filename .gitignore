@@ -8,3 +8,11 @@
 # IDE #
 .idea/
 *.swp
+
+# log model#
+*.log
+*.pkl
+
+# output images #
+.pic/
+
