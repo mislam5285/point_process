@@ -1,7 +1,7 @@
 #coding:utf-8
 import os,sys,csv,numpy
 
-class RNN(object):
+class RNNDiscriminator(object):
 	def __init__(self):
 		self.params = {}
 		self.l1 = 1.
@@ -24,10 +24,10 @@ class RNN(object):
 
 		m1 = Masking(mask_value= -1.)(g1)
 
-		n1 = LSTM(len(sequences[0][0]),activation='relu',W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(m1)
+		n1 = LSTM(1,activation='sigmoid',W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(m1)
 
 		model = Model(input=[f,k2], output=[n1])
-		model.compile(optimizer='adam', loss='mape')
+		model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['binary_accuracy'])
 		model.fit(
 			[numpy.array([[f] for f in features]),numpy.array(sequences)], [numpy.array(labels)],
 			nb_epoch=500, batch_size=10,
@@ -70,92 +70,57 @@ class RNN(object):
 
 			# sequences.append(time_seq)
 			sequence = []
-			for year in range(cut) :
+			for year in range(int(1.5 * cut)) :
 				self_count = len([x for x in self_seq if year <= x and x < year + 1])
 				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
 				sequence.append([self_count,nonself_count])
 			sequences.append(sequence)
-
-			self_count = len([x for x in self_seq if cut <= x and x < cut + 1])
-			nonself_count = len([x for x in nonself_seq if cut <= x and x < cut + 1])
-			labels.append([self_count,nonself_count])
-
+			labels.append([1.])
 			features.append(feature)
 			publish_years.append(publish_year)
 
-		superparams = {}
-		return sequences,labels,features,publish_years,pids,superparams	
-
-	def load_events(self,f,cut=15):
-		# features[paper][feature], sequences[paper][day][feature]
-		data = []
-		pids = []
-		for i,row in enumerate(csv.reader(file(f,'r'))):
-			if i % 4 == 2:
-				pids.append(str(row[0]))
-				row = [float(row[1])]
-			elif i % 4 == 0 or i % 4 == 1:
-				row = [float(x) for x in row[1:]]
-			elif i % 4 == 3:
-				_row = [float(x) for x in row[1:]]
-				_max = max(_row)
-				_min = min(_row)
-				row = [(x - _min)/float(_max - _min) for x in _row]
-			data.append(row)
-		
-		I = int(len(data)/4)
-		#train_seq = []
-		# test_seq = []
-		sequences = []
-		labels = []
-		features = []
-		publish_years = []
-		for i in range(I):
-			publish_year = data[i * 4 + 2][0]
-			self_seq = data[i * 4]
-			nonself_seq = data[i * 4 + 1]
-			feature = data[i * 4 + 3]
-			# time_seq = self_seq + nonself_seq
-			# time_seq.sort()
-
-			# sequences.append(time_seq)
 			sequence = []
-			interval = 1
 			for year in range(cut) :
 				self_count = len([x for x in self_seq if year <= x and x < year + 1])
 				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
-				if self_count + nonself_count == 0 :
-					sequence.append([-1.,-1.,-1.])
-					interval += 1
-				else :
-					sequence.append([self_count,nonself_count,interval])
-					interval = 1
+				sequence.append([self_count,nonself_count])
+			for year in range(cut,int(1.5 * cut)) :
+				self_count = len([x for x in self_seq if year <= x and x < year + 1]) * 1.5
+				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1]) * 1.5
+				sequence.append([self_count,nonself_count])
 			sequences.append(sequence)
+			labels.append([0.])
+			features.append(feature)
+			publish_years.append(publish_year)
 
-
-			self_count = len([x for x in self_seq if cut <= x and x < cut + 1])
-			nonself_count = len([x for x in nonself_seq if cut <= x and x < cut + 1])
-			cut2 = cut
-			while self_count + nonself_count == 0 and cut2 < cut + 10:
-				self_count = len([x for x in self_seq if cut2 <= x and x < cut2 + 1])
-				nonself_count = len([x for x in nonself_seq if cut2 <= x and x < cut2 + 1])
-				cut2 += 1
-				interval += 1
-
-			labels.append([self_count,nonself_count,interval])
-
+			sequence = []
+			for year in range(cut) :
+				self_count = len([x for x in self_seq if year <= x and x < year + 1])
+				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
+				sequence.append([self_count,nonself_count])
+			for year in range(cut,int(1.5 * cut)) :
+				self_count = len([x for x in self_seq if year <= x and x < year + 1]) * 0.5
+				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1]) * 0.5
+				sequence.append([self_count,nonself_count])
+			sequences.append(sequence)
+			labels.append([0.])
 			features.append(feature)
 			publish_years.append(publish_year)
 
 		superparams = {}
 		return sequences,labels,features,publish_years,pids,superparams
 
+
+
 if __name__ == '__main__':
 	with open('../log/train.log','w') as f:
 		sys.stdout = f
-		predictor = RNN()
-		loaded = predictor.load('../data/paper2.txt')
-		predictor.train(*loaded,cut=10,max_outer_iter=0)
+		# predictor = RNNGenerator()
+		# loaded = predictor.load('../data/paper2.txt')
+		# predictor.train(*loaded,cut=10,max_outer_iter=0)
+		disc = RNNDiscriminator()
+		loaded = disc.load('../data/paper2.txt')
+		disc.train(*loaded,cut=10,max_outer_iter=0)
 
 
 
