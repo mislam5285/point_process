@@ -5,17 +5,10 @@ import json,csv
 import cPickle as pickle
 numpy.random.seed(1337)
 
-from keras import backend as K
-from keras.engine.topology import Layer
-import numpy as np
 
-
-
-class HawkesGenerator(Layer):
-	def __init__(self, output_dim, **kwargs):
+class HawkesGenerator(object):
+	def __init__(self):
 		self.params = {}
-		self.output_dim = output_dim
-		super(HawkesGenerator, self).__init__(**kwargs)
 
 	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=None,predict_year=2000,max_iter=0,max_outer_iter=100):
 
@@ -45,9 +38,9 @@ class HawkesGenerator(Layer):
 
 		for outer_times in range(max_outer_iter):
 
-			# step 1 : update alpha,beta
+			# print 'step 1 : update alpha,beta ...'
 
-			for times in range(1):
+			for times in range(3):
 				v1 = numpy.mat([0.0]*num_feature) 
 				v2 = numpy.mat([0.0]*num_feature)
 				for sam in range(train_count): 
@@ -60,7 +53,7 @@ class HawkesGenerator(Layer):
 					salpha = alpha[sam]
 					old_obj = 0 
 
-					while 1:
+					for inner_iter in range(max_iter+1):
 						# E-step
 						p1 = numpy.multiply(beta,fea) / (beta * fea.T) 
 						p2 = 0
@@ -77,7 +70,6 @@ class HawkesGenerator(Layer):
 						alpha1 = p2
 						alpha2 = (n - numpy.sum(numpy.exp(- sw2 * (T[sam] - numpy.array(s)))))/float(sw2)
 						salpha = alpha1/float(alpha2)
-						break
 
 					v1 += p1 
 					v2 += fea * (1 - numpy.exp(- sw1 * T[sam])) / float(sw1) 
@@ -92,9 +84,27 @@ class HawkesGenerator(Layer):
 				Z = self.shrinkage(beta+U, lam/float(rho)) 
 				U = U + beta - Z 
 
-			# step 2 : update w by gradient descent
+				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
 
-			for times in range(5):
+				print {
+					'source':'update alpha beta',
+					'outer_iter':outer_times,
+					'inner_iter':times,
+					'time':time.time() - init_time,
+					'clock':time.clock() - init_clock,
+					'LL':likelihood,
+					'w1':numpy.mean(W1),
+					'w2':numpy.mean(W2),
+					'mean_alpha':numpy.mean(alpha),
+				}
+				sys.stdout.flush()
+
+			# print 'step 2 : update w by gradient descent ...'
+
+
+			step_size = 1e-2
+			for times in range(30):
+				step_size /= 1 + 10 * step_size
 				for sam in range(train_count):
 					s = sequences[sam]
 					s = numpy.mat([x for x in s if x <= train_times[sam]])
@@ -105,7 +115,6 @@ class HawkesGenerator(Layer):
 					salpha = alpha[sam]
 					old_obj = 0
 					count = 0
-					step_size = 1e-3
 					# while 1:
 					pw1 = -s[0,0]
 					pw2 = numpy.mat(0.0)
@@ -131,30 +140,20 @@ class HawkesGenerator(Layer):
 					W1[sam] = sw1
 					W2[sam] = sw2
 
+				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
 
-			# step 3 : compute likilyhood
-
-			likelihood = 0;
-			for item in range(train_count):
-				fea = numpy.mat(features[item])
-				sw1 = W1[item]
-				sw2 = W2[item]
-				salpha = alpha[item]
-				s = sequences[item]
-				s = [x for x in s if x <= train_times[item]]
-				obj = self.calculate_objective(beta*fea.T,sw1,salpha,sw2,s,train_times[item])
-				likelihood -= likelihood - obj[0,0]
-
-			print {
-				'iter':times,
-				'outer_iter':outer_times,
-				'time':time.time() - init_time,
-				'clock':time.clock() - init_clock,
-				'LL':likelihood,
-				'w1':numpy.mean(W1),
-				'w2':numpy.mean(W2),
-				'mean_alpha':numpy.mean(alpha),
-			}
+				print {
+					'source':'update w1 w2',
+					'outer_iter':outer_times,
+					'inner_iter':times,
+					'time':time.time() - init_time,
+					'clock':time.clock() - init_clock,
+					'LL':likelihood,
+					'w1':numpy.mean(W1),
+					'w2':numpy.mean(W2),
+					'mean_alpha':numpy.mean(alpha),
+				}
+				sys.stdout.flush()
 
 			if outer_times > max_outer_iter:
 				break
@@ -189,6 +188,20 @@ class HawkesGenerator(Layer):
 		self.params = params
 		return params
 
+	def compute_likelihood(self,beta,train_count,features,W1,W2,alpha,sequences,train_times):
+		likelihood = 0;
+		for item in range(train_count):
+			fea = numpy.mat(features[item])
+			sw1 = W1[item]
+			sw2 = W2[item]
+			salpha = alpha[item]
+			s = sequences[item]
+			s = [x for x in s if x <= train_times[item]]
+			obj = self.calculate_objective(beta*fea.T,sw1,salpha,sw2,s,train_times[item])
+			likelihood -= likelihood - obj[0,0]
+		return likelihood
+
+
 	def shrinkage(self,vector,kappa):
 		mat1 = vector-kappa
 		mat2 = -vector-kappa
@@ -217,19 +230,6 @@ class HawkesGenerator(Layer):
 		obj= obj - activate_sum 
 		obj = obj - (spontaneous/w1) * (1 - numpy.exp(-w1*T))
 		return obj
-
-	def build(self, input_shape, params=None):
-		# Create a trainable weight variable for this layer.
-		self.W = self.add_weight(shape=(input_shape[1], self.output_dim),
-									initializer='random_uniform',
-									trainable=True)
-		super(HawkesGenerator, self).build()  # Be sure to call this somewhere!
-
-	def call(self, x, mask=None):
-		return K.dot(x, self.W)
-
-	def get_output_shape_for(self, input_shape):
-		return (input_shape[0], self.output_dim)
 
 	def predict(self,model,sequences,features,publish_years,pids,threshold):
 		patents = self.params['patent']
@@ -317,6 +317,34 @@ class HawkesGenerator(Layer):
 			tr = numpy.mat(tr)
 			pred.append(ct)
 		return pred	
+
+	def get_layer(self):
+		from keras import backend as K
+		from keras.engine.topology import Layer
+		import numpy as np
+
+		class HawkesLayer(Layer):
+			def __init__(self, nb_event, nb_type, nb_feature, **kwargs):
+				self.nb_event = nb_event
+				self.nb_type = nb_type
+				self.nb_feature = nb_feature
+				super(HawkesLayer, self).__init__(**kwargs)
+
+			def build(self, input_shape):
+				# Create a trainable weight variable for this layer.
+				self.kernel = self.add_weight(shape=(input_shape[1], self.output_dim),
+											initializer='uniform',
+											trainable=True)
+				super(HawkesLayer, self).build(input_shape)  # Be sure to call this somewhere!
+
+			def call(self, x):
+				return K.dot(x, self.kernel)
+
+			def compute_output_shape(self, input_shape):
+				return (input_shape[0], self.nb_event, self.nb_type, self.nb_feature)
+
+		layer = HawkesLayer(25,2,1)
+		return layer
 
 	def load(self,f):
 		data = []
@@ -508,17 +536,19 @@ class RNNGenerator(object):
 
 
 if __name__ == '__main__':
-	predictor = HawkesGenerator(1)
-	loaded = predictor.load('../data/paper3.txt')
-	model = predictor.pre_train(*loaded)
-	# result = predictor.predict(predictor.train(*loaded,max_iter=2),*loaded)
-	# print result
-	# with open('../data/model/generator.pkl','wb') as f:
-	# 	pickle.dump(predictor.train(*loaded),f)
-	# with open('../data/model/generator.pkl','rb') as f:
-	# 	model = pickle.load(f)
-	# 	predictor.params = model
-	# result = predictor.predict(model,*loaded)
-	# print result
+	with open('../log/train.log','w') as f:
+		sys.stdout = f
+		predictor = HawkesGenerator()
+		loaded = predictor.load('../data/paper3.txt')
+		model = predictor.pre_train(*loaded)
+		# result = predictor.predict(predictor.train(*loaded,max_iter=2),*loaded)
+		# print result
+		# with open('../data/model/generator.pkl','wb') as f:
+		# 	pickle.dump(predictor.train(*loaded),f)
+		# with open('../data/model/generator.pkl','rb') as f:
+		# 	model = pickle.load(f)
+		# 	predictor.params = model
+		# result = predictor.predict(model,*loaded)
+		# print result
 
-	pass		
+		pass		

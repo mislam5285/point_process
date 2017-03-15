@@ -14,5 +14,5 @@
 *.pkl
 
 # output images #
-.pic/
+*.png
 

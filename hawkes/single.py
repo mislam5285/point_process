@@ -393,15 +393,6 @@ class Single(object):
 if __name__ == '__main__':
 	predictor = Single()
 	loaded = predictor.load('train_sequence_large_long_new.txt')
-	# model = predictor.train(*loaded)
-	# result = predictor.predict(predictor.train(*loaded,max_iter=2),*loaded)
-	# print result
-	# with open('tmp.json','wb') as f:
-	# 	pickle.dump(predictor.train(*loaded),f)
-	with open('tmp.json','rb') as f:
-		model = pickle.load(f)
-		predictor.params = model
-	result = predictor.predict(model,*loaded)
+	result = predictor.predict(predictor.train(*loaded,max_iter=2),*loaded)
 	print result
-
 	pass		
