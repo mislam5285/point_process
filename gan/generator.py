@@ -316,34 +316,68 @@ class HawkesGenerator(object):
 			tr.extend([t for i in range(int(delta_ct))])
 			tr = numpy.mat(tr)
 			pred.append(ct)
-		return pred	
+		return pred
 
-	def get_layer(self):
+	def get_hawkes_layer(self,sequences):
 		from keras import backend as K
 		from keras.engine.topology import Layer
+		from keras.initializers import Constant
 		import numpy as np
 
+		import tensorflow as tf
+		from tensorflow.python.ops import tensor_array_ops
+		from tensorflow.python.ops import control_flow_ops
+		from tensorflow.python.ops import functional_ops
+		from tensorflow.python.ops import ctc_ops as ctc
+
 		class HawkesLayer(Layer):
-			def __init__(self, nb_event, nb_type, nb_feature, **kwargs):
-				self.nb_event = nb_event
-				self.nb_type = nb_type
-				self.nb_feature = nb_feature
+			def __init__(self, sequences_value, **kwargs):
+				"""
+					sequences_value[sequence, event, type, feature], only containing training events
+				"""
+				self.sequences_value = np.array(sequences_value)
+				self.sequences_initializer = Constant(self.sequences_value)
+				shape = self.sequences_value.shape
+				self.nb_sequence = shape[0]
+				self.nb_event = shape[1]
+				self.nb_type = shape[2]
+				self.nb_feature = shape[3]
 				super(HawkesLayer, self).__init__(**kwargs)
 
 			def build(self, input_shape):
-				# Create a trainable weight variable for this layer.
-				self.kernel = self.add_weight(shape=(input_shape[1], self.output_dim),
+
+				self.sequences = self.add_weight(shape=(self.nb_sequence, self,nb_event, self.nb_type, self.nb_feature),
+											initializer=self.sequences_initializer,
+											trainable=False)
+
+				self.spontaneous = self.add_weight(shape=(self.nb_sequence, self.nb_type),
 											initializer='uniform',
 											trainable=True)
-				super(HawkesLayer, self).build(input_shape)  # Be sure to call this somewhere!
 
-			def call(self, x):
-				return K.dot(x, self.kernel)
+				self.w1 = self.add_weight(shape=(self.nb_sequence, self.nb_type),
+											initializer='uniform',
+											trainable=True)
+
+				self.w2 = self.add_weight(shape=(self.nb_sequence, self.nb_type),
+											initializer='uniform',
+											trainable=True)
+
+				self.alpha = self.add_weight(shape=(self.nb_sequence, self.nb_type, self.nb_type),
+											initializer='uniform',
+											trainable=True)
+
+				super(HawkesLayer, self).build(input_shape)
+
+			def call(self, seq_id):
+				if K.dtype(seq_id) != 'int32':
+					seq_id = K.cast(seq_id, 'int32')
+				out = K.gather(self.sequences, seq_id)
+				return out
 
 			def compute_output_shape(self, input_shape):
 				return (input_shape[0], self.nb_event, self.nb_type, self.nb_feature)
 
-		layer = HawkesLayer(25,2,1)
+		layer = HawkesLayer(sequences)
 		return layer
 
 	def load(self,f):
