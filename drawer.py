@@ -14,6 +14,7 @@ from hawkes.mtpp import MTPP
 
 from hawkes.hawkes import MHawkes
 from hawkes.single import Single
+from gan.generator import HawkesGenerator
 from processor import Processor
 
 np.random.seed(137)
@@ -201,7 +202,69 @@ def paper_fix_train_non_self_m_hawkes():
             if i == 1: key = 'paper.fix-train.non-self.m-hawks.acc.png'
             plt.savefig(root + '/pic/%s'%key)
 
+def paper_hawkes_generator_pretrain_convergence():
+    will_preprocess = False
+    will_train_hawkes = False
+    will_draw = True
+    # preprocess
+    paper_data = root + '/data/paper3.txt'
+    if will_preprocess == True :
+        paper_data_raw = root + '/data/paper2.txt'
+        processor = Processor()
+        result = processor.screen(paper_data_raw)
+        with open(paper_data,'w') as fw:
+            fw.writelines(result)
+    
+    # training
+    pre_train_log = root + '/data/paper.pretrain.log4.txt'
+
+    if will_train_hawkes == True :
+        with open(pre_train_log,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            predictor = HawkesGenerator()
+            loaded = predictor.load(paper_data)
+            model = predictor.pre_train(*loaded,max_outer_iter=100)
+            sys.stdout = old_stdout
+
+    # drawing
+    if will_draw == True :
+        # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
+        colors = ['red','red','green','purple']
+        filenames = [pre_train_log]
+        labels = ['LL(test sequences)','LL(train sequences)','Xiao']
+        keys = ['LL','LL']
+        uncertainty = 0.0
+        # p = plt.subplot(121)
+        i = 0       
+
+        with open(filenames[i]) as f:
+            nodes = []
+            for line in f:
+                try:
+                    # node = json.loads(line)
+                    node = eval(line)
+                    nodes.append(node)
+                except:
+                    print 'error'
+            print node['LL']
+            y = np.array([-float(node['LL']) for node in nodes])
+            plt.ylim(np.min(y) - 0.1,np.max(y) + 0.1)
+            plt.xlim(0,130)
+            plt.plot(np.arange(1,len(y)+1),y,c=colors[i],lw=2,label='NLL')
+            gca = plt.gca()
+
+        plt.xlabel('iterations')
+        plt.title('negative log likelihood')
+        plt.legend(loc='upper right')
+        plt.gcf().set_size_inches(5.5, 5.5, forward=True)
+
+        plt.show()
+        # plt.savefig("result-4/convergence-%s"%labels[i])
+
+
 if __name__ == '__main__' :
-    paper_fix_train_total_xiao()
-    paper_fix_train_non_self_m_hawkes()
+    # paper_fix_train_total_xiao()
+    # paper_fix_train_non_self_m_hawkes()
+    paper_hawkes_generator_pretrain_convergence()
         

@@ -10,7 +10,7 @@ class HawkesGenerator(object):
 	def __init__(self):
 		self.params = {}
 
-	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=None,predict_year=2000,max_iter=0,max_outer_iter=100):
+	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=None,predict_year=2000,max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30):
 
 		if cut is None:
 			T = numpy.array([predict_year - publish_year + 1 for publish_year in publish_years],dtype=float)
@@ -26,21 +26,40 @@ class HawkesGenerator(object):
 		U = numpy.mat([0.0]*num_feature)
 		
 		beta = numpy.mat([1.0]*num_feature)  
-		W1 = [0.05]*train_count
-		# sw1 = 0.05
 		alpha = [1.0]*train_count
+		# sw1 = 0.05
+		W1 = [0.05]*train_count
 		W2 = [1.0]*train_count
 		# sw2 = 1.0
-		old_tlikelihood = 0.0
 
 		init_time = time.time()
 		init_clock = time.clock()
+
+		likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
+		self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
+		mape_acc = self.predict(self.params,sequences,features,publish_years,pids,threshold)
+
+		print {
+			'source':'initial',
+			'outer_iter':0,
+			'inner_iter':0,
+			'time':time.time() - init_time,
+			'clock':time.clock() - init_clock,
+			'LL':likelihood,
+			'w1':numpy.mean(W1),
+			'w2':numpy.mean(W2),
+			'mean_alpha':numpy.mean(alpha),
+			'mean_beta':numpy.mean(beta),
+			'mape':mape_acc['mape'],
+			'acc':mape_acc['acc'],
+		}
+		sys.stdout.flush()
 
 		for outer_times in range(max_outer_iter):
 
 			# print 'step 1 : update alpha,beta ...'
 
-			for times in range(3):
+			for times in range(alpha_iter):
 				v1 = numpy.mat([0.0]*num_feature) 
 				v2 = numpy.mat([0.0]*num_feature)
 				for sam in range(train_count): 
@@ -85,6 +104,8 @@ class HawkesGenerator(object):
 				U = U + beta - Z 
 
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
+				self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
+				mape_acc = self.predict(self.params,sequences,features,publish_years,pids,threshold)
 
 				print {
 					'source':'update alpha beta',
@@ -96,6 +117,9 @@ class HawkesGenerator(object):
 					'w1':numpy.mean(W1),
 					'w2':numpy.mean(W2),
 					'mean_alpha':numpy.mean(alpha),
+					'mean_beta':numpy.mean(beta),
+					'mape':mape_acc['mape'],
+					'acc':mape_acc['acc'],
 				}
 				sys.stdout.flush()
 
@@ -103,7 +127,7 @@ class HawkesGenerator(object):
 
 
 			step_size = 1e-2
-			for times in range(30):
+			for times in range(w_iter):
 				step_size /= 1 + 10 * step_size
 				for sam in range(train_count):
 					s = sequences[sam]
@@ -141,6 +165,8 @@ class HawkesGenerator(object):
 					W2[sam] = sw2
 
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
+				self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
+				mape_acc = self.predict(self.params,sequences,features,publish_years,pids,threshold)
 
 				print {
 					'source':'update w1 w2',
@@ -152,17 +178,29 @@ class HawkesGenerator(object):
 					'w1':numpy.mean(W1),
 					'w2':numpy.mean(W2),
 					'mean_alpha':numpy.mean(alpha),
+					'mean_beta':numpy.mean(beta),
+					'mape':mape_acc['mape'],
+					'acc':mape_acc['acc'],
 				}
 				sys.stdout.flush()
+
+			# print 'step 3 : check terminate condition ...'
 
 			if outer_times > max_outer_iter:
 				break
 			outer_times += 1
 
+		self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
+		return self.params
+
+	def update_params(self,pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2):
+
 		patent = {}
 		for item in range(len(alpha)):
 			a_patent = {}
 			a_patent['alpha'] = alpha[item]
+			a_patent['w1'] = W1[item]
+			a_patent['w2'] = W2[item]
 			a_patent['fea'] = features[item]
 			a_patent['cite'] = sequences[item]
 			a_patent['year'] = publish_years[item]
@@ -172,8 +210,6 @@ class HawkesGenerator(object):
 		params['predict_year'] = predict_year
 		params['train_count'] = len(patent)
 		params['beta'] = beta.tolist()[0]
-		params['w1'] = W1
-		params['w2'] = W2
 		params['patent'] = patent
 		params['feature_name'] = ["assignee_type",
 								"n_inventor",
@@ -186,7 +222,7 @@ class HawkesGenerator(object):
 								"backward_lag"]
 
 		self.params = params
-		return params
+
 
 	def compute_likelihood(self,beta,train_count,features,W1,W2,alpha,sequences,train_times):
 		likelihood = 0;
@@ -269,9 +305,9 @@ class HawkesGenerator(object):
 			patent = self.params['patent'][str(_id)]
 		except KeyError,e:
 			return None
-		w1 = self.params['w1']
+		w1 = patent['w1']
 		alpha = patent['alpha']
-		w2 = self.params['w2']
+		w2 = patent['w2']
 		fea = numpy.mat(patent['fea'])
 		ti = patent['cite']
 		beta = numpy.mat(self.params['beta'])

@@ -8,7 +8,7 @@ class RNNDiscriminator(object):
 		self.l1 = 1.
 		self.l2 = 1.
 
-	def train(self,sequences,labels,features,publish_years,pids,superparams,cut=None,predict_year=2000,max_iter=0,max_outer_iter=100):
+	def train(self,sequences,labels,features,publish_years,pids,superparams,cut=None,predict_year=2000,max_iter=0,max_outer_iter=200):
 		from keras.layers import Input, Dense, Masking, LSTM, Activation, Dropout, merge
 		from keras.models import Model
 		from keras.regularizers import l1,l2
