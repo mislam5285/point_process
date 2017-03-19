@@ -352,34 +352,105 @@ class HawkesGenerator(object):
 			tr.extend([t for i in range(int(delta_ct))])
 			tr = numpy.mat(tr)
 			pred.append(ct)
-		return pred	
+		return pred
 
-	def get_layer(self):
+	def get_hawkes_layer(self,sequences, pred_length):
 		from keras import backend as K
 		from keras.engine.topology import Layer
+		from keras.initializers import Constant
 		import numpy as np
 
+		import tensorflow as tf
+		from tensorflow.python.ops import tensor_array_ops
+		from tensorflow.python.ops import control_flow_ops
+
 		class HawkesLayer(Layer):
-			def __init__(self, nb_event, nb_type, nb_feature, **kwargs):
-				self.nb_event = nb_event
-				self.nb_type = nb_type
-				self.nb_feature = nb_feature
+			def __init__(self, sequences_value, pred_length, delta = 1., **kwargs):
+				"""
+				can only be the first layer of an architecture
+					
+				sequences_value[sequence, event, type, feature]
+
+				sequences only contain training events
+				"""
+				self.sequences_value = np.array(sequences_value,dtype='float32')
+				self.sequences_initializer = Constant(self.sequences_value)
+				shape = self.sequences_value.shape
+				self.nb_sequence = shape[0]
+				self.nb_event = shape[1]
+				self.nb_type = shape[2]
+				self.nb_feature = shape[3]
+				self.pred_length = pred_length
+				self.delta = delta
+
 				super(HawkesLayer, self).__init__(**kwargs)
 
 			def build(self, input_shape):
-				# Create a trainable weight variable for this layer.
-				self.kernel = self.add_weight(shape=(input_shape[1], self.output_dim),
+
+				assert input_shape[1] == self.nb_event
+				assert input_shape[2] == self.nb_type
+				assert input_shape[3] == self.nb_feature
+
+				self.sequences = self.add_weight(shape=(self.nb_sequence, self,nb_event, self.nb_type, self.nb_feature),
+											initializer=self.sequences_initializer,
+											trainable=False)
+
+				self.spontaneous = self.add_weight(shape=(self.nb_sequence, self.nb_type),
 											initializer='uniform',
 											trainable=True)
-				super(HawkesLayer, self).build(input_shape)  # Be sure to call this somewhere!
 
-			def call(self, x):
-				return K.dot(x, self.kernel)
+				self.Theta = self.add_weight(shape=(self.nb_sequence, self.nb_type),
+											initializer='uniform',
+											trainable=True)
+
+				self.W = self.add_weight(shape=(self.nb_sequence, self.nb_type),
+											initializer='uniform',
+											trainable=True)
+
+				self.Alpha = self.add_weight(shape=(self.nb_sequence, self.nb_type, self.nb_type),
+											initializer='uniform',
+											trainable=True)
+
+				super(HawkesLayer, self).build(input_shape)
+
+			def call(self, seq_id):
+				if K.dtype(seq_id) != 'int32':
+					seq_id = K.cast(seq_id, 'int32')
+				self.train_seq = K.gather(self.sequences, seq_id)[:,:,0] # currently only support the 1st feature
+				spont  = K.gather(self.spontaneous, seq_id)
+				theta = K.gather(self.Theta, seq_id)
+				w = K.gather(self.W, seq_id)
+				alpha = K.gather(self.Alpha, seq_id)
+
+				pred_seq = tensor_array_ops.TensorArray(dtype=tf.float32, size=self.nb_event + self.pred_length, 
+					dynamic_size=False, infer_shape=True)
+
+				def iteration_unit(t, pred_seq, spont, theta, w, alpha):
+					if t < self.nb_event :
+						pred_seq.write(t, self.train_seq[t])
+						return t+1, pred_seq, spont, theta, w, alpha
+
+					term1 = spont / theta * (tf.exp(- theta * t * self.delta) - tf.exp(- theta * (t + 1) * self.delta))
+					term2 = tf.pack([pred_seq.read(tao) * (tf.exp(- w * (t - tao) * self.delta) - tf.exp(- w * (t + 1 - tao) * self.delta)) \
+								for tao in range(t) ])
+					term2 = tf.reduce_sum(term2,0)
+					term2 = tf.matmul(alpha,term2) / w
+					pred_seq.write(t, term1 + term2)
+					return t+1, pred_seq, spont, theta, w, alpha
+
+				_0, pred_seq, _2, _3, _4, _5 = control_flow_ops.while_loop(
+					cond=lambda t, _1, _2, _3, _4, _5: t < self.nb_event + self.pred_length,
+					body=iteration_unit,
+					loop_vars=(tf.constant(0, dtype=tf.int32),pred_seq,spont,theta,w,alpha))
+
+				pred_seq = tf.expand_dims(pred_seq.pack(), 2)  # currently only support the 1st feature
+				return pred_seq
+				
 
 			def compute_output_shape(self, input_shape):
 				return (input_shape[0], self.nb_event, self.nb_type, self.nb_feature)
 
-		layer = HawkesLayer(25,2,1)
+		layer = HawkesLayer(sequences,pred_length)
 		return layer
 
 	def load(self,f):

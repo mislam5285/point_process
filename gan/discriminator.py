@@ -147,9 +147,9 @@ class CNNDiscriminator(object):
 		print g1
 
 		# n1 = LSTM(1,activation='sigmoid',W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(g1)
-		g1 = Convolution2D(128,len(sequences[0])-16+1,1,subsample=(2,1),activation='relu','dim_ordering'='tf')(g1)
+		g1 = Convolution2D(128,len(sequences[0])-16+1,1,subsample=(2,1),activation='relu')(g1)
 		g1 = Dropout(0.5)(g1)
-		g1 = Convolution2D(128,5,len(sequences[0][0]),activation='relu','dim_ordering'='tf')(g1)
+		g1 = Convolution2D(128,5,len(sequences[0][0]),activation='relu')(g1)
 		g1 = Dropout(0.5)(g1)
 		g1 = Flatten()(g1)
 		n1 = Dense(2,activation='softmax')(g1)

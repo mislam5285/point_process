@@ -10,8 +10,8 @@ import numpy
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
-from hawkes.mtpp import MTPP
 
+from hawkes.mtpp import MTPP
 from hawkes.hawkes import MHawkes
 from hawkes.single import Single
 from gan.generator import HawkesGenerator
@@ -111,7 +111,7 @@ def paper_fix_train_total_xiao():
                 plt.title('ACC')
                 plt.legend(loc='lower left')
 
-            plt.gcf().set_size_inches(5.5, 5.5, forward=True)
+            plt.gcf().set_size_inches(5., 5., forward=True)
             #plt.show()    
             if i == 0: key = 'paper.fix-train.total.xiao.mape.png'
             if i == 3: key = 'paper.fix-train.total.xiao.acc.png'
@@ -196,7 +196,7 @@ def paper_fix_train_non_self_m_hawkes():
                 plt.legend(loc='lower left')
                 plt.title('ACC(10 years of training)')
 
-            plt.gcf().set_size_inches(5.5, 5.5, forward=True)
+            plt.gcf().set_size_inches(5., 5., forward=True)
             # plt.show()
             if i == 0: key = 'paper.fix-train.non-self.m-hawks.mape.png'
             if i == 1: key = 'paper.fix-train.non-self.m-hawks.acc.png'
@@ -224,21 +224,17 @@ def paper_hawkes_generator_pretrain_convergence():
             sys.stdout = f
             predictor = HawkesGenerator()
             loaded = predictor.load(paper_data)
-            model = predictor.pre_train(*loaded,max_outer_iter=100)
+            model = predictor.pre_train(*loaded,max_outer_iter=10)
             sys.stdout = old_stdout
 
     # drawing
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
-        colors = ['red','red','green','purple']
-        filenames = [pre_train_log]
-        labels = ['LL(test sequences)','LL(train sequences)','Xiao']
-        keys = ['LL','LL']
-        uncertainty = 0.0
-        # p = plt.subplot(121)
-        i = 0       
+        colors = ['red','green','purple']
+        keys = [lambda x:-x['LL'], lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
+        labels = ['NLL', 'ACC', 'MAPE']
 
-        with open(filenames[i]) as f:
+        with open(pre_train_log) as f:
             nodes = []
             for line in f:
                 try:
@@ -247,24 +243,33 @@ def paper_hawkes_generator_pretrain_convergence():
                     nodes.append(node)
                 except:
                     print 'error'
-            print node['LL']
-            y = np.array([-float(node['LL']) for node in nodes])
-            plt.ylim(np.min(y) - 0.1,np.max(y) + 0.1)
-            plt.xlim(0,130)
-            plt.plot(np.arange(1,len(y)+1),y,c=colors[i],lw=2,label='NLL')
-            gca = plt.gca()
 
-        plt.xlabel('iterations')
-        plt.title('negative log likelihood')
-        plt.legend(loc='upper right')
-        plt.gcf().set_size_inches(5.5, 5.5, forward=True)
+            for i in range(3):
+                plt.figure()
+                y = np.array([float(keys[i](node)) for node in nodes])
+                delta = np.max(y) - np.min(y)
+                delta /= 30
+                if y[0] > y[-1]: plt.ylim(np.min(y) - delta, 0.2 * np.max(y) + 0.8 * np.min(y))
+                if y[0] < y[-1]: plt.ylim(0.8 * np.max(y) + 0.2 * np.min(y), np.max(y) + delta)
+                plt.xlim(0,130)
+                plt.plot(np.arange(1,len(y)+1),y,c=colors[i],lw=2,label=labels[i])
+                gca = plt.gca()
 
-        plt.show()
-        # plt.savefig("result-4/convergence-%s"%labels[i])
+                plt.xlabel('iterations')
+                plt.title('learning curve')
+                plt.legend(loc='upper right')
+                plt.gcf().set_size_inches(5., 5., forward=True)
+
+                #plt.show()
+                if i == 0: key = 'paper.gan.pretrain.learning.NLL.png'
+                if i == 1: key = 'paper.gan.pretrain.learning.ACC.png'
+                if i == 2: key = 'paper.gan.pretrain.learning.MAPE.png'
+                plt.savefig(root + '/pic/%s'%key)
 
 
 if __name__ == '__main__' :
-    # paper_fix_train_total_xiao()
-    # paper_fix_train_non_self_m_hawkes()
+    paper_fix_train_total_xiao()
+    paper_fix_train_non_self_m_hawkes()
     paper_hawkes_generator_pretrain_convergence()
+    plt.show()
         
