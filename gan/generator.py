@@ -354,10 +354,13 @@ class HawkesGenerator(object):
 			pred.append(ct)
 		return pred
 
-	def get_hawkes_layer(self,sequences, pred_length):
+	def create_trainable_model(self,sequences, pred_length):
 		from keras import backend as K
 		from keras.engine.topology import Layer
 		from keras.initializers import Constant
+		from keras.layers import Input
+		from keras.models import Model
+
 		import numpy as np
 
 		import tensorflow as tf
@@ -416,6 +419,8 @@ class HawkesGenerator(object):
 			def call(self, seq_id):
 				if K.dtype(seq_id) != 'int32':
 					seq_id = K.cast(seq_id, 'int32')
+
+				seq_id = K.gather(seq_id, 0)
 				self.train_seq = K.gather(self.sequences, seq_id)[:,:,0] # currently only support the 1st feature
 				spont  = K.gather(self.spontaneous, seq_id)
 				theta = K.gather(self.Theta, seq_id)
@@ -451,7 +456,14 @@ class HawkesGenerator(object):
 				return (input_shape[0], self.nb_event, self.nb_type, self.nb_feature)
 
 		layer = HawkesLayer(sequences,pred_length)
-		return layer
+		x = Input(shape=(1,), dtype='int32')
+		y = layer(x)
+
+		model = Model(input=[x], output=[y])
+		model.compile(optimizer='adam', loss='mape', metrics=['accuracy'])
+
+		self.model = model
+		return model
 
 	def load(self,f):
 		data = []

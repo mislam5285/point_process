@@ -10,7 +10,8 @@ cpu = multiprocessing.cpu_count()
 
 class HawkesGAN(object):
 	def __init__(self):
-		pass
+		self.gen = HawkesGenerator()
+		self.dis = CNNDiscriminator()
 
 	def full_train(self,full_sequences,train_sequences,features,publish_years,pids,superparams):
 		from keras.layers import Input, Dense, Flatten, Convolution2D, Activation, Dropout, merge
@@ -20,17 +21,29 @@ class HawkesGAN(object):
 		nb_sequence = len(full_sequences)
 		nb_event = len(train_sequences[0])
 		pred_length = len(full_sequences[0]) - nb_event
+		nb_feature = len(full_sequences[0][0])
 
-		gen = HawkesGenerator()
-		hawkes_layer = gen.get_hawkes_layer(train_sequences,pred_length)
-		x = Input(batchshape=(nb_sequence,),dtype='int32')
-		y = hawkes_layer(x)
+		self.gen.create_trainable_model(train_sequences,pred_length)
+		self.gen.model.summary()
+
+		self.dis.create_trainable_model(nb_event + pred_length,nb_type,nb_feature)
+		self.dis.model.summary()
+
+		self.dis.model.trainable = False
+		for l in self.dis.model.layers: l.trainable = False
+
+		x = Input(shape=(1,), dtype='int32')
+		y = self.gen.model(x)
+		z = self.dis.model(y)
+
+		gan = Model(input=[x], output=[z])
+		gan.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+		gan.summary()
 
 
 	def pre_train(self,paper_data):
-		predictor = HawkesGenerator()
-		loaded = predictor.load(paper_data)
-		predictor.pre_train(*loaded,max_outer_iter=10)
+		loaded = self.gen.load(paper_data)
+		self.gen.pre_train(*loaded,max_outer_iter=10)
 
 	def load(self,f,pred_length=10,train_length=15):
 		# features[paper][feature], sequences[paper][day][feature]
@@ -91,3 +104,6 @@ class HawkesGAN(object):
 
 
 # yield
+if __name__ == '__main__':
+	with open('../log/train_gan.log','w') as f:
+		pass

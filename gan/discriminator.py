@@ -164,6 +164,24 @@ class CNNDiscriminator(object):
 		# embeddings = model.layers[1].W.get_value()
 		return model
 
+	def create_trainable_model(self,nb_event,nb_type,nb_feature):
+		from keras.layers import Input, Dense, Flatten, Convolution2D, Activation, Dropout, merge
+		from keras.models import Model
+		from keras.regularizers import l1,l2
+
+		x = Input(shape=(nb_event, nb_type, nb_feature), dtype='float')
+		y = Convolution2D(128, nb_event-16+1, 1, subsample=(2,1), activation='relu')(y)
+		y = Dropout(0.5)(y)
+		y = Convolution2D(128, 5, nb_type, activation='relu')(y)
+		y = Dropout(0.5)(y)
+		y = Flatten()(y)
+		y = Dense(2,activation='softmax')(y)
+
+		model = Model(input=[x], output=[y])
+		model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+		self.model = model
+		return model
+
 	def load(self,f,cut=15):
 		# features[paper][feature], sequences[paper][day][feature]
 		data = []
