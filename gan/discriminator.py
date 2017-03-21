@@ -32,7 +32,7 @@ class RNNDiscriminator(object):
 		model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 		model.fit(
 			[numpy.array([[f] for f in features]),numpy.array(sequences)], [numpy.array(labels)],
-			nb_epoch=500, batch_size=10,
+			nb_epoch=500, batch_size=1,
 			verbose=1,validation_split=0.2)
 		self.params['model'] = model
 		# embeddings = model.layers[1].W.get_value()
@@ -169,8 +169,8 @@ class CNNDiscriminator(object):
 		from keras.models import Model
 		from keras.regularizers import l1,l2
 
-		x = Input(shape=(nb_event, nb_type, nb_feature), dtype='float')
-		y = Convolution2D(128, nb_event-16+1, 1, subsample=(2,1), activation='relu')(y)
+		x = Input(batch_shape=(1, nb_event, nb_type, nb_feature), dtype='float')
+		y = Convolution2D(128, nb_event-16+1, 1, subsample=(2,1), activation='relu')(x)
 		y = Dropout(0.5)(y)
 		y = Convolution2D(128, 5, nb_type, activation='relu')(y)
 		y = Dropout(0.5)(y)
@@ -178,7 +178,6 @@ class CNNDiscriminator(object):
 		y = Dense(2,activation='softmax')(y)
 
 		model = Model(input=[x], output=[y])
-		model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 		self.model = model
 		return model
 

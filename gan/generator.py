@@ -390,28 +390,27 @@ class HawkesGenerator(object):
 
 			def build(self, input_shape):
 
-				assert input_shape[1] == self.nb_event
-				assert input_shape[2] == self.nb_type
-				assert input_shape[3] == self.nb_feature
+				assert len(input_shape) == 2
+				assert input_shape[1] == 1 # currenly only support one sample per batch
 
-				self.sequences = self.add_weight(shape=(self.nb_sequence, self,nb_event, self.nb_type, self.nb_feature),
+				self.sequences = self.add_weight(shape=(self.nb_sequence, self.nb_event, self.nb_type, self.nb_feature),
 											initializer=self.sequences_initializer,
 											trainable=False)
 
 				self.spontaneous = self.add_weight(shape=(self.nb_sequence, self.nb_type),
-											initializer='uniform',
+											initializer='glorot_uniform',
 											trainable=True)
 
 				self.Theta = self.add_weight(shape=(self.nb_sequence, self.nb_type),
-											initializer='uniform',
+											initializer='glorot_uniform',
 											trainable=True)
 
 				self.W = self.add_weight(shape=(self.nb_sequence, self.nb_type),
-											initializer='uniform',
+											initializer='glorot_uniform',
 											trainable=True)
 
 				self.Alpha = self.add_weight(shape=(self.nb_sequence, self.nb_type, self.nb_type),
-											initializer='uniform',
+											initializer='glorot_uniform',
 											trainable=True)
 
 				super(HawkesLayer, self).build(input_shape)
@@ -420,47 +419,82 @@ class HawkesGenerator(object):
 				if K.dtype(seq_id) != 'int32':
 					seq_id = K.cast(seq_id, 'int32')
 
-				seq_id = K.gather(seq_id, 0)
+				# seq_id = K.gather(seq_id, 0)
+				# seq_id = seq_id[0,0]
+				seq_id = K.gather(K.gather(seq_id,0),0)
 				self.train_seq = K.gather(self.sequences, seq_id)[:,:,0] # currently only support the 1st feature
 				spont  = K.gather(self.spontaneous, seq_id)
 				theta = K.gather(self.Theta, seq_id)
 				w = K.gather(self.W, seq_id)
 				alpha = K.gather(self.Alpha, seq_id)
+				# print {
+				# 	'spont':spont.shape,
+				# 	'theta':theta.shape,
+				# 	'train_seq':self.train_seq.shape,
+				# 	'alpha':alpha,
+				# 	'w':w.shape,
+				# 	'Theta':self.Theta.get_shape(),
+				# 	'Alpha':self.Alpha.get_shape(),
+				# 	'sequences':self.sequences.get_shape,
+				# 	'seq_id':seq_id.get_shape(),
+				# }
 
 				pred_seq = tensor_array_ops.TensorArray(dtype=tf.float32, size=self.nb_event + self.pred_length, 
 					dynamic_size=False, infer_shape=True)
 
-				def iteration_unit(t, pred_seq, spont, theta, w, alpha):
-					if t < self.nb_event :
-						pred_seq.write(t, self.train_seq[t])
-						return t+1, pred_seq, spont, theta, w, alpha
+				def copy_unit(t, pred_seq):
+					pred_seq = pred_seq.write(t, self.train_seq[t])
+					return t+1, pred_seq
 
+				def triggering_unit(int_tao, pred_seq, spont, theta, w, alpha, t, effect):
+					tao = K.cast(int_tao, 'float32')
+					effect_unit = pred_seq.read(int_tao) * (tf.exp(- w * (t - tao) * self.delta) - tf.exp(- w * (t + 1 - tao) * self.delta))
+					# print {
+					# 	"effect_unit":effect_unit.get_shape(),
+					# 	"pred_seq":pred_seq.read(int_tao).get_shape(),
+					# 	"0":(tf.exp(- w * (t - tao) * self.delta) - tf.exp(- w * (t + 1 - tao) * self.delta)).get_shape(),
+					# }
+					return int_tao + 1, pred_seq, spont, theta, w, alpha, t, effect + effect_unit
+
+				def prediction_unit(int_t, pred_seq, spont, theta, w, alpha):
+					t = K.cast(int_t, 'float32')
 					term1 = spont / theta * (tf.exp(- theta * t * self.delta) - tf.exp(- theta * (t + 1) * self.delta))
-					term2 = tf.pack([pred_seq.read(tao) * (tf.exp(- w * (t - tao) * self.delta) - tf.exp(- w * (t + 1 - tao) * self.delta)) \
-								for tao in range(t) ])
-					term2 = tf.reduce_sum(term2,0)
-					term2 = tf.matmul(alpha,term2) / w
-					pred_seq.write(t, term1 + term2)
-					return t+1, pred_seq, spont, theta, w, alpha
+					# term2 = tf.stack([pred_seq.read(tao) * (tf.exp(- w * (t - tao) * self.delta) - tf.exp(- w * (t + 1 - tao) * self.delta)) \
+					# 			for tao in range(int_t) ])
+					# term2 = tf.reduce_sum(term2,0)
+					_0, _1, _2, _3, _4, _5, _6, effect = control_flow_ops.while_loop(
+						cond=lambda int_tao, _1, _2, _3, _4, _5, _6, _7: int_tao < int_t,
+						body=triggering_unit,
+						loop_vars=(tf.constant(0, dtype=tf.int32),pred_seq, spont, theta, w, alpha, t, tf.constant([0.,0.],dtype=tf.float32)))
+
+					term2 = tf.reduce_sum(tf.matmul(alpha,tf.expand_dims(effect,1)),1) / w
+					pred_seq = pred_seq.write(int_t, term1 + term2)
+					return int_t+1, pred_seq, spont, theta, w, alpha
+
+				_0, pred_seq = control_flow_ops.while_loop(
+					cond=lambda t, pred_seq: t < self.nb_event,
+					body=copy_unit,
+					loop_vars=(tf.constant(0, dtype=tf.int32),pred_seq))
 
 				_0, pred_seq, _2, _3, _4, _5 = control_flow_ops.while_loop(
-					cond=lambda t, _1, _2, _3, _4, _5: t < self.nb_event + self.pred_length,
-					body=iteration_unit,
-					loop_vars=(tf.constant(0, dtype=tf.int32),pred_seq,spont,theta,w,alpha))
+					cond=lambda int_t, _1, _2, _3, _4, _5: int_t < self.nb_event + self.pred_length,
+					body=prediction_unit,
+					loop_vars=(tf.constant(self.nb_event, dtype=tf.int32),pred_seq,spont,theta,w,alpha))
 
-				pred_seq = tf.expand_dims(pred_seq.pack(), 2)  # currently only support the 1st feature
+				pred_seq = tf.expand_dims(tf.expand_dims(pred_seq.stack(), 2), 0)  # currently only support the 1st feature and one sample per batch
 				return pred_seq
 				
 
 			def compute_output_shape(self, input_shape):
-				return (input_shape[0], self.nb_event, self.nb_type, self.nb_feature)
+				# print '@1 ',input_shape
+				return (input_shape[0], self.nb_event + self.pred_length, self.nb_type, self.nb_feature)
+
 
 		layer = HawkesLayer(sequences,pred_length)
 		x = Input(shape=(1,), dtype='int32')
 		y = layer(x)
 
 		model = Model(input=[x], output=[y])
-		model.compile(optimizer='adam', loss='mape', metrics=['accuracy'])
 
 		self.model = model
 		return model

@@ -1,10 +1,11 @@
 #coding:utf-8
 import os,sys,csv
+import numpy
 import numpy as np
 import multiprocessing
 
-from gan.generator import HawkesGenerator
-from gan.discriminator import CNNDiscriminator
+from generator import HawkesGenerator
+from discriminator import CNNDiscriminator
 
 cpu = multiprocessing.cpu_count()
 
@@ -21,13 +22,13 @@ class HawkesGAN(object):
 		nb_sequence = len(full_sequences)
 		nb_event = len(train_sequences[0])
 		pred_length = len(full_sequences[0]) - nb_event
-		nb_feature = len(full_sequences[0][0])
+		nb_type = len(full_sequences[0][0])
+		nb_feature = len(full_sequences[0][0][0])
 
 		self.gen.create_trainable_model(train_sequences,pred_length)
-		self.gen.model.summary()
-
+		self.gen.model.compile(optimizer='adam', loss='msle', metrics=['accuracy'])
 		self.dis.create_trainable_model(nb_event + pred_length,nb_type,nb_feature)
-		self.dis.model.summary()
+		self.dis.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
 		self.dis.model.trainable = False
 		for l in self.dis.model.layers: l.trainable = False
@@ -36,14 +37,39 @@ class HawkesGAN(object):
 		y = self.gen.model(x)
 		z = self.dis.model(y)
 
-		gan = Model(input=[x], output=[z])
-		gan.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
-		gan.summary()
+		gan_model = Model(input=[x], output=[z])
+		gan_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+
+		# self.gen.model.summary()
+		# self.dis.model.summary()
+		# gan_model.summary()
+
+		self.gen.model.fit(
+			[np.arange(nb_sequence)[0:1]],[np.array(full_sequences)[0:1]],
+			nb_epoch=500, batch_size=1,
+			verbose=1,validation_split=0.0)
+
+		# self.dis.model.fit(
+		# 	[np.array(full_sequences)],[np.array([[0.,1.] for i in xrange(nb_sequence)])],
+		# 	nb_epoch=500, batch_size=1,
+		# 	verbose=1,validation_split=0.2)
+
+		# gan_model.fit(
+		# 	[np.arange(nb_sequence)],[np.array([[0.,1.] for i in xrange(nb_sequence)])],
+		# 	nb_epoch=500, batch_size=1,
+		# 	verbose=1,validation_split=0.2)
 
 
-	def pre_train(self,paper_data):
+	def pre_train_hawkes(self,paper_data='../data/paper3.txt'):
 		loaded = self.gen.load(paper_data)
 		self.gen.pre_train(*loaded,max_outer_iter=10)
+
+	def pre_train_cnn(self,paper_data='../data/paper3.txt'):
+		sequences,labels,features,publish_years,pids,superparams = self.dis.load(paper_data)
+		self.dis.model.fit(
+			[numpy.array(sequences)], [numpy.array(labels)],
+			nb_epoch=500, batch_size=1,
+			verbose=1,validation_split=0.2)
 
 	def load(self,f,pred_length=10,train_length=15):
 		# features[paper][feature], sequences[paper][day][feature]
@@ -106,4 +132,9 @@ class HawkesGAN(object):
 # yield
 if __name__ == '__main__':
 	with open('../log/train_gan.log','w') as f:
-		pass
+		old_stdout = sys.stdout
+		sys.stdout = f
+		gan = HawkesGAN()
+		loaded = gan.load('../data/paper3.txt')
+		gan.full_train(*loaded)
+		sys.stdout = old_stdout
