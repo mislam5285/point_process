@@ -221,3 +221,14 @@ class InfiniteDimensionHawkesLayer(HawkesLayer):
 
 		pred_seq = tf.expand_dims(tf.expand_dims(pred_seq.stack(), 2), 0)  # currently only support the 1st feature and one sample per batch
 		return pred_seq
+
+
+class NoiseLayer(Layer):
+	def __init__(self, sequences,pred_length, stddev=1., **kwargs):
+		super(NoiseLayer, self).__init__(**kwargs)
+		self.stddev = stddev
+
+	def call(self, inputs, training=None):
+		return inputs + K.random_normal(shape=K.shape(inputs),
+											mean=0.,
+											stddev=self.stddev)

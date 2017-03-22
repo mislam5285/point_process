@@ -54,7 +54,7 @@ class HawkesGAN(object):
 			'mean(np.array(train_sequences)[:,0:15])':np.mean(np.array(train_sequences)[:,0:nb_event]),
 		}
 		Y = np.array([[0.,1.] if i % 2 == 0 else [1.,0.] for i in range(2 * nb_sequence)])
-		self.dis.model.fit(X,Y,batch_size=1,epochs=1,verbose=1,validation_split=0.2)
+		self.dis.model.fit(X,Y,batch_size=1,epochs=1,verbose=1,validation_split=0.0)
 
 		self.gen.model.summary()
 		self.dis.model.summary()

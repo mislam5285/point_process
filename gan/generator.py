@@ -89,7 +89,7 @@ class HawkesGenerator(object):
 						# M-step
 						alpha1 = p2
 						alpha2 = (n - numpy.sum(numpy.exp(- sw2 * (T[sam] - numpy.array(s)))))/float(sw2)
-						salpha = alpha1/float(alpha2)
+						salpha = (alpha1/float(alpha2))[0,0]
 
 					v1 += p1 
 					v2 += fea * (1 - numpy.exp(- sw1 * T[sam])) / float(sw1) 
@@ -367,11 +367,11 @@ class HawkesGenerator(object):
 		from keras.layers import Input
 		from keras.models import Model
 
-		from customed_layer import HawkesLayer
+		from customed_layer import HawkesLayer, NoiseLayer
 
-		layer = HawkesLayer(sequences,pred_length,sequence_weights=self.sequence_weights)
 		x = Input(batch_shape=(1,1), dtype='int32')
-		y = layer(x)
+		y = HawkesLayer(sequences,pred_length,sequence_weights=self.sequence_weights)(x)
+		y = NoiseLayer(sequences,pred_length)(y)
 
 		model = Model(inputs=[x], outputs=[y])
 
