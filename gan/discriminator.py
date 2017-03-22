@@ -154,7 +154,7 @@ class CNNDiscriminator(object):
 		g1 = Flatten()(g1)
 		n1 = Dense(2,activation='softmax')(g1)
 
-		model = Model(input=[k2], output=[n1])
+		model = Model(inputs=[k2], outputs=[n1])
 		model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 		model.fit(
 			[numpy.array(sequences)], [numpy.array(labels)],
@@ -177,7 +177,7 @@ class CNNDiscriminator(object):
 		y = Flatten()(y)
 		y = Dense(2,activation='softmax')(y)
 
-		model = Model(input=[x], output=[y])
+		model = Model(inputs=[x], outputs=[y])
 		self.model = model
 		return model
 

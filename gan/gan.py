@@ -1,5 +1,5 @@
 #coding:utf-8
-import os,sys,csv
+import os,sys,csv,json
 import numpy
 import numpy as np
 import multiprocessing
@@ -26,8 +26,8 @@ class HawkesGAN(object):
 		nb_feature = len(full_sequences[0][0][0])
 
 		# pretrain generator
-		if self.gen.params is None:
-			raise Exception('generator not pretrained')
+		if self.gen.sequence_weights is None:
+			raise Exception('generator not pretrained, or weights not loaded')
 
 		# compile keras models
 		self.gen.create_trainable_model(train_sequences,pred_length)
@@ -36,25 +36,25 @@ class HawkesGAN(object):
 
 		self.dis.model.trainable = False
 		for l in self.dis.model.layers: l.trainable = False
-		x = Input(shape=(1,), dtype='int32')
-		y = self.gen.model(x)
-		z = self.dis.model(y)
-		gan_model = Model(input=[x], output=[z])
+		z = Input(shape=(1,), dtype='int32')
+		g_z = self.gen.model(z)
+		y = self.dis.model(g_z)
+		gan_model = Model(inputs=[z], outputs=[y])
 		gan_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
 		# pretrain discrimnator
-		X = np.arange(nb_sequence)
-		Y = self.gen.model.predict(X,batch_size=1)
+		Z = np.arange(nb_sequence)
+		G_Z = self.gen.model.predict(Z,batch_size=1)
+		X = np.array([G_Z[i/2] if i % 2 == 0 else full_sequences[i/2] for i in range(2 * nb_sequence)])
 		print {
-			'np.mean(Y[:,15:])':np.mean(Y[:,15:]),
-			'np.mean(Y[:,0:15])':np.mean(Y[:,0:15]),
-			'np.mean(np.array(full_sequences)[:,15:])':np.mean(np.array(full_sequences)[:,15:]),
-			'np.mean(np.array(full_sequences)[:,0:15])':np.mean(np.array(full_sequences)[:,0:15]),
-			'np.mean(np.array(train_sequences)[:,0:15])':np.mean(np.array(train_sequences)[:,0:15]),
+			'mean(Z)':np.mean(G_Z[:,0:nb_event]),
+			'mean(G_Z)':np.mean(G_Z[:,nb_event:]),
+			'mean(np.array(full_sequences)[:,15:])':np.mean(np.array(full_sequences)[:,nb_event:]),
+			'mean(np.array(full_sequences)[:,0:15])':np.mean(np.array(full_sequences)[:,0:nb_event]),
+			'mean(np.array(train_sequences)[:,0:15])':np.mean(np.array(train_sequences)[:,0:nb_event]),
 		}
-		Y = np.array([Y[i/2] if i % 2 == 0 else full_sequences[i/2] for i in range(2 * nb_sequence)])
-		Z = np.array([[0.,1.] if i % 2 == 0 else [1.,0.] for i in range(2 * nb_sequence)])
-		self.dis.model.fit(Y,Z,batch_size=1,epochs=1,verbose=1,validation_split=0.2)
+		Y = np.array([[0.,1.] if i % 2 == 0 else [1.,0.] for i in range(2 * nb_sequence)])
+		self.dis.model.fit(X,Y,batch_size=1,epochs=1,verbose=1,validation_split=0.2)
 
 		self.gen.model.summary()
 		self.dis.model.summary()
@@ -153,12 +153,13 @@ if __name__ == '__main__':
 		sys.stdout = f
 		gan = HawkesGAN()
 		try:
-			gan.gen.params = json.load(open('../data/paper.pretrain.params.json'))
+			gan.gen.sequence_weights = json.load(open('../data/paper.3.pretrain.sequence_weights.json'))
 		except:
 			loaded = gan.gen.load('../data/paper3.txt')
 			gan.gen.pre_train(*loaded,max_outer_iter=1)
-			with open('../data/paper.pretrain.params.json','w') as fw:
-				json.dump(gan.gen.params,fw)
+			with open('../data/paper.3.pretrain.sequence_weights.json','w') as fw:
+				json.dump(gan.gen.sequence_weights,fw)
+		# exit()
 		loaded = gan.load('../data/paper3.txt')
 		gan.full_train(*loaded)
 		sys.stdout = old_stdout
