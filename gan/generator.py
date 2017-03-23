@@ -367,11 +367,10 @@ class HawkesGenerator(object):
 		from keras.layers import Input
 		from keras.models import Model
 
-		from customed_layer import HawkesLayer, NoiseLayer
+		from customed_layer import HawkesLayer
 
 		x = Input(batch_shape=(1,1), dtype='int32')
 		y = HawkesLayer(sequences,pred_length,sequence_weights=self.sequence_weights)(x)
-		y = NoiseLayer(sequences,pred_length)(y)
 
 		model = Model(inputs=[x], outputs=[y])
 
@@ -441,11 +440,11 @@ class RNNGenerator(object):
 
 		n1 = LSTM(len(sequences[0][0]),activation='relu',W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(m1)
 
-		model = Model(input=[f,k2], output=[n1])
+		model = Model(inputs=[f,k2], outputs=[n1])
 		model.compile(optimizer='adam', loss='mape')
 		model.fit(
 			[numpy.array([[f] for f in features]),numpy.array(sequences)], [numpy.array(labels)],
-			nb_epoch=500, batch_size=10,
+			epochs=500, batch_size=10,
 			verbose=1,validation_split=0.2)
 		self.params['model'] = model
 		# embeddings = model.layers[1].W.get_value()

@@ -17,7 +17,7 @@ class HawkesGAN(object):
 	def full_train(self,full_sequences,train_sequences,features,publish_years,pids,superparams):
 		from keras.layers import Input, Dense, Flatten, Convolution2D, Activation, Dropout, merge
 		from keras.models import Model
-		from keras.regularizers import l1,l2
+		from customed_layer import PoissonNoise
 
 		nb_sequence = len(full_sequences)
 		nb_event = len(train_sequences[0])
@@ -25,43 +25,79 @@ class HawkesGAN(object):
 		nb_type = len(full_sequences[0][0])
 		nb_feature = len(full_sequences[0][0][0])
 
-		# pretrain generator
+		# guarantee pretrained generator
 		if self.gen.sequence_weights is None:
 			raise Exception('generator not pretrained, or weights not loaded')
 
-		# compile keras models
+		# build keras models
 		self.gen.create_trainable_model(train_sequences,pred_length)
+		# self.gen.model.compile(optimizer='adam', loss='mape', metrics=['accuracy'])
+		# self.gen.model.fit(np.arange(nb_sequence),np.array(full_sequences),verbose=1,batch_size=1,epochs=100)
 		self.dis.create_trainable_model(nb_event + pred_length,nb_type,nb_feature)
 		self.dis.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
 		self.dis.model.trainable = False
 		for l in self.dis.model.layers: l.trainable = False
-		z = Input(shape=(1,), dtype='int32')
+		z = Input(batch_shape=(1,1), dtype='int32')
 		g_z = self.gen.model(z)
-		y = self.dis.model(g_z)
+		noised_g_z = PoissonNoise(train_sequences,pred_length)(g_z)
+		y = self.dis.model(noised_g_z)
+		noised_gen_model = Model(inputs=[z], outputs=[noised_g_z])
 		gan_model = Model(inputs=[z], outputs=[y])
 		gan_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
 		# pretrain discrimnator
 		Z = np.arange(nb_sequence)
-		G_Z = self.gen.model.predict(Z,batch_size=1)
-		X = np.array([G_Z[i/2] if i % 2 == 0 else full_sequences[i/2] for i in range(2 * nb_sequence)])
-		print {
-			'mean(Z)':np.mean(G_Z[:,0:nb_event]),
-			'mean(G_Z)':np.mean(G_Z[:,nb_event:]),
-			'mean(np.array(full_sequences)[:,15:])':np.mean(np.array(full_sequences)[:,nb_event:]),
-			'mean(np.array(full_sequences)[:,0:15])':np.mean(np.array(full_sequences)[:,0:nb_event]),
-			'mean(np.array(train_sequences)[:,0:15])':np.mean(np.array(train_sequences)[:,0:nb_event]),
-		}
-		Y = np.array([[0.,1.] if i % 2 == 0 else [1.,0.] for i in range(2 * nb_sequence)])
-		self.dis.model.fit(X,Y,batch_size=1,epochs=1,verbose=1,validation_split=0.0)
+		X = np.array(full_sequences)
+		b_size = 32
+		max_batch = 2
+		for it in range(nb_sequence):
+			batch_z = Z[np.arange(it,it+b_size)%nb_sequence]
+			batch_g_z = noised_gen_model.predict(batch_z,batch_size=1)
+			batch_x = X[np.arange(it,it+b_size)%nb_sequence]
+			batch_x_merge = np.array([batch_g_z[i/2] if i % 2 == 0 else batch_x[i/2] for i in range(2 * b_size)])
+			batch_y_merge = np.array([[0.,1.] if i % 2 == 0 else [1.,0.] for i in range(2 * b_size)])
+			self.dis.model.fit(batch_x_merge,batch_y_merge,batch_size=1,epochs=1,verbose=1)
+
+			if it + 1 <= max_batch: break
+
+		# Z = np.arange(nb_sequence)
+		# G_Z = noised_gen_model.predict(Z,batch_size=1)
+		# X = np.array([G_Z[i/2] if i % 2 == 0 else full_sequences[i/2] for i in range(2 * nb_sequence)])
+		# print {
+		# 	'mean(Z)':np.mean(G_Z[:,0:nb_event]),
+		# 	'mean(G_Z)':np.mean(G_Z[:,nb_event:]),
+		# 	'mean(np.array(full_sequences)[:,15:])':np.mean(np.array(full_sequences)[:,nb_event:]),
+		# 	'mean(np.array(full_sequences)[:,0:15])':np.mean(np.array(full_sequences)[:,0:nb_event]),
+		# 	'mean(np.array(train_sequences)[:,0:15])':np.mean(np.array(train_sequences)[:,0:nb_event]),
+		# }
+		# Y = np.array([[0.,1.] if i % 2 == 0 else [1.,0.] for i in range(2 * nb_sequence)])
+		# self.dis.model.fit(X,Y,batch_size=1,epochs=1,verbose=1,validation_split=0.0)
+
+
+		# full train gan model
+		Z = np.arange(nb_sequence)
+		X = np.array(full_sequences)
+		b_size = 32
+		for epoch in range(500):
+			for it in range(nb_sequence):
+				batch_z = Z[np.arange(it,it+b_size)%nb_sequence]
+				batch_g_z = noised_gen_model.predict(batch_z,batch_size=1)
+				batch_x = X[np.arange(it,it+b_size)%nb_sequence]
+				batch_x_merge = np.array([batch_g_z[i/2] if i % 2 == 0 else batch_x[i/2] for i in range(2 * b_size)])
+				batch_y_merge = np.array([[0.,1.] if i % 2 == 0 else [1.,0.] for i in range(2 * b_size)])
+				self.dis.model.fit(batch_x_merge,batch_y_merge,batch_size=1,epochs=3,verbose=1)
+
+				batch_y = np.array([[1.,0.] for i in range(b_size)])
+				gan_model.fit(batch_z,batch_y,batch_size=1,epochs=1,verbose=1)
+			print '\n' * 10 + 'test on epoch',epoch
+
 
 		self.gen.model.summary()
 		self.dis.model.summary()
 		gan_model.summary()
 
 
-		# full train gan model
 
 		# self.dis.model.fit(
 		# 	[np.array(full_sequences)],[np.array([[0.,1.] for i in xrange(nb_sequence)])],

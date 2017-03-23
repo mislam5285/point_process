@@ -28,11 +28,11 @@ class RNNDiscriminator(object):
 		n1 = LSTM(10,W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(m1)
 		n1 = Dense(2,activation='softmax')(n1)
 
-		model = Model(input=[f,k2], output=[n1])
+		model = Model(inputs=[f,k2], outputs=[n1])
 		model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 		model.fit(
 			[numpy.array([[f] for f in features]),numpy.array(sequences)], [numpy.array(labels)],
-			nb_epoch=500, batch_size=1,
+			epochs=500, batch_size=1,
 			verbose=1,validation_split=0.2)
 		self.params['model'] = model
 		# embeddings = model.layers[1].W.get_value()
@@ -158,7 +158,7 @@ class CNNDiscriminator(object):
 		model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 		model.fit(
 			[numpy.array(sequences)], [numpy.array(labels)],
-			nb_epoch=500, batch_size=10,
+			epochs=500, batch_size=10,
 			verbose=1,validation_split=0.2)
 		self.params['model'] = model
 		# embeddings = model.layers[1].W.get_value()
@@ -230,8 +230,8 @@ class CNNDiscriminator(object):
 				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
 				sequence.append([[self_count],[nonself_count]])
 			for year in range(cut,int(10 + cut)) :
-				self_count = len([x for x in self_seq if year <= x and x < year + 1]) * 1.5
-				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1]) * 1.5
+				self_count = len([x for x in self_seq if year <= x and x < year + 1]) + 0.01 * (year - cut) # * 1.5 #
+				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1]) + 0.01 * (year - cut) # * 1.5 #
 				sequence.append([[self_count],[nonself_count]])
 			sequences.append(sequence)
 			labels.append([0.,1.])
