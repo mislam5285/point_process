@@ -431,14 +431,16 @@ class RNNGenerator(object):
 		k = Dense(len(sequences[0][0]),activation='relu',W_regularizer=l1(self.l1))(f)
 		# k = merge([k,k],mode='concat',concat_axis=1)
 		k1 = Dropout(0.5)(k)
-
 		k2 = Input(shape=(len(sequences[0]),len(sequences[0][0])),dtype='float')
-
 		g1 = merge([k1,k2],mode='concat',concat_axis=1)
-
 		m1 = Masking(mask_value= -1.)(g1)
-
 		n1 = LSTM(len(sequences[0][0]),activation='relu',W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(m1)
+		# n1 = Dense(16)(n1)
+		# n1 = Activation('tanh')(n1)
+		# n1 = Dropout(0.5)(n1)
+		# n1 = Dense(4)(n1)
+		# n1 = Activation('tanh')(n1)
+		# n1 = Dense(len(sequences[0][0]))(n1)
 
 		model = Model(inputs=[f,k2], outputs=[n1])
 		model.compile(optimizer='adam', loss='mape')
@@ -569,6 +571,11 @@ class RNNGenerator(object):
 if __name__ == '__main__':
 	with open('../log/train.log','w') as f:
 		sys.stdout = f
+		if len(sys.argv) == 2:
+			predictor = RNNGenerator()
+			loaded = predictor.load('../data/paper3.txt')
+			predictor.train(*loaded)
+			exit()
 		predictor = HawkesGenerator()
 		loaded = predictor.load('../data/paper3.txt')
 		model = predictor.pre_train(*loaded)

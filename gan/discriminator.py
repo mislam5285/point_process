@@ -25,7 +25,7 @@ class RNNDiscriminator(object):
 
 		m1 = Masking(mask_value= -1.)(g1)
 
-		n1 = LSTM(10,W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(m1)
+		n1 = LSTM(128,W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(m1)
 		n1 = Dense(2,activation='softmax')(n1)
 
 		model = Model(inputs=[f,k2], outputs=[n1])
@@ -37,6 +37,9 @@ class RNNDiscriminator(object):
 		self.params['model'] = model
 		# embeddings = model.layers[1].W.get_value()
 		return model
+
+	def create_trainable_model(self,sequences):
+		pass
 
 	def load(self,f,cut=15,normalize_sequence=False):
 		# features[paper][feature], sequences[paper][day][feature]
@@ -87,8 +90,8 @@ class RNNDiscriminator(object):
 				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
 				sequence.append([self_count,nonself_count])
 			for year in range(cut,int(10 + cut)) :
-				self_count = len([x for x in self_seq if year <= x and x < year + 1]) + 0.01 * (year - cut) # * 1.5 #
-				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1]) + 0.01 * (year - cut) # * 1.5 #
+				self_count = len([x for x in self_seq if year <= x and x < year + 1]) + 0.1 * (year - cut) # * 1.5 #
+				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1]) + 0.1 * (year - cut) # * 1.5 #
 				sequence.append([self_count,nonself_count])
 			sequences.append(sequence)
 			labels.append([0.,1.])
@@ -170,9 +173,9 @@ class CNNDiscriminator(object):
 		from keras.regularizers import l1,l2
 
 		x = Input(batch_shape=(1, nb_event, nb_type, nb_feature), dtype='float')
-		y = Convolution2D(8, nb_event-16+1, 1, subsample=(2,1), activation='relu')(x)
+		y = Convolution2D(128, nb_event-16+1, 1, subsample=(2,1), activation='relu')(x)
 		y = Dropout(0.5)(y)
-		y = Convolution2D(8, 5, nb_type, activation='relu')(y)
+		y = Convolution2D(128, 5, nb_type, activation='relu')(y)
 		y = Dropout(0.5)(y)
 		y = Flatten()(y)
 		y = Dense(2,activation='softmax')(y)
