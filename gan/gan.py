@@ -15,8 +15,9 @@ class HawkesGAN(object):
 		self.dis = CNNDiscriminator()
 
 	def full_train(self,full_sequences,train_sequences,features,publish_years,pids,superparams):
-		from keras.layers import Input, Dense, Flatten, Convolution2D, Activation, Dropout, merge
+		from keras.layers import Input
 		from keras.models import Model
+		from keras.optimizers import SGD
 		from customed_layer import PoissonNoise
 
 		nb_sequence = len(full_sequences)
@@ -44,13 +45,13 @@ class HawkesGAN(object):
 		y = self.dis.model(noised_g_z)
 		noised_gen_model = Model(inputs=[z], outputs=[noised_g_z])
 		gan_model = Model(inputs=[z], outputs=[y])
-		gan_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+		gan_model.compile(optimizer=SGD(lr=0.001), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
 		# pretrain discrimnator
 		Z = np.arange(nb_sequence)
 		X = np.array(full_sequences)
 		b_size = 32
-		max_batch = 2
+		max_batch = 15
 		for it in range(nb_sequence):
 			batch_z = Z[np.arange(it,it+b_size)%nb_sequence]
 			batch_g_z = noised_gen_model.predict(batch_z,batch_size=1)
@@ -59,7 +60,7 @@ class HawkesGAN(object):
 			batch_y_merge = np.array([[0.,1.] if i % 2 == 0 else [1.,0.] for i in range(2 * b_size)])
 			self.dis.model.fit(batch_x_merge,batch_y_merge,batch_size=1,epochs=1,verbose=1)
 
-			if it + 1 <= max_batch: break
+			if it + 1 >= max_batch: break
 
 		# Z = np.arange(nb_sequence)
 		# G_Z = noised_gen_model.predict(Z,batch_size=1)
@@ -86,10 +87,10 @@ class HawkesGAN(object):
 				batch_x = X[np.arange(it,it+b_size)%nb_sequence]
 				batch_x_merge = np.array([batch_g_z[i/2] if i % 2 == 0 else batch_x[i/2] for i in range(2 * b_size)])
 				batch_y_merge = np.array([[0.,1.] if i % 2 == 0 else [1.,0.] for i in range(2 * b_size)])
-				self.dis.model.fit(batch_x_merge,batch_y_merge,batch_size=1,epochs=3,verbose=1)
+				self.dis.model.fit(batch_x_merge,batch_y_merge,batch_size=1,epochs=15,verbose=1)
 
 				batch_y = np.array([[1.,0.] for i in range(b_size)])
-				gan_model.fit(batch_z,batch_y,batch_size=1,epochs=1,verbose=1)
+				gan_model.fit(batch_z,batch_y,batch_size=1,epochs=30,verbose=1)
 			print '\n' * 10 + 'test on epoch',epoch
 
 
@@ -97,27 +98,6 @@ class HawkesGAN(object):
 		self.dis.model.summary()
 		gan_model.summary()
 
-
-
-		# self.dis.model.fit(
-		# 	[np.array(full_sequences)],[np.array([[0.,1.] for i in xrange(nb_sequence)])],
-		# 	nb_epoch=500, batch_size=1,
-		# 	verbose=1,validation_split=0.2)
-
-		# gan_model.fit(
-		# 	[np.arange(nb_sequence)],[np.array([[0.,1.] for i in xrange(nb_sequence)])],
-		# 	nb_epoch=500, batch_size=1,
-		# 	verbose=1,validation_split=0.2)
-
-
-	# def pre_train_hawkes(self,paper_data='../data/paper3.txt'):
-
-	# def pre_train_cnn(self,paper_data='../data/paper3.txt'):
-	# 	sequences,labels,features,publish_years,pids,superparams = self.dis.load(paper_data)
-	# 	self.dis.model.fit(
-	# 		[numpy.array(sequences)], [numpy.array(labels)],
-	# 		nb_epoch=500, batch_size=1,
-	# 		verbose=1,validation_split=0.2)
 
 	def load(self,f,pred_length=10,train_length=15):
 		# features[paper][feature], sequences[paper][day][feature]

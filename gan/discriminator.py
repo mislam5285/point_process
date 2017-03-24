@@ -87,8 +87,8 @@ class RNNDiscriminator(object):
 				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
 				sequence.append([self_count,nonself_count])
 			for year in range(cut,int(10 + cut)) :
-				self_count = len([x for x in self_seq if year <= x and x < year + 1]) * 1.5
-				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1]) * 1.5
+				self_count = len([x for x in self_seq if year <= x and x < year + 1]) + 0.01 * (year - cut) # * 1.5 #
+				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1]) + 0.01 * (year - cut) # * 1.5 #
 				sequence.append([self_count,nonself_count])
 			sequences.append(sequence)
 			labels.append([0.,1.])
@@ -147,9 +147,9 @@ class CNNDiscriminator(object):
 		print g1
 
 		# n1 = LSTM(1,activation='sigmoid',W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(g1)
-		g1 = Convolution2D(128,len(sequences[0])-16+1,1,subsample=(2,1),activation='relu')(g1)
+		g1 = Convolution2D(8,len(sequences[0])-16+1,1,subsample=(2,1),activation='relu')(g1)
 		g1 = Dropout(0.5)(g1)
-		g1 = Convolution2D(128,5,len(sequences[0][0]),activation='relu')(g1)
+		g1 = Convolution2D(8,5,len(sequences[0][0]),activation='relu')(g1)
 		g1 = Dropout(0.5)(g1)
 		g1 = Flatten()(g1)
 		n1 = Dense(2,activation='softmax')(g1)
@@ -170,9 +170,9 @@ class CNNDiscriminator(object):
 		from keras.regularizers import l1,l2
 
 		x = Input(batch_shape=(1, nb_event, nb_type, nb_feature), dtype='float')
-		y = Convolution2D(128, nb_event-16+1, 1, subsample=(2,1), activation='relu')(x)
+		y = Convolution2D(8, nb_event-16+1, 1, subsample=(2,1), activation='relu')(x)
 		y = Dropout(0.5)(y)
-		y = Convolution2D(128, 5, nb_type, activation='relu')(y)
+		y = Convolution2D(8, 5, nb_type, activation='relu')(y)
 		y = Dropout(0.5)(y)
 		y = Flatten()(y)
 		y = Dense(2,activation='softmax')(y)
@@ -263,9 +263,11 @@ if __name__ == '__main__':
 		# predictor = RNNGenerator()
 		# loaded = predictor.load('../data/paper2.txt')
 		# predictor.train(*loaded,cut=10,max_outer_iter=0)
-		# disc = RNNDiscriminator()
-		# loaded = disc.load('../data/paper3.txt')
-		# disc.train(*loaded,cut=10,max_outer_iter=0)
+		if len(sys.argv) == 2 :
+			disc = RNNDiscriminator()
+			loaded = disc.load('../data/paper3.txt')
+			disc.train(*loaded,cut=10,max_outer_iter=0)
+			exit()
 		disc = CNNDiscriminator()
 		loaded = disc.load('../data/paper3.txt')
 		disc.train(*loaded,cut=10,max_outer_iter=0)
