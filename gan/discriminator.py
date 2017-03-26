@@ -180,7 +180,7 @@ class CNNDiscriminator(object):
 		y = Flatten()(y)
 		y = Dense(2,activation='softmax')(y)
 
-		model = Model(inputs=[x], outputs=[y])
+		model = Model(inputs=[x], outputs=[y], name='dis_output')
 		self.model = model
 		return model
 

@@ -370,11 +370,13 @@ class HawkesGenerator(object):
 		from customed_layer import HawkesLayer
 
 		x = Input(batch_shape=(1,1), dtype='int32')
-		y = HawkesLayer(sequences,pred_length,sequence_weights=self.sequence_weights)(x)
+		hawkes_layer = HawkesLayer(sequences,pred_length,sequence_weights=self.sequence_weights)
+		y = hawkes_layer(x)
 
-		model = Model(inputs=[x], outputs=[y])
+		model = Model(inputs=[x], outputs=[y], name='hawkes_output')
 
 		self.model = model
+		self.hawkes_layer = hawkes_layer
 		return model
 
 	def load(self,f):

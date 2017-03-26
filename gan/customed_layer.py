@@ -58,7 +58,7 @@ class HawkesLayer(Layer):
 
 		self.spontaneous = self.add_weight(shape=(self.nb_sequence, self.nb_type),
 									initializer=self.spont_initializer,
-									trainable=True)
+									trainable=False)
 
 		self.Theta = self.add_weight(shape=(self.nb_sequence, self.nb_type),
 									initializer=self.Theta_initializer,
@@ -188,7 +188,7 @@ class InfiniteDimensionHawkesLayer(HawkesLayer):
 
 
 class PoissonNoise(Layer):
-	def __init__(self, sequences,pred_length, stddev=1., **kwargs):
+	def __init__(self, sequences,pred_length, stddev=0., **kwargs):
 		super(PoissonNoise, self).__init__(**kwargs)
 		self.stddev = stddev
 
