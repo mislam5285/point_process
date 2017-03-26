@@ -150,9 +150,9 @@ class CNNDiscriminator(object):
 		print g1
 
 		# n1 = LSTM(1,activation='sigmoid',W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(g1)
-		g1 = Convolution2D(8,len(sequences[0])-16+1,1,subsample=(2,1),activation='relu')(g1)
+		g1 = Convolution2D(128,kernel_size=[len(sequences[0])-10+1,1],strides=(2,1),activation='relu')(g1)
 		g1 = Dropout(0.5)(g1)
-		g1 = Convolution2D(8,5,len(sequences[0][0]),activation='relu')(g1)
+		g1 = Convolution2D(128,kernel_size=[3,len(sequences[0][0])],activation='relu')(g1)
 		g1 = Dropout(0.5)(g1)
 		g1 = Flatten()(g1)
 		n1 = Dense(2,activation='softmax')(g1)
@@ -173,9 +173,9 @@ class CNNDiscriminator(object):
 		from keras.regularizers import l1,l2
 
 		x = Input(batch_shape=(1, nb_event, nb_type, nb_feature), dtype='float')
-		y = Convolution2D(128, nb_event-16+1, 1, subsample=(2,1), activation='relu')(x)
+		y = Convolution2D(128, kernel_size=[nb_event-10+1, 1], strides=(2,1), activation='relu')(x)
 		y = Dropout(0.5)(y)
-		y = Convolution2D(128, 5, nb_type, activation='relu')(y)
+		y = Convolution2D(128, kernel_size=[3, nb_type], activation='relu')(y)
 		y = Dropout(0.5)(y)
 		y = Flatten()(y)
 		y = Dense(2,activation='softmax')(y)

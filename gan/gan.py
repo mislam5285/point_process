@@ -12,24 +12,29 @@ cpu = multiprocessing.cpu_count()
 class HawkesGAN(object):
 	def __init__(self):
 		self.gen = HawkesGenerator()
+		self.gen_full = HawkesGenerator()
 		self.dis = CNNDiscriminator()
 
-	def full_train(self,full_sequences,train_sequences,features,publish_years,pids,superparams,train_method='gan'):
+	def full_train(self,full_sequences,observed_sequences,train_sequences,features,publish_years,pids,superparams,train_method='gan'):
 		from keras.layers import Input
 		from keras.models import Model
 		from keras.optimizers import SGD
 		from customed_layer import PoissonNoise
 
 		nb_sequence = len(full_sequences)
-		nb_event = len(train_sequences[0])
-		pred_length = len(full_sequences[0]) - nb_event
+		observed_length = len(observed_sequences[0])
+		train_length = len(train_sequences[0])
+		test_length = len(full_sequences[0]) - observed_length
+		val_length = observed_length - train_length
 		nb_type = len(full_sequences[0][0])
 		nb_feature = len(full_sequences[0][0][0])
 
 		# guarantee pretrained generator
 		if self.gen.sequence_weights is None:
 			raise Exception('generator not pretrained, or weights not loaded')
-		self.gen.create_trainable_model(train_sequences,pred_length)
+		# self.gen.create_trainable_model(observed_sequences,test_length)
+		self.gen.create_trainable_model(train_sequences,val_length)
+		self.gen_full.create_trainable_model(observed_sequences,test_length,proxy_layer=self.gen.model.get_layer('hawkes_output'))
 
 		# build keras models
 		# self.gen.model.compile(optimizer='adam', loss='mape', metrics=['accuracy'])
@@ -37,16 +42,19 @@ class HawkesGAN(object):
 		assert train_method in ['gan','wgan']
 
 		if train_method == 'gan':
-			self.dis.create_trainable_model(nb_event + pred_length,nb_type,nb_feature)
+			# self.dis.create_trainable_model(observed_length + test_length,nb_type,nb_feature)
+			self.dis.create_trainable_model(observed_length,nb_type,nb_feature)
 			self.dis.model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
 			self.dis.model.trainable = False
 			for l in self.dis.model.layers: l.trainable = False
 			z = Input(batch_shape=(1,1), dtype='int32')
 			g_z = self.gen.model(z)
-			noised_g_z = PoissonNoise(train_sequences,pred_length)(g_z)
+			full_g_z = self.gen_full.model(z)
+			noised_g_z = PoissonNoise(train_sequences,val_length)(g_z)
 			y = self.dis.model(g_z)
 			noised_gen_model = Model(inputs=[z], outputs=[noised_g_z])
+			full_gen_model = Model(inputs=[z], outputs=[full_g_z])
 			gan_model = Model(inputs=[z], outputs=[g_z,y])
 			gan_model.compile(optimizer='rmsprop', 
 				loss={'dis_output':'categorical_crossentropy','hawkes_output':'mse'},
@@ -54,43 +62,32 @@ class HawkesGAN(object):
 				metrics=['categorical_accuracy'])
 		elif train_method == 'wgan':
 			from customed_loss import wassertein
-			self.dis.create_trainable_wassertein(nb_event + pred_length,nb_type,nb_feature)
-			self.dis.model.compile(optimizer='rmsprop', loss=wassertein)
-
-			self.dis.model.trainable = False
-			for l in self.dis.model.layers: l.trainable = False
-			z = Input(batch_shape=(1,1), dtype='int32')
-			g_z = self.gen.model(z)
-			noised_g_z = PoissonNoise(train_sequences,pred_length)(g_z)
-			y = self.dis.model(g_z)
-			noised_gen_model = Model(inputs=[z], outputs=[noised_g_z])
-			gan_model = Model(inputs=[z], outputs=[g_z,y])
-			gan_model.compile(optimizer='rmsprop', 
-				loss={'dis_output':wassertein,'hawkes_output':'mse'},
-				loss_weights={'dis_output':1.,'hawkes_output':0.})
+			self.dis.create_trainable_wassertein
 
 
 
 		self.gen.model.summary()
 		self.dis.model.summary()
 		gan_model.summary()
+		sys.stdout.flush()
 
 		# pretrain discrimnator
 		Z = np.arange(nb_sequence)
-		X = np.array(full_sequences)
+		X = np.array(observed_sequences)
+		X_full = np.array(full_sequences)
 		b_size = 512
 		max_pretrain_iter = 5
 		it = 0
 
-		# likelihood = self.compute_likelihood()
-		# mape_acc = self.compute_mape_acc(self.gen.model,Z,X,pred_length)
-		# print {
-		# 	'source':'before pre-training discriminator',
-		# 	'mape':mape_acc['mape'],
-		# 	'acc':mape_acc['acc'],
-		# 	'LL':likelihood,
-		# }
-		# sys.stdout.flush()
+		likelihood = self.compute_likelihood()
+		mape_acc = self.compute_mape_acc(self.gen_full.model,Z,X_full,test_length)
+		print {
+			'source':'before pre-training discriminator',
+			'mape':mape_acc['mape'],
+			'acc':mape_acc['acc'],
+			'LL':likelihood,
+		}
+		sys.stdout.flush()
 
 		while it <= max_pretrain_iter * b_size:
 			batch_z = Z[np.arange(it,it+b_size)%nb_sequence]
@@ -110,7 +107,8 @@ class HawkesGAN(object):
 
 		# full train gan model
 		Z = np.arange(nb_sequence)
-		X = np.array(full_sequences)
+		X = np.array(observed_sequences)
+		X_full = np.array(full_sequences)
 		Y = np.array([[1.,0.] for i in range(nb_sequence)])
 		b_size_dis = 32
 		b_size_gan = 512
@@ -134,7 +132,7 @@ class HawkesGAN(object):
 				batch_size=1,epochs=1,verbose=0)
 
 			likelihood = self.compute_likelihood()
-			mape_acc = self.compute_mape_acc(self.gen.model,Z,X,pred_length)
+			mape_acc = self.compute_mape_acc(self.gen_full.model,Z,X_full,test_length)
 			print {
 				'source':'full train one batch',
 				# 'epoch':epoch,
@@ -154,7 +152,7 @@ class HawkesGAN(object):
 	def compute_likelihood(self):
 		return 0.0
 
-	def compute_mape_acc(self,generator,z,x,pred_length):
+	def compute_mape_acc(self,generator,z,x,test_length):
 		g_z = generator.predict(z,batch_size=1)
 		assert g_z.shape == x.shape
 		count_g_z = np.sum(np.sum(g_z,3),2)
@@ -162,8 +160,8 @@ class HawkesGAN(object):
 		for i in range(1,g_z.shape[1]):
 			count_g_z[:,i] += count_g_z[:,i-1]
 			count_x[:,i] += count_x[:,i-1]
-		count_g_z = count_g_z[:,-pred_length:]
-		count_x = count_x[:,-pred_length:]
+		count_g_z = count_g_z[:,-test_length:]
+		count_x = count_x[:,-test_length:]
 
 		ind = np.argmax(np.sum(count_g_z,1))
 		print ind,np.sum(count_g_z,1)[ind]
@@ -198,7 +196,7 @@ class HawkesGAN(object):
 		return {'mape':mape.tolist(),'acc':acc.tolist()}
 
 
-	def load(self,f,pred_length=10,train_length=15,nb_type=1):
+	def load(self,f,test_length=10,observed_length=15,train_length=10,nb_type=1):
 		# features[paper][feature], sequences[paper][day][feature]
 		assert nb_type <= 2
 		data = []
@@ -220,6 +218,7 @@ class HawkesGAN(object):
 		#train_seq = []
 		# test_seq = []
 		full_sequences = []
+		observed_sequences = []
 		train_sequences = []
 		features = []
 		publish_years = []
@@ -232,7 +231,7 @@ class HawkesGAN(object):
 			#time_seq.sort()
 
 			sequence = []
-			for year in range(int(pred_length + train_length)) :
+			for year in range(int(test_length + observed_length)) :
 				self_count = len([x for x in self_seq if year <= x and x < year + 1])
 				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
 				if nb_type == 2: sequence.append([[self_count],[nonself_count]])
@@ -243,13 +242,17 @@ class HawkesGAN(object):
 			publish_years.append(publish_year)
 
 			sequence = []
+			for year in range(observed_length) :
+				self_count = len([x for x in self_seq if year <= x and x < year + 1])
+				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
+				if nb_type == 2: sequence.append([[self_count],[nonself_count]])
+				if nb_type == 1: sequence.append([[self_count + nonself_count]])
+			observed_sequences.append(sequence)
+
+			sequence = []
 			for year in range(train_length) :
 				self_count = len([x for x in self_seq if year <= x and x < year + 1])
 				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
-				# sequence.append([[self_count],[nonself_count]])
-			# for year in range(train_length,int(pred_length + train_length)) :
-			# 	self_count = len([x for x in self_seq if year <= x and x < year + 1]) * 1.5
-			# 	nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1]) * 1.5
 				if nb_type == 2: sequence.append([[self_count],[nonself_count]])
 				if nb_type == 1: sequence.append([[self_count + nonself_count]])
 			train_sequences.append(sequence)
@@ -258,10 +261,10 @@ class HawkesGAN(object):
 		# print {
 		# 	# 'np.mean(np.array(full_sequences)[:,15:])':np.mean(np.array(full_sequences)[:,15:]),
 		# 	'np.mean(np.array(full_sequences)[:,0:15])':np.mean(np.array(full_sequences)[:,0:15]),
-		# 	'np.mean(np.array(train_sequences)[:,0:15])':np.mean(np.array(train_sequences)[:,0:15]),
+		# 	'np.mean(np.array(observed_sequences)[:,0:15])':np.mean(np.array(observed_sequences)[:,0:15]),
 		# }
 		# exit()
-		return full_sequences,train_sequences,features,publish_years,pids,superparams
+		return full_sequences,observed_sequences,train_sequences,features,publish_years,pids,superparams
 
 
 # yield

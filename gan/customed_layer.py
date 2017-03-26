@@ -12,7 +12,7 @@ from keras.layers import Input
 from keras.models import Model
 
 class HawkesLayer(Layer):
-	def __init__(self, sequences_value, pred_length, delta = 1., sequence_weights=None,**kwargs):
+	def __init__(self, sequences_value, pred_length, delta = 1., sequence_weights=None, proxy_layer=None, **kwargs):
 		"""
 		can only be the first layer of an architecture
 			
@@ -29,6 +29,11 @@ class HawkesLayer(Layer):
 		self.nb_feature = shape[3]
 		self.pred_length = pred_length
 		self.delta = delta
+		self.proxy_layer = proxy_layer
+
+		if self.proxy_layer:
+			super(HawkesLayer, self).__init__(**kwargs)
+			return
 
 		if sequence_weights:
 			assert len(sequence_weights) == self.nb_sequence
@@ -43,8 +48,6 @@ class HawkesLayer(Layer):
 			self.W_initializer = Constant(np.array([[0.5 for j in range(self.nb_type)] for i in range(self.nb_sequence)]))
 			self.Alpha_initializer = Constant(np.array([[[0.5 for k in range(self.nb_type)] for j in range(self.nb_type)] for i in range(self.nb_sequence)]))
 
-			
-
 		super(HawkesLayer, self).__init__(**kwargs)
 
 	def build(self, input_shape):
@@ -55,6 +58,10 @@ class HawkesLayer(Layer):
 		self.sequences = self.add_weight(shape=(self.nb_sequence, self.nb_event, self.nb_type, self.nb_feature),
 									initializer=self.sequences_initializer,
 									trainable=False)
+
+		if self.proxy_layer:
+			super(HawkesLayer, self).build(input_shape)
+			return
 
 		self.spontaneous = self.add_weight(shape=(self.nb_sequence, self.nb_type),
 									initializer=self.spont_initializer,
@@ -92,22 +99,30 @@ class HawkesLayer(Layer):
 		# seq_id = K.gather(seq_id, 0)
 		# seq_id = seq_id[0,0]
 		seq_id = K.gather(K.gather(seq_id,0),0)
-		self.train_seq = K.gather(self.sequences, seq_id)[:,:,0] # currently only support the 1st feature
-		spont  = K.gather(self.spontaneous, seq_id)
-		theta = K.gather(self.Theta, seq_id)
-		w = K.gather(self.W, seq_id)
-		alpha = K.gather(self.Alpha, seq_id)
-		# print {
-		# 	'spont':spont.shape,
-		# 	'theta':theta.shape,
-		# 	'train_seq':self.train_seq.shape,
-		# 	'alpha':alpha,
-		# 	'w':w.shape,
-		# 	'Theta':self.Theta.get_shape(),
-		# 	'Alpha':self.Alpha.get_shape(),
-		# 	'sequences':self.sequences.get_shape,
-		# 	'seq_id':seq_id.get_shape(),
-		# }
+
+		if self.proxy_layer:
+			self.train_seq = K.gather(self.sequences, seq_id)[:,:,0] # currently only support the 1st feature
+			spont  = K.gather(self.proxy_layer.spontaneous, seq_id)
+			theta = K.gather(self.proxy_layer.Theta, seq_id)
+			w = K.gather(self.proxy_layer.W, seq_id)
+			alpha = K.gather(self.proxy_layer.Alpha, seq_id)
+		else:
+			self.train_seq = K.gather(self.sequences, seq_id)[:,:,0] # currently only support the 1st feature
+			spont  = K.gather(self.spontaneous, seq_id)
+			theta = K.gather(self.Theta, seq_id)
+			w = K.gather(self.W, seq_id)
+			alpha = K.gather(self.Alpha, seq_id)
+			# print {
+			# 	'spont':spont.shape,
+			# 	'theta':theta.shape,
+			# 	'train_seq':self.train_seq.shape,
+			# 	'alpha':alpha,
+			# 	'w':w.shape,
+			# 	'Theta':self.Theta.get_shape(),
+			# 	'Alpha':self.Alpha.get_shape(),
+			# 	'sequences':self.sequences.get_shape,
+			# 	'seq_id':seq_id.get_shape(),
+			# }
 
 		pred_seq = tensor_array_ops.TensorArray(dtype=tf.float32, size=self.nb_event + self.pred_length, 
 			dynamic_size=False, infer_shape=True, clear_after_read=False)
