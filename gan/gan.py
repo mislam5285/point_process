@@ -34,7 +34,7 @@ class HawkesGAN(object):
 			raise Exception('generator not pretrained, or weights not loaded')
 		# self.gen.create_trainable_model(observed_sequences,test_length)
 		self.gen.create_trainable_model(train_sequences,val_length)
-		self.gen_full.create_trainable_model(observed_sequences,test_length,proxy_layer=self.gen.model.get_layer('hawkes_output'))
+		self.gen_full.create_trainable_model(observed_sequences,test_length,proxy_layer=self.gen.hawkes_layer)
 
 		# build keras models
 		# self.gen.model.compile(optimizer='adam', loss='mape', metrics=['accuracy'])
@@ -58,7 +58,7 @@ class HawkesGAN(object):
 			gan_model = Model(inputs=[z], outputs=[g_z,y])
 			gan_model.compile(optimizer='rmsprop', 
 				loss={'dis_output':'categorical_crossentropy','hawkes_output':'mse'},
-				loss_weights={'dis_output':0.5,'hawkes_output':0.5},
+				loss_weights={'dis_output':0.0,'hawkes_output':1.0},
 				metrics=['categorical_accuracy'])
 		elif train_method == 'wgan':
 			from customed_loss import wassertein
@@ -175,25 +175,36 @@ class HawkesGAN(object):
 			sess.run(layer.Theta.initializer)
 			sess.run(layer.W.initializer)
 			sess.run(layer.spontaneous.initializer)
-			# print sess.run(layer.sequences[0])
+		# 	# print sess.run(layer.sequences[0])
 			sess.run(layer.Alpha.initializer)
-			# print sess.run(layer.Alpha[0])
-			# print sess.run(layer.Alpha[1])
-			# print sess.run(layer.Alpha[2])
-			# print sess.run(layer.Alpha[3])
+			mean_alpha = sess.run(tf.reduce_mean(layer.Alpha))
+			mean_w = sess.run(tf.reduce_mean(layer.W))
+			theta = sess.run(tf.reduce_min(layer.Theta)),
+			spont = sess.run(tf.reduce_max(layer.spontaneous)),
+		# 	# print sess.run(layer.Alpha[0])
+		# 	# print sess.run(layer.Alpha[1])
+		# 	# print sess.run(layer.Alpha[2])
+		# 	# print sess.run(layer.Alpha[3])
 
-			print {
-				'count_g_z':np.mean(count_g_z,0),
-				'count_x':np.mean(count_x,0),
-				'count_g_z[1]':count_g_z[1],
-				'count_x[1]':count_x[1],
-				'alpha':sess.run(tf.reduce_max(layer.Alpha)),
-				'w':sess.run(tf.reduce_min(layer.W)),
-				'theta':sess.run(tf.reduce_min(layer.Theta)),
-				'spont':sess.run(tf.reduce_max(layer.spontaneous)),
-			}
+		# 	print {
+		# 		'count_g_z':np.mean(count_g_z,0),
+		# 		'count_x':np.mean(count_x,0),
+		# 		'count_g_z[1]':count_g_z[1],
+		# 		'count_x[1]':count_x[1],
+		# 		'alpha':sess.run(tf.reduce_max(layer.Alpha)),
+		# 		'w':sess.run(tf.reduce_min(layer.W)),
+		# 		'theta':sess.run(tf.reduce_min(layer.Theta)),
+		# 		'spont':sess.run(tf.reduce_max(layer.spontaneous)),
+		# 	}
 
-		return {'mape':mape.tolist(),'acc':acc.tolist()}
+		return {
+			'mape':mape.tolist(),
+			'acc':acc.tolist(),
+			'mean_alpha':mean_alpha,
+			'mean_w':mean_w,
+			'mean_theta':theta,
+			'mean_spont':spont,
+		}
 
 
 	def load(self,f,test_length=10,observed_length=15,train_length=10,nb_type=1):
@@ -236,6 +247,12 @@ class HawkesGAN(object):
 				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
 				if nb_type == 2: sequence.append([[self_count],[nonself_count]])
 				if nb_type == 1: sequence.append([[self_count + nonself_count]])
+			if nb_type == 2: 
+				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][1] += len([x for x in nonself_seq if -1 < x and x < 0])
+			if nb_type == 1: 
+				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][0] += len([x for x in nonself_seq if -1 < x and x < 0])
 			full_sequences.append(sequence)
 
 			features.append(feature)
@@ -247,6 +264,12 @@ class HawkesGAN(object):
 				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
 				if nb_type == 2: sequence.append([[self_count],[nonself_count]])
 				if nb_type == 1: sequence.append([[self_count + nonself_count]])
+			if nb_type == 2: 
+				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][1] += len([x for x in nonself_seq if -1 < x and x < 0])
+			if nb_type == 1: 
+				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][0] += len([x for x in nonself_seq if -1 < x and x < 0])
 			observed_sequences.append(sequence)
 
 			sequence = []
@@ -255,6 +278,12 @@ class HawkesGAN(object):
 				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
 				if nb_type == 2: sequence.append([[self_count],[nonself_count]])
 				if nb_type == 1: sequence.append([[self_count + nonself_count]])
+			if nb_type == 2: 
+				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][1] += len([x for x in nonself_seq if -1 < x and x < 0])
+			if nb_type == 1: 
+				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][0] += len([x for x in nonself_seq if -1 < x and x < 0])
 			train_sequences.append(sequence)
 
 		superparams = {}

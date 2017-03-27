@@ -204,7 +204,7 @@ def paper_fix_train_non_self_m_hawkes():
 
 def paper_hawkes_generator_pretrain_convergence():
     will_preprocess = False
-    will_train_hawkes = False
+    will_train_hawkes = True
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
@@ -216,7 +216,7 @@ def paper_hawkes_generator_pretrain_convergence():
             fw.writelines(result)
     
     # training
-    pre_train_log = root + '/data/paper.pretrain.log4.txt'
+    pre_train_log = root + '/data/paper.pretrain.log5.txt'
 
     if will_train_hawkes == True :
         with open(pre_train_log,'w') as f:
@@ -232,7 +232,7 @@ def paper_hawkes_generator_pretrain_convergence():
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
         colors = ['red','green','purple']
         keys = [lambda x:-x['LL'], lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
-        labels = ['NLL', 'ACC', 'MAPE']
+        labels = ['NLL on observed seq.', 'ACC on test seq.', 'MAPE on test seq.']
 
         with open(pre_train_log) as f:
             nodes = []

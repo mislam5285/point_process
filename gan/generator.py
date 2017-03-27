@@ -234,7 +234,7 @@ class HawkesGenerator(object):
 
 
 	def compute_likelihood(self,beta,train_count,features,W1,W2,alpha,sequences,train_times):
-		likelihood = 0;
+		likelihood = 0.
 		for item in range(train_count):
 			fea = numpy.mat(features[item])
 			sw1 = W1[item]
@@ -243,7 +243,8 @@ class HawkesGenerator(object):
 			s = sequences[item]
 			s = [x for x in s if x <= train_times[item]]
 			obj = self.calculate_objective(beta*fea.T,sw1,salpha,sw2,s,train_times[item])
-			likelihood -= likelihood - obj[0,0]
+			likelihood -= obj[0,0]
+		likelihood /= train_count
 		return likelihood
 
 
