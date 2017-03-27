@@ -1,6 +1,6 @@
 #coding:utf-8
 import json,csv
-class Processor(object) :
+class PaperScreenor(object) :
     def __init__(self):
         pass
     

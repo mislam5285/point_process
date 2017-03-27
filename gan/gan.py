@@ -80,11 +80,14 @@ class HawkesGAN(object):
 		it = 0
 
 		likelihood = self.compute_likelihood()
-		mape_acc = self.compute_mape_acc(self.gen_full.model,Z,X_full,test_length)
+		mape_acc_test = self.compute_mape_acc(self.gen_full.model,Z,X_full,test_length)
+		mape_acc_val = self.compute_mape_acc(self.gen.model,Z,X,val_length)
 		print {
 			'source':'before pre-training discriminator',
-			'mape':mape_acc['mape'],
-			'acc':mape_acc['acc'],
+			'test_mape':mape_acc_test['mape'],
+			'test_acc':mape_acc_test['acc'],
+			'val_mape':mape_acc_val['mape'],
+			'val_acc':mape_acc_val['acc'],
 			'LL':likelihood,
 		}
 		sys.stdout.flush()
@@ -132,7 +135,8 @@ class HawkesGAN(object):
 				batch_size=1,epochs=1,verbose=0)
 
 			likelihood = self.compute_likelihood()
-			mape_acc = self.compute_mape_acc(self.gen_full.model,Z,X_full,test_length)
+			mape_acc_test = self.compute_mape_acc(self.gen_full.model,Z,X_full,test_length)
+			mape_acc_val = self.compute_mape_acc(self.gen.model,Z,X,val_length)
 			print {
 				'source':'full train one batch',
 				# 'epoch':epoch,
@@ -140,8 +144,10 @@ class HawkesGAN(object):
 				# 'batch':'[' + str(it) + ',' + str(it+b_size) + ')',
 				'dis_loss':dis_his.history['loss'],
 				'gan_loss':gan_his.history['loss'],
-				'mape':mape_acc['mape'],
-				'acc':mape_acc['acc'],
+				'test_mape':mape_acc_test['mape'],
+				'test_acc':mape_acc_test['acc'],
+				'val_mape':mape_acc_val['mape'],
+				'val_acc':mape_acc_val['acc'],
 				'LL':likelihood,
 			}
 			sys.stdout.flush()
@@ -163,8 +169,6 @@ class HawkesGAN(object):
 		count_g_z = count_g_z[:,-test_length:]
 		count_x = count_x[:,-test_length:]
 
-		ind = np.argmax(np.sum(count_g_z,1))
-		print ind,np.sum(count_g_z,1)[ind]
 		mape = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1),0)
 		acc = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1) < 0.3,0)
 
@@ -248,11 +252,11 @@ class HawkesGAN(object):
 				if nb_type == 2: sequence.append([[self_count],[nonself_count]])
 				if nb_type == 1: sequence.append([[self_count + nonself_count]])
 			if nb_type == 2: 
-				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
-				sequence[0][1] += len([x for x in nonself_seq if -1 < x and x < 0])
+				sequence[0][0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][1][0] += len([x for x in nonself_seq if -1 < x and x < 0])
 			if nb_type == 1: 
-				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
-				sequence[0][0] += len([x for x in nonself_seq if -1 < x and x < 0])
+				sequence[0][0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][0][0] += len([x for x in nonself_seq if -1 < x and x < 0])
 			full_sequences.append(sequence)
 
 			features.append(feature)
@@ -265,11 +269,11 @@ class HawkesGAN(object):
 				if nb_type == 2: sequence.append([[self_count],[nonself_count]])
 				if nb_type == 1: sequence.append([[self_count + nonself_count]])
 			if nb_type == 2: 
-				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
-				sequence[0][1] += len([x for x in nonself_seq if -1 < x and x < 0])
+				sequence[0][0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][1][0] += len([x for x in nonself_seq if -1 < x and x < 0])
 			if nb_type == 1: 
-				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
-				sequence[0][0] += len([x for x in nonself_seq if -1 < x and x < 0])
+				sequence[0][0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][0][0] += len([x for x in nonself_seq if -1 < x and x < 0])
 			observed_sequences.append(sequence)
 
 			sequence = []
@@ -279,11 +283,11 @@ class HawkesGAN(object):
 				if nb_type == 2: sequence.append([[self_count],[nonself_count]])
 				if nb_type == 1: sequence.append([[self_count + nonself_count]])
 			if nb_type == 2: 
-				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
-				sequence[0][1] += len([x for x in nonself_seq if -1 < x and x < 0])
+				sequence[0][0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][1][0] += len([x for x in nonself_seq if -1 < x and x < 0])
 			if nb_type == 1: 
-				sequence[0][0] += len([x for x in self_seq if -1 < x and x < 0])
-				sequence[0][0] += len([x for x in nonself_seq if -1 < x and x < 0])
+				sequence[0][0][0] += len([x for x in self_seq if -1 < x and x < 0])
+				sequence[0][0][0] += len([x for x in nonself_seq if -1 < x and x < 0])
 			train_sequences.append(sequence)
 
 		superparams = {}

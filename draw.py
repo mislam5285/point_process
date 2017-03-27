@@ -15,7 +15,7 @@ from hawkes.mtpp import MTPP
 from hawkes.hawkes import MHawkes
 from hawkes.single import Single
 from gan.generator import HawkesGenerator
-from processor import Processor
+from preprocess.screen import PaperScreenor
 
 np.random.seed(137)
 
@@ -31,7 +31,7 @@ def paper_fix_train_total_xiao():
     paper_data = root + '/data/paper3.txt'
     if will_preprocess == True :
         paper_data_raw = root + '/data/paper2.txt'
-        processor = Processor()
+        processor = PaperScreenor()
         result = processor.screen(paper_data_raw)
         with open(paper_data,'w') as fw:
             fw.writelines(result)
@@ -126,7 +126,7 @@ def paper_fix_train_non_self_m_hawkes():
     paper_data = root + '/data/paper3.txt'
     if will_preprocess == True :
         paper_data_raw = root + '/data/paper2.txt'
-        processor = Processor()
+        processor = PaperScreenor()
         result = processor.screen(paper_data_raw)
         with open(paper_data,'w') as fw:
             fw.writelines(result)
@@ -204,13 +204,13 @@ def paper_fix_train_non_self_m_hawkes():
 
 def paper_hawkes_generator_pretrain_convergence():
     will_preprocess = False
-    will_train_hawkes = True
+    will_train_hawkes = False
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
     if will_preprocess == True :
         paper_data_raw = root + '/data/paper2.txt'
-        processor = Processor()
+        processor = PaperScreenor()
         result = processor.screen(paper_data_raw)
         with open(paper_data,'w') as fw:
             fw.writelines(result)
@@ -231,7 +231,7 @@ def paper_hawkes_generator_pretrain_convergence():
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
         colors = ['red','green','purple']
-        keys = [lambda x:-x['LL'], lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
+        keys = [lambda x:x['LL'], lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
         labels = ['NLL on observed seq.', 'ACC on test seq.', 'MAPE on test seq.']
 
         with open(pre_train_log) as f:
