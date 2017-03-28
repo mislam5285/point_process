@@ -15,7 +15,7 @@ class HawkesGAN(object):
 		self.gen_full = HawkesGenerator()
 		self.dis = CNNDiscriminator()
 
-	def full_train(self,full_sequences,observed_sequences,train_sequences,features,publish_years,pids,superparams,train_method='gan'):
+	def full_train(self,full_sequences,observed_sequences,train_sequences,features,publish_years,pids,superparams,max_fulltrain_iter=400,train_method='gan'):
 		from keras.layers import Input
 		from keras.models import Model
 		from keras.optimizers import SGD
@@ -66,10 +66,10 @@ class HawkesGAN(object):
 
 
 
-		self.gen.model.summary()
-		self.dis.model.summary()
-		gan_model.summary()
-		sys.stdout.flush()
+		# self.gen.model.summary()
+		# self.dis.model.summary()
+		# gan_model.summary()
+		# sys.stdout.flush()
 
 		# pretrain discrimnator
 		Z = np.arange(nb_sequence)
@@ -82,13 +82,18 @@ class HawkesGAN(object):
 		likelihood = self.compute_likelihood()
 		mape_acc_test = self.compute_mape_acc(self.gen_full.model,Z,X_full,test_length)
 		mape_acc_val = self.compute_mape_acc(self.gen.model,Z,X,val_length)
+		weights = self.get_weights_value(self.gen.hawkes_layer)
 		print {
 			'source':'before pre-training discriminator',
-			'test_mape':mape_acc_test['mape'],
-			'test_acc':mape_acc_test['acc'],
-			'val_mape':mape_acc_val['mape'],
-			'val_acc':mape_acc_val['acc'],
+			'mape':mape_acc_test['mape'],
+			'acc':mape_acc_test['acc'],
+			'mape_val':mape_acc_val['mape'],
+			'acc_val':mape_acc_val['acc'],
 			'LL':likelihood,
+			'alpha':weights['mean_alpha'],
+			'spont':weights['mean_spont'],
+			'theta':weights['mean_theta'],
+			'w':weights['mean_w'],
 		}
 		sys.stdout.flush()
 
@@ -117,7 +122,6 @@ class HawkesGAN(object):
 		b_size_gan = 512
 		it_dis = 0
 		it_gan = 0
-		max_fulltrain_iter = 500
 
 		while it_gan <= b_size_gan * max_fulltrain_iter:
 			batch_z = Z[np.arange(it_dis,it_dis+b_size_dis)%nb_sequence]
@@ -137,18 +141,22 @@ class HawkesGAN(object):
 			likelihood = self.compute_likelihood()
 			mape_acc_test = self.compute_mape_acc(self.gen_full.model,Z,X_full,test_length)
 			mape_acc_val = self.compute_mape_acc(self.gen.model,Z,X,val_length)
+			weights = self.get_weights_value(self.gen.hawkes_layer)
 			print {
 				'source':'full train one batch',
-				# 'epoch':epoch,
-				# 'iteration':it,
-				# 'batch':'[' + str(it) + ',' + str(it+b_size) + ')',
-				'dis_loss':dis_his.history['loss'],
-				'gan_loss':gan_his.history['loss'],
-				'test_mape':mape_acc_test['mape'],
-				'test_acc':mape_acc_test['acc'],
-				'val_mape':mape_acc_val['mape'],
-				'val_acc':mape_acc_val['acc'],
+				'batch_dis':it_dis/b_size_dis,
+				'batch_gan':it_gan/b_size_gan,
+				'loss_dis':dis_his.history['loss'],
+				'loss_gan':gan_his.history['loss'],
+				'mape':mape_acc_test['mape'],
+				'acc':mape_acc_test['acc'],
+				'mape_val':mape_acc_val['mape'],
+				'acc_val':mape_acc_val['acc'],
 				'LL':likelihood,
+				'alpha':weights['mean_alpha'],
+				'spont':weights['mean_spont'],
+				'theta':weights['mean_theta'],
+				'w':weights['mean_w'],
 			}
 			sys.stdout.flush()
 
@@ -172,38 +180,20 @@ class HawkesGAN(object):
 		mape = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1),0)
 		acc = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1) < 0.3,0)
 
-		import tensorflow as tf
-		layer = self.gen.hawkes_layer
-		with tf.Session() as sess:
-			sess.run(layer.sequences.initializer)
-			sess.run(layer.Theta.initializer)
-			sess.run(layer.W.initializer)
-			sess.run(layer.spontaneous.initializer)
-		# 	# print sess.run(layer.sequences[0])
-			sess.run(layer.Alpha.initializer)
-			mean_alpha = sess.run(tf.reduce_mean(layer.Alpha))
-			mean_w = sess.run(tf.reduce_mean(layer.W))
-			theta = sess.run(tf.reduce_min(layer.Theta)),
-			spont = sess.run(tf.reduce_max(layer.spontaneous)),
-		# 	# print sess.run(layer.Alpha[0])
-		# 	# print sess.run(layer.Alpha[1])
-		# 	# print sess.run(layer.Alpha[2])
-		# 	# print sess.run(layer.Alpha[3])
-
-		# 	print {
-		# 		'count_g_z':np.mean(count_g_z,0),
-		# 		'count_x':np.mean(count_x,0),
-		# 		'count_g_z[1]':count_g_z[1],
-		# 		'count_x[1]':count_x[1],
-		# 		'alpha':sess.run(tf.reduce_max(layer.Alpha)),
-		# 		'w':sess.run(tf.reduce_min(layer.W)),
-		# 		'theta':sess.run(tf.reduce_min(layer.Theta)),
-		# 		'spont':sess.run(tf.reduce_max(layer.spontaneous)),
-		# 	}
-
 		return {
 			'mape':mape.tolist(),
 			'acc':acc.tolist(),
+		}
+
+	def get_weights_value(self,layer):
+
+		import keras.backend as K
+		mean_alpha = K.eval(K.mean(layer.Alpha))
+		mean_w = K.eval(K.mean(layer.W))
+		theta = K.eval(K.mean(layer.Theta))
+		spont = K.eval(K.mean(layer.spontaneous))
+
+		return {
 			'mean_alpha':mean_alpha,
 			'mean_w':mean_w,
 			'mean_theta':theta,

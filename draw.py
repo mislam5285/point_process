@@ -15,6 +15,7 @@ from hawkes.mtpp import MTPP
 from hawkes.hawkes import MHawkes
 from hawkes.single import Single
 from gan.generator import HawkesGenerator
+from gan.gan import HawkesGAN
 from preprocess.screen import PaperScreenor
 
 np.random.seed(137)
@@ -23,13 +24,13 @@ import os, sys
 root = os.path.abspath(os.path.dirname(__file__))
 
 def paper_fix_train_total_xiao():
-    will_preprocess = False
+    will_screen = False
     will_train_mtpp = False
     will_train_single = False
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
-    if will_preprocess == True :
+    if will_screen == True :
         paper_data_raw = root + '/data/paper2.txt'
         processor = PaperScreenor()
         result = processor.screen(paper_data_raw)
@@ -118,13 +119,13 @@ def paper_fix_train_total_xiao():
             plt.savefig(root + '/pic/%s'%key)
         
 def paper_fix_train_non_self_m_hawkes():
-    will_preprocess = False
+    will_screen = False
     will_train_mtpp = False
     will_train_hawkes = False
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
-    if will_preprocess == True :
+    if will_screen == True :
         paper_data_raw = root + '/data/paper2.txt'
         processor = PaperScreenor()
         result = processor.screen(paper_data_raw)
@@ -203,12 +204,12 @@ def paper_fix_train_non_self_m_hawkes():
             plt.savefig(root + '/pic/%s'%key)
 
 def paper_hawkes_generator_pretrain_convergence():
-    will_preprocess = False
+    will_screen = False
     will_train_hawkes = False
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
-    if will_preprocess == True :
+    if will_screen == True :
         paper_data_raw = root + '/data/paper2.txt'
         processor = PaperScreenor()
         result = processor.screen(paper_data_raw)
@@ -232,7 +233,7 @@ def paper_hawkes_generator_pretrain_convergence():
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
         colors = ['red','green','purple']
         keys = [lambda x:x['LL'], lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
-        labels = ['NLL on observed seq.', 'ACC on test seq.', 'MAPE on test seq.']
+        labels = ['Loss on observed seq.', 'ACC on test seq.', 'MAPE on test seq.']
 
         with open(pre_train_log) as f:
             nodes = []
@@ -246,12 +247,13 @@ def paper_hawkes_generator_pretrain_convergence():
 
             for i in range(3):
                 plt.figure()
-                y = np.array([float(keys[i](node)) for node in nodes])
+                x_right_limit = 200
+                y = np.array([float(keys[i](node)) for node in nodes])[0:x_right_limit]
                 delta = np.max(y) - np.min(y)
                 delta /= 30
                 if y[0] > y[-1]: plt.ylim(np.min(y) - delta, 0.2 * np.max(y) + 0.8 * np.min(y))
                 if y[0] < y[-1]: plt.ylim(0.8 * np.max(y) + 0.2 * np.min(y), np.max(y) + delta)
-                plt.xlim(0,130)
+                plt.xlim(0,x_right_limit)
                 plt.plot(np.arange(1,len(y)+1),y,c=colors[i],lw=2,label=labels[i])
                 gca = plt.gca()
 
@@ -266,10 +268,125 @@ def paper_hawkes_generator_pretrain_convergence():
                 if i == 2: key = 'paper.gan.pretrain.learning.MAPE.png'
                 plt.savefig(root + '/pic/%s'%key)
 
+def paper_full_train_potential_ability():
+    will_screen = False
+    will_train_hawkes = False
+    will_train_gan = False
+    will_draw = True
+    # preprocess
+    paper_data = root + '/data/paper3.txt'
+    if will_screen == True :
+        paper_data_raw = root + '/data/paper2.txt'
+        processor = PaperScreenor()
+        result = processor.screen(paper_data_raw)
+        with open(paper_data,'w') as fw:
+            fw.writelines(result)
+
+    # pre-training
+    pre_train_log = root + '/data/paper.pretrain.log5.txt'
+
+    if will_train_hawkes == True :
+        with open(pre_train_log,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            predictor = HawkesGenerator()
+            loaded = predictor.load(paper_data)
+            model = predictor.pre_train(*loaded,max_outer_iter=10)
+            sys.stdout = old_stdout
+
+    # full-training
+    full_train_log = root + '/data/paper.fulltrain.log.txt'
+    pretrain_iter = 1
+    alpha_iter=3
+    w_iter=30
+    full_train_start = pretrain_iter * (alpha_iter + w_iter)
+
+    if will_train_gan == True :
+        with open(full_train_log,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(paper_data)
+                gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
+                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(paper_data)
+            gan.full_train(*loaded,max_fulltrain_iter=400,train_method='gan')
+            sys.stdout = old_stdout
+
+    # drawing
+    if will_draw == True :
+        # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
+        colors = ['red','green','purple']
+        keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
+        labels = ['ACC on test seq.', 'MAPE on test seq.']
+
+        f_full = open(full_train_log)
+        f_pretrain = open(pre_train_log)
+        nodes_pretrain = []
+        nodes_full = []
+
+        for i in range(len(keys)):
+            plt.figure()
+
+            for line in f_pretrain:
+                try:
+                    node = eval(line)
+                    nodes_pretrain.append(node)
+                except:
+                    print 'error'
+
+            for line in f_full:
+                try:
+                    node = eval(line)
+                    nodes_full.append(node)
+                except:
+                    print 'error'
+
+            # pretrain
+            y = np.array([float(keys[i](node)) for node in nodes_pretrain])
+            y_full = np.array([float(keys[i](node)) for node in nodes_full])
+
+            delta = max(np.max(y),np.max(y_full)) - min(np.min(y),np.min(y_full))
+            delta /= 30.
+            x_left_limit = 0
+            x_right_limit = 200
+            if y[0] > y[-1]:
+                y_lower_limit = min(np.min(y),np.min(y_full)) - delta
+                y_upper_limit = 0.2 * np.max(y) + 0.8 * np.min(y)
+            else:
+                y_lower_limit = 0.8 * np.max(y) + 0.2 * np.min(y)
+                y_upper_limit = max(np.max(y),np.max(y_full)) + delta
+
+            plt.plot(np.arange(1,len(y)+1),y,c=colors[i],lw=2,label=labels[i])
+            plt.ylim(y_lower_limit, y_upper_limit)
+            plt.xlim(0,x_right_limit)
+
+            # full train
+            plt.plot(np.arange(full_train_start,len(y_full)+full_train_start),y_full,c=colors[i],lw=2,label=labels[i])
+
+
+            plt.xlabel('iterations')
+            plt.title('learning curve')
+            plt.legend(loc='upper right')
+            plt.gcf().set_size_inches(5., 5., forward=True)
+
+            #plt.show()
+            if i == 0: key = 'paper.gan.fulltrain.learning.test.ACC.png'
+            if i == 1: key = 'paper.gan.fulltrain.learning.test.MAPE.png'
+            plt.savefig(root + '/pic/%s'%key)
+
+
+
 
 if __name__ == '__main__' :
-    paper_fix_train_total_xiao()
-    paper_fix_train_non_self_m_hawkes()
-    paper_hawkes_generator_pretrain_convergence()
+    # paper_fix_train_total_xiao()
+    # paper_fix_train_non_self_m_hawkes()
+    # paper_hawkes_generator_pretrain_convergence()
+    paper_full_train_potential_ability()
     plt.show()
         
