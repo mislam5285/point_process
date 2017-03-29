@@ -271,7 +271,9 @@ def paper_hawkes_generator_pretrain_convergence():
 def paper_full_train_potential_ability():
     will_screen = False
     will_train_hawkes = False
+    will_train_mse = False
     will_train_gan = False
+    will_train_wgan = False
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
@@ -295,14 +297,16 @@ def paper_full_train_potential_ability():
             sys.stdout = old_stdout
 
     # full-training
-    full_train_log = root + '/data/paper.fulltrain.log.txt'
+    full_train_mse_log = root + '/data/paper.fulltrain.mse.log.txt'
     pretrain_iter = 1
     alpha_iter=3
     w_iter=30
     full_train_start = pretrain_iter * (alpha_iter + w_iter)
 
-    if will_train_gan == True :
-        with open(full_train_log,'w') as f:
+    if will_train_mse == True :
+        mse_weight = 1.
+        gan_weight = 0.
+        with open(full_train_mse_log,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
             gan = HawkesGAN()
@@ -315,8 +319,52 @@ def paper_full_train_potential_ability():
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
             loaded = gan.load(paper_data)
-            gan.full_train(*loaded,max_fulltrain_iter=400,train_method='gan')
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
+
+    full_train_gan_log = root + '/data/paper.fulltrain.gan.log.txt'
+    if will_train_gan == True:
+        mse_weight = 0.
+        gan_weight = 1.
+        train_gan_method = 'gan'
+        with open(full_train_gan_log,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(paper_data)
+                gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
+                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(paper_data)
+            gan.full_train(*loaded,max_fulltrain_iter=400,train_gan_method=train_gan_method,mse_weight=mse_weight,gan_weight=gan_weight)
+            sys.stdout = old_stdout
+
+    full_train_wgan_log = root + '/data/paper.fulltrain.wgan.log.txt'
+    if will_train_wgan == True:
+        mse_weight = 0.
+        gan_weight = 1.
+        train_gan_method = 'wgan'
+        with open(full_train_wgan_log,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(paper_data)
+                gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
+                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(paper_data)
+            gan.full_train(*loaded,max_fulltrain_iter=400,train_gan_method=train_gan_method,mse_weight=mse_weight,gan_weight=gan_weight)
+            sys.stdout = old_stdout
+
+
 
     # drawing
     if will_draw == True :
@@ -325,10 +373,12 @@ def paper_full_train_potential_ability():
         keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
         labels = ['ACC on test seq.', 'MAPE on test seq.']
 
-        f_full = open(full_train_log)
         f_pretrain = open(pre_train_log)
+        f_full_mse = open(full_train_mse_log)
+        f_full_gan = open(full_train_gan_log)
         nodes_pretrain = []
-        nodes_full = []
+        nodes_full_mse = []
+        nodes_full_gan = []
 
         for i in range(len(keys)):
             plt.figure()
@@ -340,34 +390,43 @@ def paper_full_train_potential_ability():
                 except:
                     print 'error'
 
-            for line in f_full:
+            for line in f_full_mse:
                 try:
                     node = eval(line)
-                    nodes_full.append(node)
+                    nodes_full_mse.append(node)
                 except:
                     print 'error'
 
-            # pretrain
-            y = np.array([float(keys[i](node)) for node in nodes_pretrain])
-            y_full = np.array([float(keys[i](node)) for node in nodes_full])
+            for line in f_full_gan:
+                try:
+                    node = eval(line)
+                    nodes_full_gan.append(node)
+                except:
+                    print 'error'
 
-            delta = max(np.max(y),np.max(y_full)) - min(np.min(y),np.min(y_full))
+            # arrange layout
+            y = np.array([float(keys[i](node)) for node in nodes_pretrain])
+            y_full_mse = np.array([float(keys[i](node)) for node in nodes_full_mse])
+            y_full_gan = np.array([float(keys[i](node)) for node in nodes_full_gan])
+
+            delta = max(np.max(y),np.max(y_full_mse)) - min(np.min(y),np.min(y_full_mse))
             delta /= 30.
             x_left_limit = 0
-            x_right_limit = 200
+            x_right_limit = 300
             if y[0] > y[-1]:
-                y_lower_limit = min(np.min(y),np.min(y_full)) - delta
+                y_lower_limit = min(np.min(y),np.min(y_full_mse)) - delta
                 y_upper_limit = 0.2 * np.max(y) + 0.8 * np.min(y)
             else:
                 y_lower_limit = 0.8 * np.max(y) + 0.2 * np.min(y)
-                y_upper_limit = max(np.max(y),np.max(y_full)) + delta
+                y_upper_limit = max(np.max(y),np.max(y_full_mse)) + delta
 
-            plt.plot(np.arange(1,len(y)+1),y,c=colors[i],lw=2,label=labels[i])
             plt.ylim(y_lower_limit, y_upper_limit)
             plt.xlim(0,x_right_limit)
 
-            # full train
-            plt.plot(np.arange(full_train_start,len(y_full)+full_train_start),y_full,c=colors[i],lw=2,label=labels[i])
+            # draw curve
+            plt.plot(np.arange(1,len(y)+1),y,c=colors[i],lw=2,label=labels[i])
+            plt.plot(np.arange(full_train_start,len(y_full_mse)+full_train_start),y_full_mse,c=colors[i],lw=2,label=labels[i])
+            plt.plot(np.arange(full_train_start,len(y_full_gan)+full_train_start),y_full_gan,c=colors[i],lw=2,label=labels[i])
 
 
             plt.xlabel('iterations')

@@ -202,9 +202,9 @@ class InfiniteDimensionHawkesLayer(HawkesLayer):
 
 
 
-class PoissonNoise(Layer):
+class Noise(Layer):
 	def __init__(self, sequences,pred_length, stddev=0., **kwargs):
-		super(PoissonNoise, self).__init__(**kwargs)
+		super(Noise, self).__init__(**kwargs)
 		self.stddev = stddev
 
 	def call(self, inputs, training=None):

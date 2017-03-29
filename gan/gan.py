@@ -15,11 +15,11 @@ class HawkesGAN(object):
 		self.gen_full = HawkesGenerator()
 		self.dis = CNNDiscriminator()
 
-	def full_train(self,full_sequences,observed_sequences,train_sequences,features,publish_years,pids,superparams,max_fulltrain_iter=400,train_method='gan'):
+	def full_train(self,full_sequences,observed_sequences,train_sequences,features,publish_years,pids,superparams,max_fulltrain_iter=400,train_gan_method='gan',mse_weight=0.,gan_weight=1.):
 		from keras.layers import Input
 		from keras.models import Model
 		from keras.optimizers import SGD
-		from customed_layer import PoissonNoise
+		from customed_layer import Noise
 
 		nb_sequence = len(full_sequences)
 		observed_length = len(observed_sequences[0])
@@ -39,9 +39,9 @@ class HawkesGAN(object):
 		# build keras models
 		# self.gen.model.compile(optimizer='adam', loss='mape', metrics=['accuracy'])
 		# self.gen.model.fit(np.arange(nb_sequence),np.array(full_sequences),verbose=1,batch_size=1,epochs=100)
-		assert train_method in ['gan','wgan']
+		assert train_gan_method in ['gan','wgan']
 
-		if train_method == 'gan':
+		if train_gan_method == 'gan':
 			# self.dis.create_trainable_model(observed_length + test_length,nb_type,nb_feature)
 			self.dis.create_trainable_model(observed_length,nb_type,nb_feature)
 			self.dis.model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
@@ -51,18 +51,33 @@ class HawkesGAN(object):
 			z = Input(batch_shape=(1,1), dtype='int32')
 			g_z = self.gen.model(z)
 			full_g_z = self.gen_full.model(z)
-			noised_g_z = PoissonNoise(train_sequences,val_length)(g_z)
+			noised_g_z = Noise(train_sequences,val_length)(g_z)
 			y = self.dis.model(g_z)
 			noised_gen_model = Model(inputs=[z], outputs=[noised_g_z])
 			full_gen_model = Model(inputs=[z], outputs=[full_g_z])
 			gan_model = Model(inputs=[z], outputs=[g_z,y])
 			gan_model.compile(optimizer='rmsprop', 
 				loss={'dis_output':'categorical_crossentropy','hawkes_output':'mse'},
-				loss_weights={'dis_output':0.0,'hawkes_output':1.0},
+				loss_weights={'dis_output':gan_weight,'hawkes_output':mse_weight},
 				metrics=['categorical_accuracy'])
-		elif train_method == 'wgan':
-			from customed_loss import wassertein
-			self.dis.create_trainable_wassertein
+		elif train_gan_method == 'wgan':
+			from customed_loss import wassertein_d_loss, wassertein_g_loss
+			self.dis.create_trainable_wassertein(observed_length,nb_type,nb_feature)
+			self.dis.model.compile(optimizer='rmsprop', loss=wassertein_d_loss)
+
+			self.dis.model.trainable = False
+			for l in self.dis.model.layers: l.trainable = False
+			z = Input(batch_shape=(1,1), dtype='int32')
+			g_z = self.gen.model(z)
+			full_g_z = self.gen_full.model(z)
+			noised_g_z = Noise(train_sequences,val_length)(g_z)
+			y = self.dis.model(g_z)
+			noised_gen_model = Model(inputs=[z], outputs=[noised_g_z])
+			full_gen_model = Model(inputs=[z], outputs=[full_g_z])
+			gan_model = Model(inputs=[z], outputs=[g_z,y])
+			gan_model.compile(optimizer='rmsprop', 
+				loss={'dis_output':wassertein_g_loss,'hawkes_output':'mse'},
+				loss_weights={'dis_output':gan_weight,'hawkes_output':mse_weight})
 
 
 
@@ -122,6 +137,7 @@ class HawkesGAN(object):
 		b_size_gan = 512
 		it_dis = 0
 		it_gan = 0
+		epoch_dis = 1 if train_gan_method == 'gan' else 5
 
 		while it_gan <= b_size_gan * max_fulltrain_iter:
 			batch_z = Z[np.arange(it_dis,it_dis+b_size_dis)%nb_sequence]
@@ -129,7 +145,7 @@ class HawkesGAN(object):
 			batch_x = X[np.arange(it_dis,it_dis+b_size_dis)%nb_sequence]
 			batch_x_merge = np.array([batch_g_z[i/2] if i % 2 == 0 else batch_x[i/2] for i in range(2 * b_size_dis)])
 			batch_y_merge = np.array([[0.,1.] if i % 2 == 0 else [1.,0.] for i in range(2 * b_size_dis)])
-			dis_his = self.dis.model.fit(batch_x_merge,batch_y_merge,batch_size=1,epochs=1,verbose=0)
+			dis_his = self.dis.model.fit(batch_x_merge,batch_y_merge,batch_size=1,epochs=epoch_dis,verbose=0)
 
 			batch_z_gan = Z[np.arange(it_gan,it_gan+b_size_gan)%nb_sequence]
 			batch_y_gan = np.array([[1.,0.] for i in range(b_size_gan)])

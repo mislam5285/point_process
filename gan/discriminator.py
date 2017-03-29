@@ -184,6 +184,28 @@ class CNNDiscriminator(object):
 		self.model = model
 		return model
 
+	def create_trainable_wassertein(self,nb_event,nb_type,nb_feature):
+		from keras.layers import Input, Dense, Flatten, Convolution2D, Activation, Dropout, merge
+		from keras.models import Model
+		from keras.constraints import MinMaxNorm
+		c = 1e-2
+		constraint = MinMaxNorm(min_value=-c,max_value=c)
+
+		x = Input(batch_shape=(1, nb_event, nb_type, nb_feature), dtype='float')
+		y = Convolution2D(128, kernel_size=[nb_event-10+1, 1], strides=(2,1), activation='relu',
+			kernel_constraint=constraint,bias_constraint=constraint)(x)
+		y = Dropout(0.5)(y)
+		y = Convolution2D(128, kernel_size=[3, nb_type], activation='relu',
+			kernel_constraint=constraint,bias_constraint=constraint)(y)
+		y = Dropout(0.5)(y)
+		y = Flatten()(y)
+		y = Dense(2,activation=None)(y)
+
+		model = Model(inputs=[x], outputs=[y], name='dis_output')
+		self.model = model
+		return model
+
+
 	def load(self,f,cut=15):
 		# features[paper][feature], sequences[paper][day][feature]
 		data = []
