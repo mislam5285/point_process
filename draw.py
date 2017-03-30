@@ -14,8 +14,8 @@ from matplotlib.ticker import FuncFormatter
 from hawkes.mtpp import MTPP
 from hawkes.hawkes import MHawkes
 from hawkes.single import Single
-from gan.generator import HawkesGenerator
-from gan.gan import HawkesGAN
+from point_process.generator import HawkesGenerator
+from point_process.gan import HawkesGAN
 from preprocess.screen import PaperScreenor
 
 np.random.seed(137)
@@ -376,9 +376,11 @@ def paper_full_train_potential_ability():
         f_pretrain = open(pre_train_log)
         f_full_mse = open(full_train_mse_log)
         f_full_gan = open(full_train_gan_log)
+        f_full_wgan = open(full_train_wgan_log)
         nodes_pretrain = []
         nodes_full_mse = []
         nodes_full_gan = []
+        nodes_full_wgan = []
 
         for i in range(len(keys)):
             plt.figure()
@@ -404,10 +406,18 @@ def paper_full_train_potential_ability():
                 except:
                     print 'error'
 
+            for line in f_full_wgan:
+                try:
+                    node = eval(line)
+                    nodes_full_wgan.append(node)
+                except:
+                    print 'error'
+
             # arrange layout
             y = np.array([float(keys[i](node)) for node in nodes_pretrain])
             y_full_mse = np.array([float(keys[i](node)) for node in nodes_full_mse])
             y_full_gan = np.array([float(keys[i](node)) for node in nodes_full_gan])
+            y_full_wgan = np.array([float(keys[i](node)) for node in nodes_full_wgan])
 
             delta = max(np.max(y),np.max(y_full_mse)) - min(np.min(y),np.min(y_full_mse))
             delta /= 30.
@@ -427,6 +437,7 @@ def paper_full_train_potential_ability():
             plt.plot(np.arange(1,len(y)+1),y,c=colors[i],lw=2,label=labels[i])
             plt.plot(np.arange(full_train_start,len(y_full_mse)+full_train_start),y_full_mse,c=colors[i],lw=2,label=labels[i])
             plt.plot(np.arange(full_train_start,len(y_full_gan)+full_train_start),y_full_gan,c=colors[i],lw=2,label=labels[i])
+            plt.plot(np.arange(full_train_start,len(y_full_wgan)+full_train_start),y_full_wgan,c=colors[i],lw=2,label=labels[i])
 
 
             plt.xlabel('iterations')
@@ -441,6 +452,11 @@ def paper_full_train_potential_ability():
 
 
 
+def paper_full_train_relistic_situation():
+    pass
+
+def paper_full_train_pre_train_is_important():
+    pass
 
 if __name__ == '__main__' :
     # paper_fix_train_total_xiao()

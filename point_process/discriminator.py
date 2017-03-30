@@ -188,7 +188,7 @@ class CNNDiscriminator(object):
 		from keras.layers import Input, Dense, Flatten, Convolution2D, Activation, Dropout, merge
 		from keras.models import Model
 		from keras.constraints import MinMaxNorm
-		c = 1e-2
+		c = 1.
 		constraint = MinMaxNorm(min_value=-c,max_value=c)
 
 		x = Input(batch_shape=(1, nb_event, nb_type, nb_feature), dtype='float')
@@ -199,7 +199,8 @@ class CNNDiscriminator(object):
 			kernel_constraint=constraint,bias_constraint=constraint)(y)
 		y = Dropout(0.5)(y)
 		y = Flatten()(y)
-		y = Dense(2,activation=None)(y)
+		y = Dense(2,activation=None,
+			kernel_constraint=constraint,bias_constraint=constraint)(y)
 
 		model = Model(inputs=[x], outputs=[y], name='dis_output')
 		self.model = model
