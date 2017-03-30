@@ -19,6 +19,7 @@ from point_process.gan import HawkesGAN
 from preprocess.screen import PaperScreenor
 
 np.random.seed(137)
+os.environ["KERAS_BACKEND"] = "tensorflow"
 
 import os, sys
 root = os.path.abspath(os.path.dirname(__file__))
@@ -116,6 +117,9 @@ def paper_fix_train_total_xiao():
             #plt.show()    
             if i == 0: key = 'paper.fix-train.total.xiao.mape.png'
             if i == 3: key = 'paper.fix-train.total.xiao.acc.png'
+            plt.xticks(fontsize=14)
+            plt.yticks(fontsize=14)
+            plt.legend(fontsize=14)
             plt.savefig(root + '/pic/%s'%key)
         
 def paper_fix_train_non_self_m_hawkes():
@@ -201,6 +205,9 @@ def paper_fix_train_non_self_m_hawkes():
             # plt.show()
             if i == 0: key = 'paper.fix-train.non-self.m-hawks.mape.png'
             if i == 1: key = 'paper.fix-train.non-self.m-hawks.acc.png'
+            plt.xticks(fontsize=14)
+            plt.yticks(fontsize=14)
+            plt.legend(fontsize=14)
             plt.savefig(root + '/pic/%s'%key)
 
 def paper_hawkes_generator_pretrain_convergence():
@@ -266,9 +273,13 @@ def paper_hawkes_generator_pretrain_convergence():
                 if i == 0: key = 'paper.gan.pretrain.learning.NLL.png'
                 if i == 1: key = 'paper.gan.pretrain.learning.ACC.png'
                 if i == 2: key = 'paper.gan.pretrain.learning.MAPE.png'
+                plt.xticks(fontsize=14)
+                plt.yticks(fontsize=14)
+                plt.legend(fontsize=14)
+                if i == 0: plt.yticks(fontsize=11)
                 plt.savefig(root + '/pic/%s'%key)
 
-def paper_full_train_potential_ability():
+def paper_full_train_learning_curve_potential_ability():
     will_screen = False
     will_train_hawkes = False
     will_train_mse = False
@@ -422,7 +433,7 @@ def paper_full_train_potential_ability():
             delta = max(np.max(y),np.max(y_full_mse)) - min(np.min(y),np.min(y_full_mse))
             delta /= 30.
             x_left_limit = 0
-            x_right_limit = 300
+            x_right_limit = 200
             if y[0] > y[-1]:
                 y_lower_limit = min(np.min(y),np.min(y_full_mse)) - delta
                 y_upper_limit = 0.2 * np.max(y) + 0.8 * np.min(y)
@@ -448,20 +459,160 @@ def paper_full_train_potential_ability():
             #plt.show()
             if i == 0: key = 'paper.gan.fulltrain.learning.test.ACC.png'
             if i == 1: key = 'paper.gan.fulltrain.learning.test.MAPE.png'
+            plt.xticks(fontsize=14)
+            plt.yticks(fontsize=14)
+            plt.legend(fontsize=14)
             plt.savefig(root + '/pic/%s'%key)
 
 
+def paper_full_train_learning_mle_mse_potential_ability():
+    will_screen = False
+    will_train_mle_only = False
+    will_train_mle_to_mse = False
+    will_train_mse_only = False
+    will_train_mse_noise_dropout = False
+    will_train_mle_mse_ater = False
+    will_draw = True
+    # preprocess
+    paper_data = root + '/data/paper3.txt'
+    if will_screen == True :
+        paper_data_raw = root + '/data/paper2.txt'
+        processor = PaperScreenor()
+        result = processor.screen(paper_data_raw)
+        with open(paper_data,'w') as fw:
+            fw.writelines(result)
 
-def paper_full_train_relistic_situation():
+    # pre-training
+    log_mle_only = root + '/data/paper.pretrain.log5.txt'
+
+    if will_train_mle_only == True :
+        with open(log_mle_only,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            predictor = HawkesGenerator()
+            loaded = predictor.load(paper_data)
+            model = predictor.pre_train(*loaded,max_outer_iter=10)
+            sys.stdout = old_stdout
+
+    # full-training
+    log_mle_to_mse = root + '/data/paper.fulltrain.mse.log.txt'
+    pretrain_iter = 1
+    alpha_iter=3
+    w_iter=30
+    full_train_start = pretrain_iter * (alpha_iter + w_iter)
+
+    if will_train_mle_to_mse == True :
+        mse_weight = 1.
+        gan_weight = 0.
+        with open(log_mle_to_mse,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(paper_data)
+                gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
+                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(paper_data)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
+            sys.stdout = old_stdout
+
+    log_mse_only = root + '/data/paper.fulltrain.mse_only.log.txt'
+    if will_train_mse_only == True:
+        mse_weight = 1.
+        gan_weight = 0.
+        with open(log_mse_only,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            gan.gen.sequence_weights = None
+            # exit()
+            loaded = gan.load(paper_data)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False)
+            sys.stdout = old_stdout
+
+
+
+    # drawing
+    if will_draw == True :
+        # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
+        colors = {'mle_only':'red','mle_mse':'green','mse_only':'blue','mse_noise':'purple'}
+        keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
+        labels_prefix = ['ACC ','MAPE ']
+        labels_suffix = {'mle_only':'(MLE only)','mle_mse':'(MSE after MLE)','mse_only':'(MSE only)','mse_noise':'(MSE with noise)'}
+
+        f_mle_only = open(log_mle_only)
+        f_mle_to_mse = open(log_mle_to_mse)
+        nodes_mle_only = []
+        nodes_mle_to_mse = []
+
+        for i in range(len(keys)):
+            plt.figure()
+
+            for line in f_mle_only:
+                try:
+                    node = eval(line)
+                    nodes_mle_only.append(node)
+                except:
+                    print 'error'
+
+            for line in f_mle_to_mse:
+                try:
+                    node = eval(line)
+                    nodes_mle_to_mse.append(node)
+                except:
+                    print 'error'
+
+            # arrange layout
+            y_mle_only = np.array([float(keys[i](node)) for node in nodes_mle_only])
+            y_mle_to_mse = np.array([float(keys[i](node)) for node in nodes_mle_to_mse])
+
+            delta = max(np.max(y_mle_only),np.max(y_mle_to_mse)) - min(np.min(y_mle_only),np.min(y_mle_to_mse))
+            delta /= 30.
+            x_left_limit = 0
+            x_right_limit = 200
+            if y_mle_only[0] > y_mle_only[-1]:
+                y_lower_limit = min(np.min(y_mle_only),np.min(y_mle_to_mse)) - delta
+                y_upper_limit = 0.2 * np.max(y_mle_only) + 0.8 * np.min(y_mle_only)
+            else:
+                y_lower_limit = 0.8 * np.max(y_mle_only) + 0.2 * np.min(y_mle_only)
+                y_upper_limit = max(np.max(y_mle_only),np.max(y_mle_to_mse)) + delta
+
+            plt.ylim(y_lower_limit, y_upper_limit)
+            plt.xlim(0,x_right_limit)
+
+            # draw curve
+            plt.plot(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=2,
+                label=labels_prefix[i] + labels_suffix['mle_only'])
+            plt.plot(np.arange(full_train_start,len(y_mle_to_mse)+full_train_start),y_mle_to_mse,c=colors['mle_mse'],lw=2,
+                label=labels_prefix[i] + labels_suffix['mle_mse'])
+
+
+            plt.xlabel('iterations')
+            plt.title('learning curve')
+            plt.legend(loc='upper right')
+            plt.gcf().set_size_inches(5., 5., forward=True)
+
+            #plt.show()
+            if i == 0: key = 'paper.gan.fulltrain.learning.mle_mse.test.ACC.png'
+            if i == 1: key = 'paper.gan.fulltrain.learning.mle_mse.test.MAPE.png'
+            plt.xticks(fontsize=14)
+            plt.yticks(fontsize=14)
+            plt.legend(fontsize=14)
+            plt.savefig(root + '/pic/%s'%key)
+
+
+def paper_full_train_with_early_stopping():
     pass
 
-def paper_full_train_pre_train_is_important():
-    pass
 
 if __name__ == '__main__' :
     # paper_fix_train_total_xiao()
     # paper_fix_train_non_self_m_hawkes()
     # paper_hawkes_generator_pretrain_convergence()
-    paper_full_train_potential_ability()
+    # paper_full_train_learning_curve_potential_ability()
+    paper_full_train_learning_mle_mse_potential_ability()
     plt.show()
-        
