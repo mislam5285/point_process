@@ -7,7 +7,7 @@
 .idea/
 *.swp
 
-README.pdf
+*.pdf
 
 # log model#
 log/*.log

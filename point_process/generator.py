@@ -364,8 +364,8 @@ class HawkesGenerator(object):
 			pred.append(ct)
 		return pred
 
-	def create_trainable_model(self,sequences, pred_length, proxy_layer=None):
-		from keras.layers import Input
+	def create_trainable_model(self,sequences, pred_length, proxy_layer=None, need_noise_dropout=False):
+		from keras.layers import Input, GaussianNoise
 		from keras.models import Model
 
 		from customed_layer import HawkesLayer
@@ -373,6 +373,8 @@ class HawkesGenerator(object):
 		x = Input(batch_shape=(1,1), dtype='int32')
 		hawkes_layer = HawkesLayer(sequences,pred_length,sequence_weights=self.sequence_weights,proxy_layer=proxy_layer)
 		y = hawkes_layer(x)
+		if need_noise_dropout == True:
+			y = GaussianNoise(5.)(y)
 
 		model = Model(inputs=[x], outputs=[y], name='hawkes_output')
 

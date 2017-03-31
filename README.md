@@ -1,6 +1,6 @@
 # point process
 
-###1. Introduction
+### Introduction
 
 This project is an experiment for modeling events sequence data based on Poisson point process. The detailed description for algorithms can be found in 
 
@@ -11,7 +11,7 @@ This project is an experiment for modeling events sequence data based on Poisson
 	- AAAI:[http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/viewFile/14385/13934](http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/viewFile/14385/13934)
 
 
-###2. Pretraing with MLE only
+### Pretraing with MLE only
 
 Firstly, we train our point process by maximizing log likelihood on observed sequence, and predict events in the future time interval by time interval. The learning curve is shown as follows.
 
@@ -26,7 +26,7 @@ We can see that the objective declines as the training proceeds, that the object
 Due to this, we split the observed sequence into train sequence and validation sequence to capture signal of overfitting. After performing early stopping of MLE, we will further train our model to gain more accuracy.
 
 
-###3. Training with MLE and MSE
+### Training with MLE and MSE
 
 We *discretize the timestamp of each event*, this approximate approach leads to deterministic expectation of total events in each time interval, which enables the gradients computation of any loss function w.r.t. parameters in point process model, without losing prediction accuracy in the experiment. We choose mean squared error on the validation sequence as our loss.
 

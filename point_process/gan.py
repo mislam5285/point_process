@@ -16,7 +16,7 @@ class HawkesGAN(object):
 		self.dis = CNNDiscriminator()
 
 	def full_train(self,full_sequences,observed_sequences,train_sequences,features,publish_years,pids,superparams,
-			max_fulltrain_iter=400,train_gan_method='gan',mse_weight=0.,gan_weight=1.,need_pretrain=True):
+			max_fulltrain_iter=400,train_gan_method='gan',mse_weight=0.,gan_weight=1.,need_pretrain=True,need_noise_dropout=False):
 		from keras.layers import Input
 		from keras.models import Model
 		from keras.optimizers import SGD
@@ -34,7 +34,7 @@ class HawkesGAN(object):
 		if need_pretrain == True and self.gen.sequence_weights is None:
 			raise Exception('generator not pretrained, or weights not loaded')
 		# self.gen.create_trainable_model(observed_sequences,test_length)
-		self.gen.create_trainable_model(train_sequences,val_length)
+		self.gen.create_trainable_model(train_sequences,val_length,need_noise_dropout=need_noise_dropout)
 		self.gen_full.create_trainable_model(observed_sequences,test_length,proxy_layer=self.gen.hawkes_layer)
 
 		# build keras models

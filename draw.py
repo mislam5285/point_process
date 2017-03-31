@@ -471,7 +471,7 @@ def paper_full_train_learning_mle_mse_potential_ability():
     will_train_mle_to_mse = False
     will_train_mse_only = False
     will_train_mse_noise_dropout = False
-    will_train_mle_mse_ater = False
+    will_train_mle_mse_aternative = False
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
@@ -534,6 +534,25 @@ def paper_full_train_learning_mle_mse_potential_ability():
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False)
             sys.stdout = old_stdout
 
+    log_mse_noise = root + '/data/paper.fulltrain.mse_noise.log.txt'
+    if will_train_mse_noise_dropout == True:
+        mse_weight = 1.
+        gan_weight = 0.
+        with open(log_mse_noise,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(paper_data)
+                gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
+                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(paper_data)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True)
+            sys.stdout = old_stdout
 
 
     # drawing
@@ -546,8 +565,12 @@ def paper_full_train_learning_mle_mse_potential_ability():
 
         f_mle_only = open(log_mle_only)
         f_mle_to_mse = open(log_mle_to_mse)
+        f_mse_only = open(log_mse_only)
+        f_mse_noise = open(log_mse_noise)
         nodes_mle_only = []
         nodes_mle_to_mse = []
+        nodes_mse_only = []
+        nodes_mse_noise = []
 
         for i in range(len(keys)):
             plt.figure()
@@ -566,20 +589,36 @@ def paper_full_train_learning_mle_mse_potential_ability():
                 except:
                     print 'error'
 
+            for line in f_mse_only:
+                try:
+                    node = eval(line)
+                    nodes_mse_only.append(node)
+                except:
+                    print 'error'
+
+            for line in f_mse_noise:
+                try:
+                    node = eval(line)
+                    nodes_mse_noise.append(node)
+                except:
+                    print 'error'
+
             # arrange layout
             y_mle_only = np.array([float(keys[i](node)) for node in nodes_mle_only])
             y_mle_to_mse = np.array([float(keys[i](node)) for node in nodes_mle_to_mse])
+            y_mse_only = np.array([float(keys[i](node)) for node in nodes_mse_only])
+            y_mse_noise = np.array([float(keys[i](node)) for node in nodes_mse_noise])
 
             delta = max(np.max(y_mle_only),np.max(y_mle_to_mse)) - min(np.min(y_mle_only),np.min(y_mle_to_mse))
             delta /= 30.
             x_left_limit = 0
-            x_right_limit = 200
+            x_right_limit = 250
             if y_mle_only[0] > y_mle_only[-1]:
-                y_lower_limit = min(np.min(y_mle_only),np.min(y_mle_to_mse)) - delta
+                y_lower_limit = min(np.min(y_mle_only),np.min(y_mse_noise)) - delta
                 y_upper_limit = 0.2 * np.max(y_mle_only) + 0.8 * np.min(y_mle_only)
             else:
                 y_lower_limit = 0.8 * np.max(y_mle_only) + 0.2 * np.min(y_mle_only)
-                y_upper_limit = max(np.max(y_mle_only),np.max(y_mle_to_mse)) + delta
+                y_upper_limit = max(np.max(y_mle_only),np.max(y_mse_noise)) + delta
 
             plt.ylim(y_lower_limit, y_upper_limit)
             plt.xlim(0,x_right_limit)
@@ -589,6 +628,10 @@ def paper_full_train_learning_mle_mse_potential_ability():
                 label=labels_prefix[i] + labels_suffix['mle_only'])
             plt.plot(np.arange(full_train_start,len(y_mle_to_mse)+full_train_start),y_mle_to_mse,c=colors['mle_mse'],lw=2,
                 label=labels_prefix[i] + labels_suffix['mle_mse'])
+            plt.plot(np.arange(0,len(y_mse_only)+0),y_mse_only,c=colors['mse_only'],lw=2,
+                label=labels_prefix[i] + labels_suffix['mse_only'])
+            plt.plot(np.arange(full_train_start,len(y_mse_noise)+full_train_start),y_mse_noise,c=colors['mse_noise'],lw=2,
+                label=labels_prefix[i] + labels_suffix['mse_noise'])
 
 
             plt.xlabel('iterations')
