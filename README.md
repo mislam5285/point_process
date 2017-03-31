@@ -30,3 +30,6 @@ Due to this, we split the observed sequence into train sequence and validation s
 
 We *discretize the timestamp of each event*, this approximate approach leads to deterministic expectation of total events in each time interval, which enables the gradients computation of any loss function w.r.t. parameters in point process model, without losing prediction accuracy in the experiment. We choose mean squared error on the validation sequence as our loss.
 
+$\sqrt{3x-1}+(1+x)^2$
+
+

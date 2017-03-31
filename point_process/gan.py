@@ -62,9 +62,9 @@ class HawkesGAN(object):
 				loss_weights={'dis_output':gan_weight,'hawkes_output':mse_weight},
 				metrics=['categorical_accuracy'])
 		elif train_gan_method == 'wgan':
-			from customed_loss import wassertein_d_loss, wassertein_g_loss
-			self.dis.create_trainable_wassertein(observed_length,nb_type,nb_feature)
-			self.dis.model.compile(optimizer='rmsprop', loss=wassertein_d_loss)
+			from customed_loss import wasserstein_d_loss, wasserstein_g_loss
+			self.dis.create_trainable_wasserstein(observed_length,nb_type,nb_feature)
+			self.dis.model.compile(optimizer='rmsprop', loss=wasserstein_d_loss)
 
 			self.dis.model.trainable = False
 			for l in self.dis.model.layers: l.trainable = False
@@ -77,7 +77,7 @@ class HawkesGAN(object):
 			full_gen_model = Model(inputs=[z], outputs=[full_g_z])
 			gan_model = Model(inputs=[z], outputs=[g_z,y])
 			gan_model.compile(optimizer='rmsprop', 
-				loss={'dis_output':wassertein_g_loss,'hawkes_output':'mse'},
+				loss={'dis_output':wasserstein_g_loss,'hawkes_output':'mse'},
 				loss_weights={'dis_output':gan_weight,'hawkes_output':mse_weight})
 
 

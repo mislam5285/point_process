@@ -184,7 +184,7 @@ class CNNDiscriminator(object):
 		self.model = model
 		return model
 
-	def create_trainable_wassertein(self,nb_event,nb_type,nb_feature):
+	def create_trainable_wasserstein(self,nb_event,nb_type,nb_feature):
 		from keras.layers import Input, Dense, Flatten, Convolution2D, Activation, Dropout, merge
 		from keras.models import Model
 		from keras.constraints import MinMaxNorm

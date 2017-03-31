@@ -117,9 +117,9 @@ def paper_fix_train_total_xiao():
             #plt.show()    
             if i == 0: key = 'paper.fix-train.total.xiao.mape.png'
             if i == 3: key = 'paper.fix-train.total.xiao.acc.png'
-            plt.xticks(fontsize=14)
-            plt.yticks(fontsize=14)
-            plt.legend(fontsize=14)
+            plt.xticks(fontsize=13)
+            plt.yticks(fontsize=13)
+            plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
         
 def paper_fix_train_non_self_m_hawkes():
@@ -205,9 +205,9 @@ def paper_fix_train_non_self_m_hawkes():
             # plt.show()
             if i == 0: key = 'paper.fix-train.non-self.m-hawks.mape.png'
             if i == 1: key = 'paper.fix-train.non-self.m-hawks.acc.png'
-            plt.xticks(fontsize=14)
-            plt.yticks(fontsize=14)
-            plt.legend(fontsize=14)
+            plt.xticks(fontsize=13)
+            plt.yticks(fontsize=13)
+            plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
 def paper_hawkes_generator_pretrain_convergence():
@@ -273,9 +273,9 @@ def paper_hawkes_generator_pretrain_convergence():
                 if i == 0: key = 'paper.gan.pretrain.learning.NLL.png'
                 if i == 1: key = 'paper.gan.pretrain.learning.ACC.png'
                 if i == 2: key = 'paper.gan.pretrain.learning.MAPE.png'
-                plt.xticks(fontsize=14)
-                plt.yticks(fontsize=14)
-                plt.legend(fontsize=14)
+                plt.xticks(fontsize=13)
+                plt.yticks(fontsize=13)
+                plt.legend(fontsize=13)
                 if i == 0: plt.yticks(fontsize=11)
                 plt.savefig(root + '/pic/%s'%key)
 
@@ -459,9 +459,9 @@ def paper_full_train_learning_curve_potential_ability():
             #plt.show()
             if i == 0: key = 'paper.gan.fulltrain.learning.test.ACC.png'
             if i == 1: key = 'paper.gan.fulltrain.learning.test.MAPE.png'
-            plt.xticks(fontsize=14)
-            plt.yticks(fontsize=14)
-            plt.legend(fontsize=14)
+            plt.xticks(fontsize=13)
+            plt.yticks(fontsize=13)
+            plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
 
@@ -612,7 +612,7 @@ def paper_full_train_learning_mle_mse_potential_ability():
             delta = max(np.max(y_mle_only),np.max(y_mle_to_mse)) - min(np.min(y_mle_only),np.min(y_mle_to_mse))
             delta /= 30.
             x_left_limit = 0
-            x_right_limit = 250
+            x_right_limit = 300
             if y_mle_only[0] > y_mle_only[-1]:
                 y_lower_limit = min(np.min(y_mle_only),np.min(y_mse_noise)) - delta
                 y_upper_limit = 0.2 * np.max(y_mle_only) + 0.8 * np.min(y_mle_only)
@@ -626,10 +626,10 @@ def paper_full_train_learning_mle_mse_potential_ability():
             # draw curve
             plt.plot(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=2,
                 label=labels_prefix[i] + labels_suffix['mle_only'])
-            plt.plot(np.arange(full_train_start,len(y_mle_to_mse)+full_train_start),y_mle_to_mse,c=colors['mle_mse'],lw=2,
-                label=labels_prefix[i] + labels_suffix['mle_mse'])
             plt.plot(np.arange(0,len(y_mse_only)+0),y_mse_only,c=colors['mse_only'],lw=2,
                 label=labels_prefix[i] + labels_suffix['mse_only'])
+            plt.plot(np.arange(full_train_start,len(y_mle_to_mse)+full_train_start),y_mle_to_mse,c=colors['mle_mse'],lw=2,
+                label=labels_prefix[i] + labels_suffix['mle_mse'])
             plt.plot(np.arange(full_train_start,len(y_mse_noise)+full_train_start),y_mse_noise,c=colors['mse_noise'],lw=2,
                 label=labels_prefix[i] + labels_suffix['mse_noise'])
 
@@ -642,9 +642,9 @@ def paper_full_train_learning_mle_mse_potential_ability():
             #plt.show()
             if i == 0: key = 'paper.gan.fulltrain.learning.mle_mse.test.ACC.png'
             if i == 1: key = 'paper.gan.fulltrain.learning.mle_mse.test.MAPE.png'
-            plt.xticks(fontsize=14)
-            plt.yticks(fontsize=14)
-            plt.legend(fontsize=14)
+            plt.xticks(fontsize=13)
+            plt.yticks(fontsize=13)
+            plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
 
