@@ -470,6 +470,7 @@ def paper_full_train_learning_mle_mse_potential_ability():
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
+    will_train_mse_only_noise = False
     will_train_mse_noise_dropout = False
     will_train_mle_mse_aternative = False
     will_draw = True
@@ -534,6 +535,20 @@ def paper_full_train_learning_mle_mse_potential_ability():
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False)
             sys.stdout = old_stdout
 
+    log_mse_only_noise = root + '/data/paper.fulltrain.mse_only_noise.log.txt'
+    if will_train_mse_only_noise == True:
+        mse_weight = 1.
+        gan_weight = 0.
+        with open(log_mse_only_noise,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            gan.gen.sequence_weights = None
+            # exit()
+            loaded = gan.load(paper_data)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False,need_noise_dropout=True)
+            sys.stdout = old_stdout
+
     log_mse_noise = root + '/data/paper.fulltrain.mse_noise.log.txt'
     if will_train_mse_noise_dropout == True:
         mse_weight = 1.
@@ -561,15 +576,22 @@ def paper_full_train_learning_mle_mse_potential_ability():
         colors = {'mle_only':'red','mle_mse':'green','mse_only':'blue','mse_noise':'purple'}
         keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
         labels_prefix = ['ACC ','MAPE ']
-        labels_suffix = {'mle_only':'(MLE only)','mle_mse':'(MSE after MLE)','mse_only':'(MSE only)','mse_noise':'(MSE with noise)'}
+        labels_suffix = {
+            'mle_only':'(MLE only)',
+            'mle_mse':'(MSE without noise)',
+            'mse_only':'(MSE only)',
+            'mse_noise':'(MSE after MLE)',
+        }
 
         f_mle_only = open(log_mle_only)
         f_mle_to_mse = open(log_mle_to_mse)
         f_mse_only = open(log_mse_only)
+        f_mse_only_noise = open(log_mse_only_noise)
         f_mse_noise = open(log_mse_noise)
         nodes_mle_only = []
         nodes_mle_to_mse = []
         nodes_mse_only = []
+        nodes_mse_only_noise = []
         nodes_mse_noise = []
 
         for i in range(len(keys)):
@@ -596,6 +618,13 @@ def paper_full_train_learning_mle_mse_potential_ability():
                 except:
                     print 'error'
 
+            for line in f_mse_only_noise:
+                try:
+                    node = eval(line)
+                    nodes_mse_only_noise.append(node)
+                except:
+                    print 'error'
+
             for line in f_mse_noise:
                 try:
                     node = eval(line)
@@ -607,6 +636,7 @@ def paper_full_train_learning_mle_mse_potential_ability():
             y_mle_only = np.array([float(keys[i](node)) for node in nodes_mle_only])
             y_mle_to_mse = np.array([float(keys[i](node)) for node in nodes_mle_to_mse])
             y_mse_only = np.array([float(keys[i](node)) for node in nodes_mse_only])
+            y_mse_only_noise = np.array([float(keys[i](node)) for node in nodes_mse_only_noise])
             y_mse_noise = np.array([float(keys[i](node)) for node in nodes_mse_noise])
 
             delta = max(np.max(y_mle_only),np.max(y_mle_to_mse)) - min(np.min(y_mle_only),np.min(y_mle_to_mse))
@@ -615,9 +645,9 @@ def paper_full_train_learning_mle_mse_potential_ability():
             x_right_limit = 300
             if y_mle_only[0] > y_mle_only[-1]:
                 y_lower_limit = min(np.min(y_mle_only),np.min(y_mse_noise)) - delta
-                y_upper_limit = 0.2 * np.max(y_mle_only) + 0.8 * np.min(y_mle_only)
+                y_upper_limit = 0.25 * np.max(y_mle_only) + 0.75 * np.min(y_mle_only)
             else:
-                y_lower_limit = 0.8 * np.max(y_mle_only) + 0.2 * np.min(y_mle_only)
+                y_lower_limit = 0.75 * np.max(y_mle_only) + 0.25 * np.min(y_mle_only)
                 y_upper_limit = max(np.max(y_mle_only),np.max(y_mse_noise)) + delta
 
             plt.ylim(y_lower_limit, y_upper_limit)
@@ -628,10 +658,10 @@ def paper_full_train_learning_mle_mse_potential_ability():
                 label=labels_prefix[i] + labels_suffix['mle_only'])
             plt.plot(np.arange(0,len(y_mse_only)+0),y_mse_only,c=colors['mse_only'],lw=2,
                 label=labels_prefix[i] + labels_suffix['mse_only'])
-            plt.plot(np.arange(full_train_start,len(y_mle_to_mse)+full_train_start),y_mle_to_mse,c=colors['mle_mse'],lw=2,
-                label=labels_prefix[i] + labels_suffix['mle_mse'])
             plt.plot(np.arange(full_train_start,len(y_mse_noise)+full_train_start),y_mse_noise,c=colors['mse_noise'],lw=2,
                 label=labels_prefix[i] + labels_suffix['mse_noise'])
+            plt.plot(np.arange(full_train_start,len(y_mle_to_mse)+full_train_start),y_mle_to_mse,c=colors['mle_mse'],lw=2,
+                label=labels_prefix[i] + labels_suffix['mle_mse'])
 
 
             plt.xlabel('iterations')
