@@ -1,5 +1,6 @@
 # point process
 
+
 ### Introduction
 
 This project is an experiment for modeling events sequence data based on Poisson point process. The detailed description for algorithms can be found in 
@@ -11,7 +12,9 @@ This project is an experiment for modeling events sequence data based on Poisson
 	- AAAI:[http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/viewFile/14385/13934](http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/viewFile/14385/13934)
 
 
-### Pretraing with MLE only
+### Experiment Results
+
+##### Pretraing with MLE only
 
 Firstly, we train our point process by maximizing log likelihood on observed sequence, and predict events in the future time interval by time interval. The learning curve is shown as follows.
 
@@ -26,12 +29,21 @@ We can see that the objective declines as the training proceeds, that the object
 Due to this, we split the observed sequence into train sequence and validation sequence to capture signal of overfitting. After performing early stopping of MLE, we will further train our model to gain more accuracy.
 
 
-### Training with MLE and MSE
+##### Training with MLE and MSE
 
-We *discretize the timestamp of each event*, this approximate approach leads to deterministic expectation of total events in each time interval, which enables the gradients computation of any loss function w.r.t. parameters in point process model, without losing prediction accuracy in the experiment. We choose mean squared error on the validation sequence as our loss.
+We *discretize the timestamp of each event*, this approximate approach leads to deterministic expectation of total events in each time interval, which enables the gradients computation of any loss function w.r.t. parameters in point process model, without losing prediction accuracy in the experiment. This method enables further enhance of accuracy provided that MLE has already overfitted. We choose mean squared error on the validation sequence as our objetive functions, empirical results on real data (e.g. paper citations) has shown the efficacy.
+
+![Learning curve for ACC](./doc/paper.gan.fulltrain.learning.mle_mse.test.ACC.png)
+
+![Learning curve for MAPE](./doc/paper.gan.fulltrain.learning.mle_mse.test.MAPE.png)
+
+![final ACC metrics](./doc/paper.gan.fulltrain.mape_acc.mle_mse.test.ACC.png)
+
+![final MAPE metrics](./doc/paper.gan.fulltrain.mape_acc.mle_mse.test.MAPE.png)
 
 
+We notice that $\beta$ must be fixed in MSE-only experiment, otherwise the loss may be rather unstable and even becomes invalid value during training process. In order to test the potential ability of MSE-only method, we fix $\beta$ to be the optimal value estimated by MLE.
 
-$\beta$ must be fixed in MSE-only experiment, otherwise the loss may be rather unstable and even becomes invalid value during training process. We fix $\beta$ to be the optimal value estimated by MLE, 
+Gaussion noise on the output of generator is useful to mitigate overfitting. The number of samples is always limited, which may distort the real distribution of observed sequence, we could see the noise as a form of random data augmentation. Note that the noise is only active at training time.
 
 

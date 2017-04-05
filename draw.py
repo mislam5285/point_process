@@ -579,7 +579,7 @@ def paper_full_train_learning_mle_mse_potential_ability():
         labels_suffix = {
             'mle_only':'MLE only',
             'mle_mse':'MSE without noise',
-            'mse_only':'MSE only with optimal $\\beta$',
+            'mse_only':'MSE only',# with optimal $\\beta$',
             'mse_noise':'MSE after MLE',
         }
 
@@ -677,7 +677,7 @@ def paper_full_train_learning_mle_mse_potential_ability():
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def paper_full_train_learning_mle_mse_potential_ability():
+def paper_full_train_mape_acc_contrast_mle_mse_potential_ability():
     will_screen = False
     will_train_mle_only = False
     will_train_mle_to_mse = False
@@ -786,12 +786,12 @@ def paper_full_train_learning_mle_mse_potential_ability():
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
         colors = {'mle_only':'red','mle_mse':'green','mse_only':'blue','mse_noise':'purple'}
-        keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
+        keys = ['acc','mape']
         labels_prefix = ['ACC','MAPE']
         labels_suffix = {
             'mle_only':'MLE only',
             'mle_mse':'MSE without noise',
-            'mse_only':'MSE only with optimal $\\beta$',
+            'mse_only':'MSE only',# with optimal $\\beta$',
             'mse_noise':'MSE after MLE',
         }
 
@@ -845,45 +845,50 @@ def paper_full_train_learning_mle_mse_potential_ability():
                     print 'error'
 
             # arrange layout
-            y_mle_only = np.array([float(keys[i](node)) for node in nodes_mle_only])
-            y_mle_to_mse = np.array([float(keys[i](node)) for node in nodes_mle_to_mse])
-            y_mse_only = np.array([float(keys[i](node)) for node in nodes_mse_only])
-            y_mse_only_noise = np.array([float(keys[i](node)) for node in nodes_mse_only_noise])
-            y_mse_noise = np.array([float(keys[i](node)) for node in nodes_mse_noise])
+            epoch_limit = 300
+            y_mle_only = np.array(nodes_mle_only[epoch_limit][keys[i]])
+            y_mle_to_mse = np.array(nodes_mle_to_mse[epoch_limit - full_train_start][keys[i]])
+            y_mse_only = np.array(nodes_mse_only[epoch_limit][keys[i]])
+            y_mse_only_noise = np.array(nodes_mse_only_noise[epoch_limit][keys[i]])
+            y_mse_noise = np.array(nodes_mse_noise[epoch_limit - full_train_start][keys[i]])
 
-            delta = max(np.max(y_mle_only),np.max(y_mle_to_mse)) - min(np.min(y_mle_only),np.min(y_mle_to_mse))
-            delta /= 30.
-            x_left_limit = 0
-            x_right_limit = 300
-            if y_mle_only[0] > y_mle_only[-1]:
-                y_lower_limit = min(np.min(y_mle_only),np.min(y_mse_noise)) - delta
-                y_upper_limit = 0.25 * np.max(y_mle_only) + 0.75 * np.min(y_mle_only)
-            else:
-                y_lower_limit = 0.75 * np.max(y_mle_only) + 0.25 * np.min(y_mle_only)
-                y_upper_limit = max(np.max(y_mle_only),np.max(y_mse_noise)) + delta
+            # delta = max(np.max(y_mle_only),np.max(y_mle_to_mse)) - min(np.min(y_mle_only),np.min(y_mle_to_mse))
+            # delta /= 30.
+            # x_left_limit = 0
+            # x_right_limit = 300
+            # if y_mle_only[0] > y_mle_only[-1]:
+            #     y_lower_limit = min(np.min(y_mle_only),np.min(y_mse_noise)) - delta
+            #     y_upper_limit = 0.25 * np.max(y_mle_only) + 0.75 * np.min(y_mle_only)
+            # else:
+            #     y_lower_limit = 0.75 * np.max(y_mle_only) + 0.25 * np.min(y_mle_only)
+            #     y_upper_limit = max(np.max(y_mle_only),np.max(y_mse_noise)) + delta
 
-            plt.ylim(y_lower_limit, y_upper_limit)
-            plt.xlim(0,x_right_limit)
+            # plt.ylim(y_lower_limit, y_upper_limit)
+            # plt.xlim(0,x_right_limit)
 
             # draw curve
-            plt.plot(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=2,
+            plt.plot(np.arange(0,len(y_mle_only)+0),y_mle_only,c=colors['mle_only'],lw=2,
                 label=labels_suffix['mle_only'])
+            plt.scatter(np.arange(0,len(y_mle_only)+0),y_mle_only,c=colors['mle_only'],lw=0) 
             plt.plot(np.arange(0,len(y_mse_only)+0),y_mse_only,c=colors['mse_only'],lw=2,
                 label=labels_suffix['mse_only'])
-            plt.plot(np.arange(full_train_start,len(y_mse_noise)+full_train_start),y_mse_noise,c=colors['mse_noise'],lw=2,
+            plt.scatter(np.arange(0,len(y_mse_only)+0),y_mse_only,c=colors['mse_only'],lw=0)
+            plt.plot(np.arange(0,len(y_mse_noise)+0),y_mse_noise,c=colors['mse_noise'],lw=2,
                 label=labels_suffix['mse_noise'])
-            plt.plot(np.arange(full_train_start,len(y_mle_to_mse)+full_train_start),y_mle_to_mse,c=colors['mle_mse'],lw=2,
+            plt.scatter(np.arange(0,len(y_mse_noise)+0),y_mse_noise,c=colors['mse_noise'],lw=0)
+            plt.plot(np.arange(0,len(y_mle_to_mse)+0),y_mle_to_mse,c=colors['mle_mse'],lw=2,
                 label=labels_suffix['mle_mse'])
+            plt.scatter(np.arange(0,len(y_mle_to_mse)+0),y_mle_to_mse,c=colors['mle_mse'],lw=0)
 
 
-            plt.xlabel('iterations')
-            plt.title('learning curve for ' + labels_prefix[i])
+            plt.xlabel('years')
+            plt.title('metrics by ' + labels_prefix[i])
             plt.legend(loc='upper right')
             plt.gcf().set_size_inches(5., 5., forward=True)
 
             #plt.show()
-            if i == 0: key = 'paper.gan.fulltrain.learning.mle_mse.test.ACC.png'
-            if i == 1: key = 'paper.gan.fulltrain.learning.mle_mse.test.MAPE.png'
+            if i == 0: key = 'paper.gan.fulltrain.mape_acc.mle_mse.test.ACC.png'
+            if i == 1: key = 'paper.gan.fulltrain.mape_acc.mle_mse.test.MAPE.png'
             plt.xticks(fontsize=13)
             plt.yticks(fontsize=13)
             plt.legend(fontsize=13)
@@ -900,4 +905,5 @@ if __name__ == '__main__' :
     # paper_hawkes_generator_pretrain_convergence()
     # paper_full_train_learning_curve_potential_ability()
     paper_full_train_learning_mle_mse_potential_ability()
+    paper_full_train_mape_acc_contrast_mle_mse_potential_ability()
     plt.show()
