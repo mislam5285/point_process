@@ -81,15 +81,6 @@ class HawkesLayer(Layer):
 
 		super(HawkesLayer, self).build(input_shape)
 
-		# with tf.Session() as sess:
-		# 	# sess.run(self.sequences.initializer)
-		# 	# print sess.run(self.sequences[0])
-		# 	sess.run(self.Alpha.initializer)
-		# 	print sess.run(self.Alpha[0])
-		# 	print sess.run(self.Alpha[1])
-		# 	print sess.run(self.Alpha[2])
-		# 	print sess.run(self.Alpha[3])
-		# 	exit()
 
 
 	def call(self, seq_id):
@@ -112,17 +103,7 @@ class HawkesLayer(Layer):
 			theta = K.gather(self.Theta, seq_id)
 			w = K.gather(self.W, seq_id)
 			alpha = K.gather(self.Alpha, seq_id)
-			# print {
-			# 	'spont':spont.shape,
-			# 	'theta':theta.shape,
-			# 	'train_seq':self.train_seq.shape,
-			# 	'alpha':alpha,
-			# 	'w':w.shape,
-			# 	'Theta':self.Theta.get_shape(),
-			# 	'Alpha':self.Alpha.get_shape(),
-			# 	'sequences':self.sequences.get_shape,
-			# 	'seq_id':seq_id.get_shape(),
-			# }
+
 
 		pred_seq = tensor_array_ops.TensorArray(dtype=tf.float32, size=self.nb_event + self.pred_length, 
 			dynamic_size=False, infer_shape=True, clear_after_read=False)
@@ -172,18 +153,6 @@ class HawkesLayer(Layer):
 
 		pred_seq = tf.expand_dims(tf.expand_dims(pred_seq.stack(), 2), 0)  # currently only support the 1st feature and one sample per batch
 
-		# with tf.Session() as sess:
-		# 	sess.run(self.sequences.initializer)
-		# 	sess.run(self.Theta.initializer)
-		# 	sess.run(self.W.initializer)
-		# 	sess.run(self.spontaneous.initializer)
-		# 	# print sess.run(self.sequences[0])
-		# 	sess.run(self.Alpha.initializer)
-		# 	print sess.run(pred_seq,feed_dict={seq_id:(0)})
-		# 	print sess.run(pred_seq,feed_dict={seq_id:(1)})
-		# 	print sess.run(pred_seq,feed_dict={seq_id:(2)})
-		# 	print sess.run(pred_seq,feed_dict={seq_id:(3)})
-		# 	exit()
 
 		return pred_seq
 		

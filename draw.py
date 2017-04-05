@@ -24,19 +24,12 @@ os.environ["KERAS_BACKEND"] = "tensorflow"
 import os, sys
 root = os.path.abspath(os.path.dirname(__file__))
 
-def paper_fix_train_total_xiao():
-    will_screen = False
+def paper_fix_train_total_xiao(dataset_id):
     will_train_mtpp = False
     will_train_single = False
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
-    if will_screen == True :
-        paper_data_raw = root + '/data/paper2.txt'
-        processor = PaperScreenor()
-        result = processor.screen(paper_data_raw)
-        with open(paper_data,'w') as fw:
-            fw.writelines(result)
     
     # training
     mape_acc_data = root + '/data/paper.mape_acc.txt'
@@ -122,19 +115,12 @@ def paper_fix_train_total_xiao():
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
         
-def paper_fix_train_non_self_m_hawkes():
-    will_screen = False
+def paper_fix_train_non_self_m_hawkes(dataset_id):
     will_train_mtpp = False
     will_train_hawkes = False
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
-    if will_screen == True :
-        paper_data_raw = root + '/data/paper2.txt'
-        processor = PaperScreenor()
-        result = processor.screen(paper_data_raw)
-        with open(paper_data,'w') as fw:
-            fw.writelines(result)
     
     # training
     mape_acc_data = root + '/data/paper.mape_acc.txt'
@@ -210,18 +196,11 @@ def paper_fix_train_non_self_m_hawkes():
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def paper_hawkes_generator_pretrain_convergence():
-    will_screen = False
+def paper_hawkes_generator_pretrain_convergence(dataset_id):
     will_train_hawkes = False
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
-    if will_screen == True :
-        paper_data_raw = root + '/data/paper2.txt'
-        processor = PaperScreenor()
-        result = processor.screen(paper_data_raw)
-        with open(paper_data,'w') as fw:
-            fw.writelines(result)
     
     # training
     pre_train_log = root + '/data/paper.pretrain.log5.txt'
@@ -279,8 +258,7 @@ def paper_hawkes_generator_pretrain_convergence():
                 if i == 0: plt.yticks(fontsize=11)
                 plt.savefig(root + '/pic/%s'%key)
 
-def paper_full_train_learning_curve_potential_ability():
-    will_screen = False
+def paper_full_train_learning_curve_potential_ability(dataset_id):
     will_train_hawkes = False
     will_train_mse = False
     will_train_gan = False
@@ -288,12 +266,6 @@ def paper_full_train_learning_curve_potential_ability():
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
-    if will_screen == True :
-        paper_data_raw = root + '/data/paper2.txt'
-        processor = PaperScreenor()
-        result = processor.screen(paper_data_raw)
-        with open(paper_data,'w') as fw:
-            fw.writelines(result)
 
     # pre-training
     pre_train_log = root + '/data/paper.pretrain.log5.txt'
@@ -465,8 +437,7 @@ def paper_full_train_learning_curve_potential_ability():
             plt.savefig(root + '/pic/%s'%key)
 
 
-def paper_full_train_learning_mle_mse_potential_ability():
-    will_screen = False
+def paper_full_train_learning_mle_mse_potential_ability(dataset_id):
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
@@ -476,12 +447,6 @@ def paper_full_train_learning_mle_mse_potential_ability():
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
-    if will_screen == True :
-        paper_data_raw = root + '/data/paper2.txt'
-        processor = PaperScreenor()
-        result = processor.screen(paper_data_raw)
-        with open(paper_data,'w') as fw:
-            fw.writelines(result)
 
     # pre-training
     log_mle_only = root + '/data/paper.pretrain.log5.txt'
@@ -677,8 +642,7 @@ def paper_full_train_learning_mle_mse_potential_ability():
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def paper_full_train_mape_acc_contrast_mle_mse_potential_ability():
-    will_screen = False
+def paper_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
@@ -688,12 +652,6 @@ def paper_full_train_mape_acc_contrast_mle_mse_potential_ability():
     will_draw = True
     # preprocess
     paper_data = root + '/data/paper3.txt'
-    if will_screen == True :
-        paper_data_raw = root + '/data/paper2.txt'
-        processor = PaperScreenor()
-        result = processor.screen(paper_data_raw)
-        with open(paper_data,'w') as fw:
-            fw.writelines(result)
 
     # pre-training
     log_mle_only = root + '/data/paper.pretrain.log5.txt'
@@ -852,19 +810,6 @@ def paper_full_train_mape_acc_contrast_mle_mse_potential_ability():
             y_mse_only_noise = np.array(nodes_mse_only_noise[epoch_limit][keys[i]])
             y_mse_noise = np.array(nodes_mse_noise[epoch_limit - full_train_start][keys[i]])
 
-            # delta = max(np.max(y_mle_only),np.max(y_mle_to_mse)) - min(np.min(y_mle_only),np.min(y_mle_to_mse))
-            # delta /= 30.
-            # x_left_limit = 0
-            # x_right_limit = 300
-            # if y_mle_only[0] > y_mle_only[-1]:
-            #     y_lower_limit = min(np.min(y_mle_only),np.min(y_mse_noise)) - delta
-            #     y_upper_limit = 0.25 * np.max(y_mle_only) + 0.75 * np.min(y_mle_only)
-            # else:
-            #     y_lower_limit = 0.75 * np.max(y_mle_only) + 0.25 * np.min(y_mle_only)
-            #     y_upper_limit = max(np.max(y_mle_only),np.max(y_mse_noise)) + delta
-
-            # plt.ylim(y_lower_limit, y_upper_limit)
-            # plt.xlim(0,x_right_limit)
 
             # draw curve
             plt.plot(np.arange(0,len(y_mle_only)+0),y_mle_only,c=colors['mle_only'],lw=2,
@@ -895,15 +840,24 @@ def paper_full_train_mape_acc_contrast_mle_mse_potential_ability():
             plt.savefig(root + '/pic/%s'%key)
 
             
-def paper_full_train_with_early_stopping():
+def paper_full_train_with_early_stopping(dataset_id):
     pass
 
 
 if __name__ == '__main__' :
-    # paper_fix_train_total_xiao()
-    # paper_fix_train_non_self_m_hawkes()
-    # paper_hawkes_generator_pretrain_convergence()
-    # paper_full_train_learning_curve_potential_ability()
-    paper_full_train_learning_mle_mse_potential_ability()
-    paper_full_train_mape_acc_contrast_mle_mse_potential_ability()
+    will_screen = False
+    # preprocess
+    paper_data = root + '/data/paper3.txt'
+    if will_screen == True :
+        paper_data_raw = root + '/data/paper2.txt'
+        processor = PaperScreenor()
+        result = processor.screen(paper_data_raw)
+        with open(paper_data,'w') as fw:
+            fw.writelines(result)
+    paper_fix_train_total_xiao('paper3')
+    paper_fix_train_non_self_m_hawkes('paper3')
+    paper_hawkes_generator_pretrain_convergence('paper3')
+    paper_full_train_learning_curve_potential_ability('paper3')
+    paper_full_train_learning_mle_mse_potential_ability('paper3')
+    paper_full_train_mape_acc_contrast_mle_mse_potential_ability('paper3')
     plt.show()
