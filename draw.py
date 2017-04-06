@@ -21,7 +21,7 @@ os.environ["KERAS_BACKEND"] = "tensorflow"
 import os, sys
 root = os.path.abspath(os.path.dirname(__file__))
 
-def draw_fix_train_total_xiao(dataset_id):
+def draw_fix_train_total_xiao(dataset_id, full_process=False):
     will_train_mtpp = False
     will_train_single = False
     will_draw = True
@@ -91,7 +91,7 @@ def draw_fix_train_total_xiao(dataset_id):
                 for k in [0,1]: # proposed or xiao 
                     _curve = subgraphs[i + j][keys[k]]
                     y = np.array([float(e) for e in _curve])
-                    plt.plot(np.arange(1,len(y)+1),y,line_type[k],c=colors[j],lw=2,label=titles[k] + years[j])
+                    plt.plot(np.arange(1,len(y)+1),y,line_type[k],c=colors[j],lw=1.2,label=titles[k] + years[j])
                     plt.scatter(np.arange(1,len(y)+1),y,c=colors[j],lw=0) 
 
             if i == 0:
@@ -112,7 +112,7 @@ def draw_fix_train_total_xiao(dataset_id):
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
         
-def draw_fix_train_non_self_m_hawkes(dataset_id):
+def draw_fix_train_non_self_m_hawkes(dataset_id, full_process=False):
     will_train_mtpp = False
     will_train_hawkes = False
     will_draw = True
@@ -171,7 +171,7 @@ def draw_fix_train_non_self_m_hawkes(dataset_id):
                 for k in [0,1] : # proposed or hawkes
                     _curve = subgraphs[i][keys[k][j]]
                     y = np.array([float(e) for e in _curve])
-                    plt.plot(np.arange(1,len(y)+1),y,line_type[k],c=colors[j],lw=2,label=model_name[k] + "(" + titles[j] + ")")
+                    plt.plot(np.arange(1,len(y)+1),y,line_type[k],c=colors[j],lw=1.2,label=model_name[k] + "(" + titles[j] + ")")
                     plt.scatter(np.arange(1,len(y)+1),y,c=colors[j],lw=0)
             if i == 0:
                 plt.xlabel('')
@@ -193,7 +193,7 @@ def draw_fix_train_non_self_m_hawkes(dataset_id):
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def draw_hawkes_generator_pretrain_convergence(dataset_id):
+def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
     will_train_hawkes_3_30 = False
     will_train_hawkes_3_20 = False
     will_train_hawkes_3_10 = False
@@ -267,36 +267,36 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id):
         f_pre_train_1_10 = open(log_pre_train_1_10)
         nodes_pre_train_1_10 = []
 
+        for line in f_pre_train:
+            try:
+                node = eval(line)
+                nodes_pre_train.append(node)
+            except:
+                print 'error'
+
+        for line in f_pre_train_3_20:
+            try:
+                node = eval(line)
+                nodes_pre_train_3_20.append(node)
+            except:
+                print 'error'
+
+        for line in f_pre_train_3_10:
+            try:
+                node = eval(line)
+                nodes_pre_train_3_10.append(node)
+            except:
+                print 'error'
+
+        for line in f_pre_train_1_10:
+            try:
+                node = eval(line)
+                nodes_pre_train_1_10.append(node)
+            except:
+                print 'error'
+
         for i in range(3):
             plt.figure()
-
-            for line in f_pre_train:
-                try:
-                    node = eval(line)
-                    nodes_pre_train.append(node)
-                except:
-                    print 'error'
-
-            for line in f_pre_train_3_20:
-                try:
-                    node = eval(line)
-                    nodes_pre_train_3_20.append(node)
-                except:
-                    print 'error'
-
-            for line in f_pre_train_3_10:
-                try:
-                    node = eval(line)
-                    nodes_pre_train_3_10.append(node)
-                except:
-                    print 'error'
-
-            for line in f_pre_train_1_10:
-                try:
-                    node = eval(line)
-                    nodes_pre_train_1_10.append(node)
-                except:
-                    print 'error'
 
             # arrange layout
             y_pre_train = np.array([float(keys[i](node)) for node in nodes_pre_train])
@@ -319,13 +319,13 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id):
             plt.xlim(0,x_right_limit)
 
             # draw curve
-            plt.plot(np.arange(1,len(y_pre_train_1_10)+1),y_pre_train_1_10,c=colors['1:10'],lw=2,
+            plt.plot(np.arange(1,len(y_pre_train_1_10)+1),y_pre_train_1_10,c=colors['1:10'],lw=1.2,
                 label=labels_suffix['1:10'])
-            plt.plot(np.arange(1,len(y_pre_train_3_10)+1),y_pre_train_3_10,c=colors['3:10'],lw=2,
+            plt.plot(np.arange(1,len(y_pre_train_3_10)+1),y_pre_train_3_10,c=colors['3:10'],lw=1.2,
                 label=labels_suffix['3:10'])
-            plt.plot(np.arange(1,len(y_pre_train_3_20)+1),y_pre_train_3_20,c=colors['3:20'],lw=2,
+            plt.plot(np.arange(1,len(y_pre_train_3_20)+1),y_pre_train_3_20,c=colors['3:20'],lw=1.2,
                 label=labels_suffix['3:20'])
-            plt.plot(np.arange(1,len(y_pre_train)+1),y_pre_train,c=colors['3:30'],lw=2,
+            plt.plot(np.arange(1,len(y_pre_train)+1),y_pre_train,c=colors['3:30'],lw=1.2,
                 label=labels_suffix['3:30'])
 
 
@@ -344,20 +344,26 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id):
             plt.savefig(root + '/pic/%s'%key)
 
 
-def draw_full_train_learning_curve_potential_ability(dataset_id):
-    will_train_hawkes = False
-    will_train_mse = False
-    will_train_gan = False
-    will_train_wgan = False
+def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=False):
+    will_train_mle_only = False
+    will_train_mle_to_gan = False
+    will_train_mle_to_wgan = False
+    will_train_gan_only = False
+    will_train_gan_only_noise = False
+    will_train_gan_noise_dropout = False
+    will_train_wgan_only = False
+    will_train_wgan_only_noise = False
+    will_train_wgan_noise_dropout = False
+    will_train_mle_gan_aternative = False
     will_draw = True
     # preprocess
     dataset_path = root + '/data/' + dataset_id + '.txt'
 
     # pre-training
-    log_pre_train = root + '/data/' + dataset_id + '.pretrain.log.3.30.txt'
+    log_mle_only = root + '/data/' + dataset_id + '.pretrain.log.3.30.txt'
 
-    if will_train_hawkes == True :
-        with open(log_pre_train,'w') as f:
+    if will_train_mle_only == True :
+        with open(log_mle_only,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
@@ -366,16 +372,16 @@ def draw_full_train_learning_curve_potential_ability(dataset_id):
             sys.stdout = old_stdout
 
     # full-training
-    full_train_mse_log = root + '/data/' + dataset_id + '.fulltrain.mse.log.txt'
+    log_mle_to_gan = root + '/data/' + dataset_id + '.fulltrain.gan.log.txt'
     pretrain_iter = 1
     alpha_iter=3
     w_iter=30
     full_train_start = pretrain_iter * (alpha_iter + w_iter)
 
-    if will_train_mse == True :
-        mse_weight = 1.
-        gan_weight = 0.
-        with open(full_train_mse_log,'w') as f:
+    if will_train_mle_to_gan == True :
+        mse_weight = 0.
+        gan_weight = 1.
+        with open(log_mle_to_gan,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
             gan = HawkesGAN()
@@ -391,12 +397,39 @@ def draw_full_train_learning_curve_potential_ability(dataset_id):
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
 
-    full_train_gan_log = root + '/data/' + dataset_id + '.fulltrain.gan.log.txt'
-    if will_train_gan == True:
+    log_gan_only = root + '/data/' + dataset_id + '.fulltrain.gan_only.log.txt'
+    if will_train_gan_only == True:
         mse_weight = 0.
         gan_weight = 1.
-        train_gan_method = 'gan'
-        with open(full_train_gan_log,'w') as f:
+        with open(log_gan_only,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            gan.gen.sequence_weights = None
+            # exit()
+            loaded = gan.load(dataset_path)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False)
+            sys.stdout = old_stdout
+
+    log_gan_only_noise = root + '/data/' + dataset_id + '.fulltrain.gan_only_noise.log.txt'
+    if will_train_gan_only_noise == True:
+        mse_weight = 0.
+        gan_weight = 1.
+        with open(log_gan_only_noise,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            gan.gen.sequence_weights = None
+            # exit()
+            loaded = gan.load(dataset_path)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False,need_noise_dropout=True)
+            sys.stdout = old_stdout
+
+    log_gan_noise = root + '/data/' + dataset_id + '.fulltrain.gan_noise.log.txt'
+    if will_train_gan_noise_dropout == True:
+        mse_weight = 0.
+        gan_weight = 1.
+        with open(log_gan_noise,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
             gan = HawkesGAN()
@@ -409,121 +442,121 @@ def draw_full_train_learning_curve_potential_ability(dataset_id):
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
             loaded = gan.load(dataset_path)
-            gan.full_train(*loaded,max_fulltrain_iter=400,train_gan_method=train_gan_method,mse_weight=mse_weight,gan_weight=gan_weight)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True)
             sys.stdout = old_stdout
-
-    full_train_wgan_log = root + '/data/' + dataset_id + '.fulltrain.wgan.log.txt'
-    if will_train_wgan == True:
-        mse_weight = 0.
-        gan_weight = 1.
-        train_gan_method = 'wgan'
-        with open(full_train_wgan_log,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            gan = HawkesGAN()
-            try:
-                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
-            except:
-                loaded = gan.gen.load(dataset_path)
-                gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
-                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
-                    json.dump(gan.gen.sequence_weights,fw)
-            # exit()
-            loaded = gan.load(dataset_path)
-            gan.full_train(*loaded,max_fulltrain_iter=400,train_gan_method=train_gan_method,mse_weight=mse_weight,gan_weight=gan_weight)
-            sys.stdout = old_stdout
-
 
 
     # drawing
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
-        colors = ['red','green','purple']
+        colors = {'mle_only':'red','mle_gan':'green','gan_only':'blue','gan_noise':'purple'}
         keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
-        labels = ['ACC on test seq.', 'MAPE on test seq.']
+        labels_prefix = ['ACC','MAPE']
+        labels_suffix = {
+            'mle_only':'MLE only',
+            'mle_gan':'ppGAN without noise',
+            'gan_only':'GAN only',# with optimal $\\beta$',
+            'gan_noise':'ppGAN',
+        }
 
-        f_pretrain = open(log_pre_train)
-        f_full_mse = open(full_train_mse_log)
-        f_full_gan = open(full_train_gan_log)
-        f_full_wgan = open(full_train_wgan_log)
-        nodes_pretrain = []
-        nodes_full_mse = []
-        nodes_full_gan = []
-        nodes_full_wgan = []
+        f_mle_only = open(log_mle_only)
+        f_mle_to_gan = open(log_mle_to_gan)
+        f_gan_only = open(log_gan_only)
+        f_gan_only_noise = open(log_gan_only_noise)
+        f_gan_noise = open(log_gan_noise)
+        nodes_mle_only = []
+        nodes_mle_to_gan = []
+        nodes_gan_only = []
+        nodes_gan_only_noise = []
+        nodes_gan_noise = []
+
+        for line in f_mle_only:
+            try:
+                node = eval(line)
+                nodes_mle_only.append(node)
+            except:
+                print 'error'
+
+        for line in f_mle_to_gan:
+            try:
+                node = eval(line)
+                nodes_mle_to_gan.append(node)
+            except:
+                print 'error'
+
+        for line in f_gan_only:
+            try:
+                node = eval(line)
+                nodes_gan_only.append(node)
+            except:
+                print 'error'
+
+        for line in f_gan_only_noise:
+            try:
+                node = eval(line)
+                nodes_gan_only_noise.append(node)
+            except:
+                print 'error'
+
+        for line in f_gan_noise:
+            try:
+                node = eval(line)
+                nodes_gan_noise.append(node)
+            except:
+                print 'error'
 
         for i in range(len(keys)):
             plt.figure()
 
-            for line in f_pretrain:
-                try:
-                    node = eval(line)
-                    nodes_pretrain.append(node)
-                except:
-                    print 'error'
-
-            for line in f_full_mse:
-                try:
-                    node = eval(line)
-                    nodes_full_mse.append(node)
-                except:
-                    print 'error'
-
-            for line in f_full_gan:
-                try:
-                    node = eval(line)
-                    nodes_full_gan.append(node)
-                except:
-                    print 'error'
-
-            for line in f_full_wgan:
-                try:
-                    node = eval(line)
-                    nodes_full_wgan.append(node)
-                except:
-                    print 'error'
-
             # arrange layout
-            y = np.array([float(keys[i](node)) for node in nodes_pretrain])
-            y_full_mse = np.array([float(keys[i](node)) for node in nodes_full_mse])
-            y_full_gan = np.array([float(keys[i](node)) for node in nodes_full_gan])
-            y_full_wgan = np.array([float(keys[i](node)) for node in nodes_full_wgan])
+            y_mle_only = np.array([float(keys[i](node)) for node in nodes_mle_only])
+            y_mle_to_gan = np.array([float(keys[i](node)) for node in nodes_mle_to_gan])
+            y_gan_only = np.array([float(keys[i](node)) for node in nodes_gan_only])
+            y_gan_only_noise = np.array([float(keys[i](node)) for node in nodes_gan_only_noise])
+            y_gan_noise = np.array([float(keys[i](node)) for node in nodes_gan_noise])
 
-            delta = max(np.max(y),np.max(y_full_mse)) - min(np.min(y),np.min(y_full_mse))
+            delta = max(np.max(y_mle_only),np.max(y_mle_to_gan)) - min(np.min(y_mle_only),np.min(y_mle_to_gan))
             delta /= 30.
             x_left_limit = 0
-            x_right_limit = 200
-            if y[0] > y[-1]:
-                y_lower_limit = min(np.min(y),np.min(y_full_mse)) - delta
-                y_upper_limit = 0.25 * np.max(y) + 0.75 * np.min(y)
+            x_right_limit = 300
+            if y_mle_only[0] > y_mle_only[-1]:
+                y_lower_limit = min(np.min(y_mle_only),np.min(y_gan_noise)) - delta
+                y_upper_limit = 0.25 * np.max(y_mle_only) + 0.75 * np.min(y_mle_only)
             else:
-                y_lower_limit = 0.75 * np.max(y) + 0.25 * np.min(y)
-                y_upper_limit = max(np.max(y),np.max(y_full_mse)) + delta
+                y_lower_limit = 0.75 * np.max(y_mle_only) + 0.25 * np.min(y_mle_only)
+                y_upper_limit = max(np.max(y_mle_only),np.max(y_gan_noise)) + delta
 
             plt.ylim(y_lower_limit, y_upper_limit)
             plt.xlim(0,x_right_limit)
 
             # draw curve
-            plt.plot(np.arange(1,len(y)+1),y,c=colors[i],lw=2,label=labels[i])
-            plt.plot(np.arange(full_train_start,len(y_full_mse)+full_train_start),y_full_mse,c=colors[i],lw=2,label=labels[i])
-            plt.plot(np.arange(full_train_start,len(y_full_gan)+full_train_start),y_full_gan,c=colors[i],lw=2,label=labels[i])
-            plt.plot(np.arange(full_train_start,len(y_full_wgan)+full_train_start),y_full_wgan,c=colors[i],lw=2,label=labels[i])
+            plt.plot(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=1.2,
+                label=labels_suffix['mle_only'])
+            plt.plot(np.arange(0,len(y_gan_only)+0),y_gan_only,c=colors['gan_only'],lw=1.2,
+                label=labels_suffix['gan_only'])
+            plt.plot(np.arange(full_train_start,len(y_gan_noise)+full_train_start),y_gan_noise,c=colors['gan_noise'],lw=1.2,
+                label=labels_suffix['gan_noise'])
+            plt.plot(np.arange(full_train_start,len(y_mle_to_gan)+full_train_start),y_mle_to_gan,c=colors['mle_gan'],lw=1.2,
+                label=labels_suffix['mle_gan'])
 
 
             plt.xlabel('iterations')
-            plt.title('learning curve')
+            plt.title('learning curve for ' + labels_prefix[i])
             plt.legend(loc='upper right')
             plt.gcf().set_size_inches(5., 5., forward=True)
 
             #plt.show()
-            if i == 0: key = '' + dataset_id + '.gan.fulltrain.learning.test.ACC.png'
-            if i == 1: key = '' + dataset_id + '.gan.fulltrain.learning.test.MAPE.png'
+            if i == 0: key = '' + dataset_id + '.gan.fulltrain.learning.mle_gan.test.ACC.png'
+            if i == 1: key = '' + dataset_id + '.gan.fulltrain.learning.mle_gan.test.MAPE.png'
             plt.xticks(fontsize=13)
             plt.yticks(fontsize=13)
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
 
-def draw_full_train_learning_mle_mse_potential_ability(dataset_id):
+
+
+def draw_full_train_learning_mle_mse_potential_ability(dataset_id, full_process=False):
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
@@ -645,43 +678,43 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id):
         nodes_mse_only_noise = []
         nodes_mse_noise = []
 
+        for line in f_mle_only:
+            try:
+                node = eval(line)
+                nodes_mle_only.append(node)
+            except:
+                print 'error'
+
+        for line in f_mle_to_mse:
+            try:
+                node = eval(line)
+                nodes_mle_to_mse.append(node)
+            except:
+                print 'error'
+
+        for line in f_mse_only:
+            try:
+                node = eval(line)
+                nodes_mse_only.append(node)
+            except:
+                print 'error'
+
+        for line in f_mse_only_noise:
+            try:
+                node = eval(line)
+                nodes_mse_only_noise.append(node)
+            except:
+                print 'error'
+
+        for line in f_mse_noise:
+            try:
+                node = eval(line)
+                nodes_mse_noise.append(node)
+            except:
+                print 'error'
+
         for i in range(len(keys)):
             plt.figure()
-
-            for line in f_mle_only:
-                try:
-                    node = eval(line)
-                    nodes_mle_only.append(node)
-                except:
-                    print 'error'
-
-            for line in f_mle_to_mse:
-                try:
-                    node = eval(line)
-                    nodes_mle_to_mse.append(node)
-                except:
-                    print 'error'
-
-            for line in f_mse_only:
-                try:
-                    node = eval(line)
-                    nodes_mse_only.append(node)
-                except:
-                    print 'error'
-
-            for line in f_mse_only_noise:
-                try:
-                    node = eval(line)
-                    nodes_mse_only_noise.append(node)
-                except:
-                    print 'error'
-
-            for line in f_mse_noise:
-                try:
-                    node = eval(line)
-                    nodes_mse_noise.append(node)
-                except:
-                    print 'error'
 
             # arrange layout
             y_mle_only = np.array([float(keys[i](node)) for node in nodes_mle_only])
@@ -705,13 +738,13 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id):
             plt.xlim(0,x_right_limit)
 
             # draw curve
-            plt.plot(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=2,
+            plt.plot(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=1.2,
                 label=labels_suffix['mle_only'])
-            plt.plot(np.arange(0,len(y_mse_only)+0),y_mse_only,c=colors['mse_only'],lw=2,
+            plt.plot(np.arange(0,len(y_mse_only)+0),y_mse_only,c=colors['mse_only'],lw=1.2,
                 label=labels_suffix['mse_only'])
-            plt.plot(np.arange(full_train_start,len(y_mse_noise)+full_train_start),y_mse_noise,c=colors['mse_noise'],lw=2,
+            plt.plot(np.arange(full_train_start,len(y_mse_noise)+full_train_start),y_mse_noise,c=colors['mse_noise'],lw=1.2,
                 label=labels_suffix['mse_noise'])
-            plt.plot(np.arange(full_train_start,len(y_mle_to_mse)+full_train_start),y_mle_to_mse,c=colors['mle_mse'],lw=2,
+            plt.plot(np.arange(full_train_start,len(y_mle_to_mse)+full_train_start),y_mle_to_mse,c=colors['mle_mse'],lw=1.2,
                 label=labels_suffix['mle_mse'])
 
 
@@ -728,7 +761,7 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id):
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
+def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, full_process=False):
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
@@ -850,43 +883,43 @@ def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
         nodes_mse_only_noise = []
         nodes_mse_noise = []
 
+        for line in f_mle_only:
+            try:
+                node = eval(line)
+                nodes_mle_only.append(node)
+            except:
+                print 'error'
+
+        for line in f_mle_to_mse:
+            try:
+                node = eval(line)
+                nodes_mle_to_mse.append(node)
+            except:
+                print 'error'
+
+        for line in f_mse_only:
+            try:
+                node = eval(line)
+                nodes_mse_only.append(node)
+            except:
+                print 'error'
+
+        for line in f_mse_only_noise:
+            try:
+                node = eval(line)
+                nodes_mse_only_noise.append(node)
+            except:
+                print 'error'
+
+        for line in f_mse_noise:
+            try:
+                node = eval(line)
+                nodes_mse_noise.append(node)
+            except:
+                print 'error'
+
         for i in range(len(keys)):
             plt.figure()
-
-            for line in f_mle_only:
-                try:
-                    node = eval(line)
-                    nodes_mle_only.append(node)
-                except:
-                    print 'error'
-
-            for line in f_mle_to_mse:
-                try:
-                    node = eval(line)
-                    nodes_mle_to_mse.append(node)
-                except:
-                    print 'error'
-
-            for line in f_mse_only:
-                try:
-                    node = eval(line)
-                    nodes_mse_only.append(node)
-                except:
-                    print 'error'
-
-            for line in f_mse_only_noise:
-                try:
-                    node = eval(line)
-                    nodes_mse_only_noise.append(node)
-                except:
-                    print 'error'
-
-            for line in f_mse_noise:
-                try:
-                    node = eval(line)
-                    nodes_mse_noise.append(node)
-                except:
-                    print 'error'
 
             # arrange layout
             epoch_limit = 300
@@ -898,18 +931,18 @@ def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
 
 
             # draw curve
-            plt.plot(np.arange(0,len(y_mle_only)+0),y_mle_only,c=colors['mle_only'],lw=2,
+            plt.plot(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=1.2,
                 label=labels_suffix['mle_only'])
-            plt.scatter(np.arange(0,len(y_mle_only)+0),y_mle_only,c=colors['mle_only'],lw=0) 
-            plt.plot(np.arange(0,len(y_mse_only)+0),y_mse_only,c=colors['mse_only'],lw=2,
+            plt.scatter(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=0) 
+            plt.plot(np.arange(1,len(y_mse_only)+1),y_mse_only,c=colors['mse_only'],lw=1.2,
                 label=labels_suffix['mse_only'])
-            plt.scatter(np.arange(0,len(y_mse_only)+0),y_mse_only,c=colors['mse_only'],lw=0)
-            plt.plot(np.arange(0,len(y_mse_noise)+0),y_mse_noise,c=colors['mse_noise'],lw=2,
+            plt.scatter(np.arange(1,len(y_mse_only)+1),y_mse_only,c=colors['mse_only'],lw=0)
+            plt.plot(np.arange(1,len(y_mse_noise)+1),y_mse_noise,c=colors['mse_noise'],lw=1.2,
                 label=labels_suffix['mse_noise'])
-            plt.scatter(np.arange(0,len(y_mse_noise)+0),y_mse_noise,c=colors['mse_noise'],lw=0)
-            plt.plot(np.arange(0,len(y_mle_to_mse)+0),y_mle_to_mse,c=colors['mle_mse'],lw=2,
+            plt.scatter(np.arange(1,len(y_mse_noise)+1),y_mse_noise,c=colors['mse_noise'],lw=0)
+            plt.plot(np.arange(1,len(y_mle_to_mse)+1),y_mle_to_mse,c=colors['mle_mse'],lw=1.2,
                 label=labels_suffix['mle_mse'])
-            plt.scatter(np.arange(0,len(y_mle_to_mse)+0),y_mle_to_mse,c=colors['mle_mse'],lw=0)
+            plt.scatter(np.arange(1,len(y_mle_to_mse)+1),y_mle_to_mse,c=colors['mle_mse'],lw=0)
 
 
             plt.xlabel('years')
@@ -926,7 +959,7 @@ def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
             plt.savefig(root + '/pic/%s'%key)
 
             
-def draw_full_train_with_early_stopping(dataset_id):
+def draw_full_train_with_early_stopping(dataset_id, full_process=False):
     pass
 
 
@@ -935,7 +968,7 @@ if __name__ == '__main__' :
         draw_fix_train_total_xiao(dataset_id)
         draw_fix_train_non_self_m_hawkes(dataset_id)
         draw_hawkes_generator_pretrain_convergence(dataset_id)
-        draw_full_train_learning_curve_potential_ability(dataset_id)
+        # draw_full_train_learning_gan_potential_ability(dataset_id)
         draw_full_train_learning_mle_mse_potential_ability(dataset_id)
         draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id)
     plt.show()
