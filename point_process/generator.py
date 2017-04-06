@@ -11,7 +11,8 @@ class HawkesGenerator(object):
 		self.params = {}
 		self.sequence_weights = None
 
-	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=None,predict_year=2000,max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30):
+	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=None,predict_year=2000,
+			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30):
 
 		if cut is None:
 			T = numpy.array([predict_year - publish_year + 1 for publish_year in publish_years],dtype=float)
@@ -368,7 +369,7 @@ class HawkesGenerator(object):
 		from keras.layers import Input, GaussianNoise
 		from keras.models import Model
 
-		from customed_layer import HawkesLayer
+		from pp_layer import HawkesLayer
 
 		x = Input(batch_shape=(1,1), dtype='int32')
 		hawkes_layer = HawkesLayer(sequences,pred_length,sequence_weights=self.sequence_weights,proxy_layer=proxy_layer)

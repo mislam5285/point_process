@@ -11,12 +11,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
-from hawkes.mtpp import MTPP
-from hawkes.hawkes import MHawkes
-from hawkes.single import Single
+from point_process.hawkes import MHawkes, MTPP, Single
 from point_process.generator import HawkesGenerator
 from point_process.gan import HawkesGAN
-from preprocess.screen import PaperScreenor
 
 np.random.seed(137)
 os.environ["KERAS_BACKEND"] = "tensorflow"
@@ -24,22 +21,22 @@ os.environ["KERAS_BACKEND"] = "tensorflow"
 import os, sys
 root = os.path.abspath(os.path.dirname(__file__))
 
-def paper_fix_train_total_xiao(dataset_id):
+def draw_fix_train_total_xiao(dataset_id):
     will_train_mtpp = False
     will_train_single = False
     will_draw = True
     # preprocess
-    paper_data = root + '/data/paper3.txt'
+    dataset_path = root + '/data/' + dataset_id + '.txt'
     
     # training
-    mape_acc_data = root + '/data/paper.mape_acc.txt'
+    mape_acc_data = root + '/data/' + dataset_id + '.hawkes.mape_acc.txt'
     if will_train_mtpp == True :
         predictor = MTPP()
-        loaded = predictor.load(paper_data,cut=10)
+        loaded = predictor.load(dataset_path,cut=10)
         proposed_10_result = predictor.predict(predictor.train(*loaded,max_iter=0,max_outer_iter=0),*loaded)
-        loaded = predictor.load(paper_data,cut=15)
+        loaded = predictor.load(dataset_path,cut=15)
         proposed_15_result = predictor.predict(predictor.train(*loaded,max_iter=0,max_outer_iter=0),*loaded)
-        loaded = predictor.load(paper_data,cut=20)
+        loaded = predictor.load(dataset_path,cut=20)
         proposed_20_result = predictor.predict(predictor.train(*loaded,max_iter=0,max_outer_iter=0),*loaded)
         with open(mape_acc_data) as fr :
             result = json.load(fr)
@@ -54,7 +51,7 @@ def paper_fix_train_total_xiao(dataset_id):
 
     if will_train_single == True :
         predictor = Single()
-        loaded = predictor.load(paper_data)
+        loaded = predictor.load(dataset_path)
         single_10_result = predictor.predict(predictor.train(*loaded,cut=10,max_outer_iter=0),*loaded)
         single_15_result = predictor.predict(predictor.train(*loaded,cut=15,max_outer_iter=0),*loaded)
         single_20_result = predictor.predict(predictor.train(*loaded,cut=20,max_outer_iter=0),*loaded)
@@ -108,25 +105,25 @@ def paper_fix_train_total_xiao(dataset_id):
 
             plt.gcf().set_size_inches(5., 5., forward=True)
             #plt.show()    
-            if i == 0: key = 'paper.fix-train.total.xiao.mape.png'
-            if i == 3: key = 'paper.fix-train.total.xiao.acc.png'
+            if i == 0: key = '' + dataset_id + '.fix-train.total.xiao.mape.png'
+            if i == 3: key = '' + dataset_id + '.fix-train.total.xiao.acc.png'
             plt.xticks(fontsize=13)
             plt.yticks(fontsize=13)
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
         
-def paper_fix_train_non_self_m_hawkes(dataset_id):
+def draw_fix_train_non_self_m_hawkes(dataset_id):
     will_train_mtpp = False
     will_train_hawkes = False
     will_draw = True
     # preprocess
-    paper_data = root + '/data/paper3.txt'
+    dataset_path = root + '/data/' + dataset_id + '.txt'
     
     # training
-    mape_acc_data = root + '/data/paper.mape_acc.txt'
+    mape_acc_data = root + '/data/' + dataset_id + '.hawkes.mape_acc.txt'
     if will_train_mtpp == True :
         predictor = MTPP()
-        loaded = predictor.load(paper_data,cut=10)
+        loaded = predictor.load(dataset_path,cut=10)
         proposed_10_result = predictor.predict(predictor.train(*loaded,max_iter=0,max_outer_iter=0),*loaded)
         with open(mape_acc_data) as fr :
             result = json.load(fr)
@@ -141,7 +138,7 @@ def paper_fix_train_non_self_m_hawkes(dataset_id):
 
     if will_train_hawkes == True :
         predictor = MHawkes()
-        loaded = predictor.load(paper_data,cut=10)
+        loaded = predictor.load(dataset_path,cut=10)
         hawkes_10_result = predictor.predict(predictor.train(*loaded,max_iter=0,max_outer_iter=0),*loaded)
         with open(mape_acc_data) as fr :
             result = json.load(fr)
@@ -189,98 +186,187 @@ def paper_fix_train_non_self_m_hawkes(dataset_id):
 
             plt.gcf().set_size_inches(5., 5., forward=True)
             # plt.show()
-            if i == 0: key = 'paper.fix-train.non-self.m-hawks.mape.png'
-            if i == 1: key = 'paper.fix-train.non-self.m-hawks.acc.png'
+            if i == 0: key = '' + dataset_id + '.fix-train.non-self.m-hawks.mape.png'
+            if i == 1: key = '' + dataset_id + '.fix-train.non-self.m-hawks.acc.png'
             plt.xticks(fontsize=13)
             plt.yticks(fontsize=13)
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def paper_hawkes_generator_pretrain_convergence(dataset_id):
-    will_train_hawkes = False
+def draw_hawkes_generator_pretrain_convergence(dataset_id):
+    will_train_hawkes_3_30 = False
+    will_train_hawkes_3_20 = False
+    will_train_hawkes_3_10 = False
+    will_train_hawkes_1_10 = False
     will_draw = True
     # preprocess
-    paper_data = root + '/data/paper3.txt'
+    dataset_path = root + '/data/' + dataset_id + '.txt'
     
     # training
-    pre_train_log = root + '/data/paper.pretrain.log5.txt'
+    log_pre_train = root + '/data/' + dataset_id + '.pretrain.log.3.30.txt'
+    log_pre_train_3_20 = root + '/data/' + dataset_id + '.pretrain.log.3.20.txt'
+    log_pre_train_3_10 = root + '/data/' + dataset_id + '.pretrain.log.3.10.txt'
+    log_pre_train_1_10 = root + '/data/' + dataset_id + '.pretrain.log.1.10.txt'
 
-    if will_train_hawkes == True :
-        with open(pre_train_log,'w') as f:
+    if will_train_hawkes_3_30 == True :
+        with open(log_pre_train,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(paper_data)
+            loaded = predictor.load(dataset_path)
             model = predictor.pre_train(*loaded,max_outer_iter=10)
             sys.stdout = old_stdout
 
+    if will_train_hawkes_3_20 == True :
+        with open(log_pre_train_3_20,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            predictor = HawkesGenerator()
+            loaded = predictor.load(dataset_path)
+            model = predictor.pre_train(*loaded,max_outer_iter=20,alpha_iter=3,w_iter=20)
+            sys.stdout = old_stdout
+
+    if will_train_hawkes_3_10 == True :
+        with open(log_pre_train_3_10,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            predictor = HawkesGenerator()
+            loaded = predictor.load(dataset_path)
+            model = predictor.pre_train(*loaded,max_outer_iter=30,alpha_iter=3,w_iter=10)
+            sys.stdout = old_stdout
+
+    if will_train_hawkes_1_10 == True :
+        with open(log_pre_train_1_10,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            predictor = HawkesGenerator()
+            loaded = predictor.load(dataset_path)
+            model = predictor.pre_train(*loaded,max_outer_iter=40,alpha_iter=1,w_iter=10)
+            sys.stdout = old_stdout
     # drawing
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
-        colors = ['red','green','purple']
-        keys = [lambda x:x['LL'], lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
-        labels = ['Loss on observed seq.', 'ACC on test seq.', 'MAPE on test seq.']
+        # colors = ['red','green','purple']
+        keys = [lambda x:x['LL'], lambda x:x['acc'][-1], lambda x:x['mape'][-1], lambda x:x['acc_val'][-1], lambda x:x['mape_val'][-1]]
+        colors = {'3:30':'red','3:20':'green','3:10':'blue','1:10':'purple'}
+        # keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
+        labels_prefix = ['Loss','ACC','MAPE','ACC on val.', 'MAPE on val.']
+        labels_suffix = {
+            '3:30':'3:30',
+            '3:20':'3:20',
+            '3:10':'3:10',# with optimal $\\beta$',
+            '1:10':'1:10',
+        }
 
-        with open(pre_train_log) as f:
-            nodes = []
-            for line in f:
+        f_pre_train = open(log_pre_train)
+        nodes_pre_train = []
+        f_pre_train_3_20 = open(log_pre_train_3_20)
+        nodes_pre_train_3_20 = []
+        f_pre_train_3_10 = open(log_pre_train_3_10)
+        nodes_pre_train_3_10 = []
+        f_pre_train_1_10 = open(log_pre_train_1_10)
+        nodes_pre_train_1_10 = []
+
+        for i in range(3):
+            plt.figure()
+
+            for line in f_pre_train:
                 try:
-                    # node = json.loads(line)
                     node = eval(line)
-                    nodes.append(node)
+                    nodes_pre_train.append(node)
                 except:
                     print 'error'
 
-            for i in range(3):
-                plt.figure()
-                x_right_limit = 200
-                y = np.array([float(keys[i](node)) for node in nodes])[0:x_right_limit]
-                delta = np.max(y) - np.min(y)
-                delta /= 30
-                if y[0] > y[-1]: plt.ylim(np.min(y) - delta, 0.2 * np.max(y) + 0.8 * np.min(y))
-                if y[0] < y[-1]: plt.ylim(0.8 * np.max(y) + 0.2 * np.min(y), np.max(y) + delta)
-                plt.xlim(0,x_right_limit)
-                plt.plot(np.arange(1,len(y)+1),y,c=colors[i],lw=2,label=labels[i])
-                gca = plt.gca()
+            for line in f_pre_train_3_20:
+                try:
+                    node = eval(line)
+                    nodes_pre_train_3_20.append(node)
+                except:
+                    print 'error'
 
-                plt.xlabel('iterations')
-                plt.title('learning curve')
-                plt.legend(loc='upper right')
-                plt.gcf().set_size_inches(5., 5., forward=True)
+            for line in f_pre_train_3_10:
+                try:
+                    node = eval(line)
+                    nodes_pre_train_3_10.append(node)
+                except:
+                    print 'error'
 
-                #plt.show()
-                if i == 0: key = 'paper.gan.pretrain.learning.NLL.png'
-                if i == 1: key = 'paper.gan.pretrain.learning.ACC.png'
-                if i == 2: key = 'paper.gan.pretrain.learning.MAPE.png'
-                plt.xticks(fontsize=13)
-                plt.yticks(fontsize=13)
-                plt.legend(fontsize=13)
-                if i == 0: plt.yticks(fontsize=11)
-                plt.savefig(root + '/pic/%s'%key)
+            for line in f_pre_train_1_10:
+                try:
+                    node = eval(line)
+                    nodes_pre_train_1_10.append(node)
+                except:
+                    print 'error'
 
-def paper_full_train_learning_curve_potential_ability(dataset_id):
+            # arrange layout
+            y_pre_train = np.array([float(keys[i](node)) for node in nodes_pre_train])
+            y_pre_train_3_20 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_20])
+            y_pre_train_3_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_10])
+            y_pre_train_1_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_10])
+
+            delta = max(np.max(y_pre_train),np.max(y_pre_train)) - min(np.min(y_pre_train),np.min(y_pre_train))
+            delta /= 30.
+            x_left_limit = 0
+            x_right_limit = 200
+            if y_pre_train[0] > y_pre_train[-1]:
+                y_lower_limit = min(np.min(y_pre_train),np.min(y_pre_train)) - delta
+                y_upper_limit = 0.25 * np.max(y_pre_train) + 0.75 * np.min(y_pre_train)
+            else:
+                y_lower_limit = 0.75 * np.max(y_pre_train) + 0.25 * np.min(y_pre_train)
+                y_upper_limit = max(np.max(y_pre_train),np.max(y_pre_train)) + delta
+
+            plt.ylim(y_lower_limit, y_upper_limit)
+            plt.xlim(0,x_right_limit)
+
+            # draw curve
+            plt.plot(np.arange(1,len(y_pre_train_1_10)+1),y_pre_train_1_10,c=colors['1:10'],lw=2,
+                label=labels_suffix['1:10'])
+            plt.plot(np.arange(1,len(y_pre_train_3_10)+1),y_pre_train_3_10,c=colors['3:10'],lw=2,
+                label=labels_suffix['3:10'])
+            plt.plot(np.arange(1,len(y_pre_train_3_20)+1),y_pre_train_3_20,c=colors['3:20'],lw=2,
+                label=labels_suffix['3:20'])
+            plt.plot(np.arange(1,len(y_pre_train)+1),y_pre_train,c=colors['3:30'],lw=2,
+                label=labels_suffix['3:30'])
+
+
+            plt.xlabel('iterations')
+            plt.title('learning curve for ' + labels_prefix[i])
+            plt.legend(loc='upper right')
+            plt.gcf().set_size_inches(5., 5., forward=True)
+
+            if i == 0: key = '' + dataset_id + '.gan.pretrain.learning.NLL.png'
+            if i == 1: key = '' + dataset_id + '.gan.pretrain.learning.ACC.png'
+            if i == 2: key = '' + dataset_id + '.gan.pretrain.learning.MAPE.png'
+            plt.xticks(fontsize=13)
+            plt.yticks(fontsize=13)
+            plt.legend(fontsize=13)
+            if i == 0: plt.yticks(fontsize=11)
+            plt.savefig(root + '/pic/%s'%key)
+
+
+def draw_full_train_learning_curve_potential_ability(dataset_id):
     will_train_hawkes = False
     will_train_mse = False
     will_train_gan = False
     will_train_wgan = False
     will_draw = True
     # preprocess
-    paper_data = root + '/data/paper3.txt'
+    dataset_path = root + '/data/' + dataset_id + '.txt'
 
     # pre-training
-    pre_train_log = root + '/data/paper.pretrain.log5.txt'
+    log_pre_train = root + '/data/' + dataset_id + '.pretrain.log.3.30.txt'
 
     if will_train_hawkes == True :
-        with open(pre_train_log,'w') as f:
+        with open(log_pre_train,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(paper_data)
+            loaded = predictor.load(dataset_path)
             model = predictor.pre_train(*loaded,max_outer_iter=10)
             sys.stdout = old_stdout
 
     # full-training
-    full_train_mse_log = root + '/data/paper.fulltrain.mse.log.txt'
+    full_train_mse_log = root + '/data/' + dataset_id + '.fulltrain.mse.log.txt'
     pretrain_iter = 1
     alpha_iter=3
     w_iter=30
@@ -294,18 +380,18 @@ def paper_full_train_learning_curve_potential_ability(dataset_id):
             sys.stdout = f
             gan = HawkesGAN()
             try:
-                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(paper_data)
+                loaded = gan.gen.load(dataset_path)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
-                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
 
-    full_train_gan_log = root + '/data/paper.fulltrain.gan.log.txt'
+    full_train_gan_log = root + '/data/' + dataset_id + '.fulltrain.gan.log.txt'
     if will_train_gan == True:
         mse_weight = 0.
         gan_weight = 1.
@@ -315,18 +401,18 @@ def paper_full_train_learning_curve_potential_ability(dataset_id):
             sys.stdout = f
             gan = HawkesGAN()
             try:
-                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(paper_data)
+                loaded = gan.gen.load(dataset_path)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
-                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,train_gan_method=train_gan_method,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
 
-    full_train_wgan_log = root + '/data/paper.fulltrain.wgan.log.txt'
+    full_train_wgan_log = root + '/data/' + dataset_id + '.fulltrain.wgan.log.txt'
     if will_train_wgan == True:
         mse_weight = 0.
         gan_weight = 1.
@@ -336,14 +422,14 @@ def paper_full_train_learning_curve_potential_ability(dataset_id):
             sys.stdout = f
             gan = HawkesGAN()
             try:
-                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(paper_data)
+                loaded = gan.gen.load(dataset_path)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
-                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,train_gan_method=train_gan_method,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
 
@@ -356,7 +442,7 @@ def paper_full_train_learning_curve_potential_ability(dataset_id):
         keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
         labels = ['ACC on test seq.', 'MAPE on test seq.']
 
-        f_pretrain = open(pre_train_log)
+        f_pretrain = open(log_pre_train)
         f_full_mse = open(full_train_mse_log)
         f_full_gan = open(full_train_gan_log)
         f_full_wgan = open(full_train_wgan_log)
@@ -408,9 +494,9 @@ def paper_full_train_learning_curve_potential_ability(dataset_id):
             x_right_limit = 200
             if y[0] > y[-1]:
                 y_lower_limit = min(np.min(y),np.min(y_full_mse)) - delta
-                y_upper_limit = 0.2 * np.max(y) + 0.8 * np.min(y)
+                y_upper_limit = 0.25 * np.max(y) + 0.75 * np.min(y)
             else:
-                y_lower_limit = 0.8 * np.max(y) + 0.2 * np.min(y)
+                y_lower_limit = 0.75 * np.max(y) + 0.25 * np.min(y)
                 y_upper_limit = max(np.max(y),np.max(y_full_mse)) + delta
 
             plt.ylim(y_lower_limit, y_upper_limit)
@@ -429,15 +515,15 @@ def paper_full_train_learning_curve_potential_ability(dataset_id):
             plt.gcf().set_size_inches(5., 5., forward=True)
 
             #plt.show()
-            if i == 0: key = 'paper.gan.fulltrain.learning.test.ACC.png'
-            if i == 1: key = 'paper.gan.fulltrain.learning.test.MAPE.png'
+            if i == 0: key = '' + dataset_id + '.gan.fulltrain.learning.test.ACC.png'
+            if i == 1: key = '' + dataset_id + '.gan.fulltrain.learning.test.MAPE.png'
             plt.xticks(fontsize=13)
             plt.yticks(fontsize=13)
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
 
-def paper_full_train_learning_mle_mse_potential_ability(dataset_id):
+def draw_full_train_learning_mle_mse_potential_ability(dataset_id):
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
@@ -446,22 +532,22 @@ def paper_full_train_learning_mle_mse_potential_ability(dataset_id):
     will_train_mle_mse_aternative = False
     will_draw = True
     # preprocess
-    paper_data = root + '/data/paper3.txt'
+    dataset_path = root + '/data/' + dataset_id + '.txt'
 
     # pre-training
-    log_mle_only = root + '/data/paper.pretrain.log5.txt'
+    log_mle_only = root + '/data/' + dataset_id + '.pretrain.log.3.30.txt'
 
     if will_train_mle_only == True :
         with open(log_mle_only,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(paper_data)
+            loaded = predictor.load(dataset_path)
             model = predictor.pre_train(*loaded,max_outer_iter=10)
             sys.stdout = old_stdout
 
     # full-training
-    log_mle_to_mse = root + '/data/paper.fulltrain.mse.log.txt'
+    log_mle_to_mse = root + '/data/' + dataset_id + '.fulltrain.mse.log.txt'
     pretrain_iter = 1
     alpha_iter=3
     w_iter=30
@@ -475,18 +561,18 @@ def paper_full_train_learning_mle_mse_potential_ability(dataset_id):
             sys.stdout = f
             gan = HawkesGAN()
             try:
-                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(paper_data)
+                loaded = gan.gen.load(dataset_path)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
-                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
 
-    log_mse_only = root + '/data/paper.fulltrain.mse_only.log.txt'
+    log_mse_only = root + '/data/' + dataset_id + '.fulltrain.mse_only.log.txt'
     if will_train_mse_only == True:
         mse_weight = 1.
         gan_weight = 0.
@@ -496,11 +582,11 @@ def paper_full_train_learning_mle_mse_potential_ability(dataset_id):
             gan = HawkesGAN()
             gan.gen.sequence_weights = None
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False)
             sys.stdout = old_stdout
 
-    log_mse_only_noise = root + '/data/paper.fulltrain.mse_only_noise.log.txt'
+    log_mse_only_noise = root + '/data/' + dataset_id + '.fulltrain.mse_only_noise.log.txt'
     if will_train_mse_only_noise == True:
         mse_weight = 1.
         gan_weight = 0.
@@ -510,11 +596,11 @@ def paper_full_train_learning_mle_mse_potential_ability(dataset_id):
             gan = HawkesGAN()
             gan.gen.sequence_weights = None
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False,need_noise_dropout=True)
             sys.stdout = old_stdout
 
-    log_mse_noise = root + '/data/paper.fulltrain.mse_noise.log.txt'
+    log_mse_noise = root + '/data/' + dataset_id + '.fulltrain.mse_noise.log.txt'
     if will_train_mse_noise_dropout == True:
         mse_weight = 1.
         gan_weight = 0.
@@ -523,14 +609,14 @@ def paper_full_train_learning_mle_mse_potential_ability(dataset_id):
             sys.stdout = f
             gan = HawkesGAN()
             try:
-                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(paper_data)
+                loaded = gan.gen.load(dataset_path)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
-                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True)
             sys.stdout = old_stdout
 
@@ -635,14 +721,14 @@ def paper_full_train_learning_mle_mse_potential_ability(dataset_id):
             plt.gcf().set_size_inches(5., 5., forward=True)
 
             #plt.show()
-            if i == 0: key = 'paper.gan.fulltrain.learning.mle_mse.test.ACC.png'
-            if i == 1: key = 'paper.gan.fulltrain.learning.mle_mse.test.MAPE.png'
+            if i == 0: key = '' + dataset_id + '.gan.fulltrain.learning.mle_mse.test.ACC.png'
+            if i == 1: key = '' + dataset_id + '.gan.fulltrain.learning.mle_mse.test.MAPE.png'
             plt.xticks(fontsize=13)
             plt.yticks(fontsize=13)
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def paper_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
+def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
@@ -651,22 +737,22 @@ def paper_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
     will_train_mle_mse_aternative = False
     will_draw = True
     # preprocess
-    paper_data = root + '/data/paper3.txt'
+    dataset_path = root + '/data/' + dataset_id + '.txt'
 
     # pre-training
-    log_mle_only = root + '/data/paper.pretrain.log5.txt'
+    log_mle_only = root + '/data/' + dataset_id + '.pretrain.log.3.30.txt'
 
     if will_train_mle_only == True :
         with open(log_mle_only,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(paper_data)
+            loaded = predictor.load(dataset_path)
             model = predictor.pre_train(*loaded,max_outer_iter=10)
             sys.stdout = old_stdout
 
     # full-training
-    log_mle_to_mse = root + '/data/paper.fulltrain.mse.log.txt'
+    log_mle_to_mse = root + '/data/' + dataset_id + '.fulltrain.mse.log.txt'
     pretrain_iter = 1
     alpha_iter=3
     w_iter=30
@@ -680,18 +766,18 @@ def paper_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
             sys.stdout = f
             gan = HawkesGAN()
             try:
-                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(paper_data)
+                loaded = gan.gen.load(dataset_path)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
-                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
 
-    log_mse_only = root + '/data/paper.fulltrain.mse_only.log.txt'
+    log_mse_only = root + '/data/' + dataset_id + '.fulltrain.mse_only.log.txt'
     if will_train_mse_only == True:
         mse_weight = 1.
         gan_weight = 0.
@@ -701,11 +787,11 @@ def paper_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
             gan = HawkesGAN()
             gan.gen.sequence_weights = None
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False)
             sys.stdout = old_stdout
 
-    log_mse_only_noise = root + '/data/paper.fulltrain.mse_only_noise.log.txt'
+    log_mse_only_noise = root + '/data/' + dataset_id + '.fulltrain.mse_only_noise.log.txt'
     if will_train_mse_only_noise == True:
         mse_weight = 1.
         gan_weight = 0.
@@ -715,11 +801,11 @@ def paper_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
             gan = HawkesGAN()
             gan.gen.sequence_weights = None
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False,need_noise_dropout=True)
             sys.stdout = old_stdout
 
-    log_mse_noise = root + '/data/paper.fulltrain.mse_noise.log.txt'
+    log_mse_noise = root + '/data/' + dataset_id + '.fulltrain.mse_noise.log.txt'
     if will_train_mse_noise_dropout == True:
         mse_weight = 1.
         gan_weight = 0.
@@ -728,14 +814,14 @@ def paper_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
             sys.stdout = f
             gan = HawkesGAN()
             try:
-                gan.gen.sequence_weights = json.load(open(root + '/data/paper.3.pretrain.sequence_weights.json'))
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(paper_data)
+                loaded = gan.gen.load(dataset_path)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
-                with open(root + '/data/paper.3.pretrain.sequence_weights.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(paper_data)
+            loaded = gan.load(dataset_path)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True)
             sys.stdout = old_stdout
 
@@ -832,32 +918,24 @@ def paper_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id):
             plt.gcf().set_size_inches(5., 5., forward=True)
 
             #plt.show()
-            if i == 0: key = 'paper.gan.fulltrain.mape_acc.mle_mse.test.ACC.png'
-            if i == 1: key = 'paper.gan.fulltrain.mape_acc.mle_mse.test.MAPE.png'
+            if i == 0: key = '' + dataset_id + '.gan.fulltrain.mape_acc.mle_mse.test.ACC.png'
+            if i == 1: key = '' + dataset_id + '.gan.fulltrain.mape_acc.mle_mse.test.MAPE.png'
             plt.xticks(fontsize=13)
             plt.yticks(fontsize=13)
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
             
-def paper_full_train_with_early_stopping(dataset_id):
+def draw_full_train_with_early_stopping(dataset_id):
     pass
 
 
 if __name__ == '__main__' :
-    will_screen = False
-    # preprocess
-    paper_data = root + '/data/paper3.txt'
-    if will_screen == True :
-        paper_data_raw = root + '/data/paper2.txt'
-        processor = PaperScreenor()
-        result = processor.screen(paper_data_raw)
-        with open(paper_data,'w') as fw:
-            fw.writelines(result)
-    paper_fix_train_total_xiao('paper3')
-    paper_fix_train_non_self_m_hawkes('paper3')
-    paper_hawkes_generator_pretrain_convergence('paper3')
-    paper_full_train_learning_curve_potential_ability('paper3')
-    paper_full_train_learning_mle_mse_potential_ability('paper3')
-    paper_full_train_mape_acc_contrast_mle_mse_potential_ability('paper3')
+    for dataset_id in ['paper3']:
+        draw_fix_train_total_xiao(dataset_id)
+        draw_fix_train_non_self_m_hawkes(dataset_id)
+        draw_hawkes_generator_pretrain_convergence(dataset_id)
+        draw_full_train_learning_curve_potential_ability(dataset_id)
+        draw_full_train_learning_mle_mse_potential_ability(dataset_id)
+        draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id)
     plt.show()

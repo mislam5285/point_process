@@ -47,3 +47,10 @@ class PaperScreenor(object) :
         })
         return result
     
+    def paper2_to_paper3(self):
+        # preprocess
+        paper_data = '../data/paper3.txt'
+        paper_data_raw = '../data/paper2.txt'
+        result = self.screen(paper_data_raw)
+        with open(paper_data,'w') as fw:
+            fw.writelines(result)

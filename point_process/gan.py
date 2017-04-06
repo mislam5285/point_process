@@ -20,7 +20,7 @@ class HawkesGAN(object):
 		from keras.layers import Input
 		from keras.models import Model
 		from keras.optimizers import SGD
-		from customed_layer import Noise
+		from pp_layer import Noise
 
 		nb_sequence = len(full_sequences)
 		observed_length = len(observed_sequences[0])
@@ -62,7 +62,7 @@ class HawkesGAN(object):
 				loss_weights={'dis_output':gan_weight,'hawkes_output':mse_weight},
 				metrics=['categorical_accuracy'])
 		elif train_gan_method == 'wgan':
-			from customed_loss import wasserstein_d_loss, wasserstein_g_loss
+			from pp_loss import wasserstein_d_loss, wasserstein_g_loss
 			self.dis.create_trainable_wasserstein(observed_length,nb_type,nb_feature)
 			self.dis.model.compile(optimizer='rmsprop', loss=wasserstein_d_loss)
 
@@ -314,11 +314,11 @@ if __name__ == '__main__':
 		sys.stdout = f
 		gan = HawkesGAN()
 		try:
-			gan.gen.sequence_weights = json.load(open('../data/paper.3.pretrain.sequence_weights.json'))
+			gan.gen.sequence_weights = json.load(open('../data/paper3.pretrain.sequence_weights.json'))
 		except:
 			loaded = gan.gen.load('../data/paper3.txt')
 			gan.gen.pre_train(*loaded,max_outer_iter=1)
-			with open('../data/paper.3.pretrain.sequence_weights.json','w') as fw:
+			with open('../data/paper3.pretrain.sequence_weights.json','w') as fw:
 				json.dump(gan.gen.sequence_weights,fw)
 		# exit()
 		loaded = gan.load('../data/paper3.txt')
