@@ -350,7 +350,7 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
     will_train_mle_to_wgan = False
     will_train_gan_only = False
     will_train_gan_only_noise = False
-    will_train_gan_noise_dropout = False
+    will_train_gan_noise_dropout = True
     will_train_wgan_only = False
     will_train_wgan_only_noise = False
     will_train_wgan_noise_dropout = False
@@ -429,6 +429,7 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
     if will_train_gan_noise_dropout == True:
         mse_weight = 0.
         gan_weight = 1.
+        stddev = 1.
         with open(log_gan_noise,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
@@ -442,7 +443,7 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
             loaded = gan.load(dataset_path)
-            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,stddev=stddev)
             sys.stdout = old_stdout
 
 
@@ -965,10 +966,10 @@ def draw_full_train_with_early_stopping(dataset_id, full_process=False):
 
 if __name__ == '__main__' :
     for dataset_id in ['paper3']:
-        draw_fix_train_total_xiao(dataset_id)
-        draw_fix_train_non_self_m_hawkes(dataset_id)
-        draw_hawkes_generator_pretrain_convergence(dataset_id)
-        # draw_full_train_learning_gan_potential_ability(dataset_id)
-        draw_full_train_learning_mle_mse_potential_ability(dataset_id)
-        draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id)
+        # draw_fix_train_total_xiao(dataset_id)
+        # draw_fix_train_non_self_m_hawkes(dataset_id)
+        # draw_hawkes_generator_pretrain_convergence(dataset_id)
+        draw_full_train_learning_gan_potential_ability(dataset_id)
+        # draw_full_train_learning_mle_mse_potential_ability(dataset_id)
+        # draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id)
     plt.show()
