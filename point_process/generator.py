@@ -112,9 +112,6 @@ class HawkesGenerator(object):
 				Z = self.shrinkage(beta+U, lam/float(rho)) 
 				U = U + beta - Z 
 
-				# likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
-				# self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
-				# mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold)
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
 				self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
 				mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,cut=cut)
@@ -180,9 +177,6 @@ class HawkesGenerator(object):
 					W1[sam] = sw1
 					W2[sam] = sw2
 
-				# likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
-				# self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
-				# mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold)
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
 				self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
 				mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,cut=cut)
@@ -410,41 +404,83 @@ class HawkesGenerator(object):
 		return model
 
 	def load(self,f,nb_type=1):
-		data = []
-		pids = []
-		for i,row in enumerate(csv.reader(file(f,'r'))):
-			if i % 4 == 2:
-				pids.append(str(row[0]))
-				row = [float(row[1])]
-			elif i % 4 == 0 or i % 4 == 1:
-				row = [float(x) for x in row[1:]]
-			elif i % 4 == 3:
-				_row = [float(x) for x in row[1:]]
-				_max = max(_row)
-				_min = min(_row)
-				row = [(x - _min)/float(_max - _min) for x in _row]
-			data.append(row)
-		
-		I = int(len(data)/4)
-		train_seq = []
-		test_seq = []
-		sequences = []
-		features = []
-		publish_years = []
-		for i in range(I):
-			publish_year = data[i * 4 + 2][0]
-			self_seq = data[i * 4]
-			nonself_seq = data[i * 4 + 1]
-			feature = data[i * 4 + 3]
-			time_seq = self_seq + nonself_seq
-			time_seq.sort()
+		"""
+			event types, nb_type lines
+			start time, one line
+			profile feature, one line
+		"""
+		if nb_type > 1:
+			data = []
+			pids = []
+			span = nb_type + 2
+			for i,row in enumerate(csv.reader(file(f,'r'))):
+				if i % span == nb_type:
+					pids.append(str(row[0]))
+					row = [float(row[1])]
+				elif i % span < nb_type:
+					row = [float(x) for x in row[1:]]
+				elif i % span == nb_type + 1:
+					_row = [float(x) for x in row[1:]]
+					_max = max(_row)
+					_min = min(_row)
+					row = [(x - _min)/float(_max - _min) for x in _row]
+				data.append(row)
+			
+			I = int(len(data)/span)
+			train_seq = []
+			test_seq = []
+			sequences = []
+			features = []
+			publish_years = []
+			for i in range(I):
+				publish_year = data[i * span + nb_type][0]
+				feature = data[i * span + nb_type + 1]
+				# time_seq = self_seq + nonself_seq
+				# time_seq.sort()
+				sequence = data[(i*span):(i*span + nb_type)]
 
-			sequences.append(time_seq)
-			features.append(feature)
-			publish_years.append(publish_year)
+				sequences.append(sequence)
+				features.append(feature)
+				publish_years.append(publish_year)
 
-		threshold = 0.01
-		return sequences,features,publish_years,pids,threshold
+			threshold = 0.01
+			return sequences,features,publish_years,pids,threshold
+		else:
+			data = []
+			pids = []
+			for i,row in enumerate(csv.reader(file(f,'r'))):
+				if i % 4 == 2:
+					pids.append(str(row[0]))
+					row = [float(row[1])]
+				elif i % 4 == 0 or i % 4 == 1:
+					row = [float(x) for x in row[1:]]
+				elif i % 4 == 3:
+					_row = [float(x) for x in row[1:]]
+					_max = max(_row)
+					_min = min(_row)
+					row = [(x - _min)/float(_max - _min) for x in _row]
+				data.append(row)
+			
+			I = int(len(data)/4)
+			train_seq = []
+			test_seq = []
+			sequences = []
+			features = []
+			publish_years = []
+			for i in range(I):
+				publish_year = data[i * 4 + 2][0]
+				self_seq = data[i * 4]
+				nonself_seq = data[i * 4 + 1]
+				feature = data[i * 4 + 3]
+				time_seq = self_seq + nonself_seq
+				time_seq.sort()
+
+				sequences.append(time_seq)
+				features.append(feature)
+				publish_years.append(publish_year)
+
+			threshold = 0.01
+			return sequences,features,publish_years,pids,threshold
 
 
 class RNNGenerator(object):
@@ -609,16 +645,10 @@ if __name__ == '__main__':
 			predictor.train(*loaded)
 			exit()
 		predictor = HawkesGenerator()
-		loaded = predictor.load('../data/paper3.txt')
+		# loaded = predictor.load('../data/paper3.txt')
+		loaded = predictor.load('../data/patent3.txt',nb_type=2)
+		print loaded[0][0]
 		model = predictor.pre_train(*loaded)
-		# result = predictor.predict(predictor.train(*loaded,max_iter=2),*loaded)
-		# print result
-		# with open('../data/model/generator.pkl','wb') as f:
-		# 	pickle.dump(predictor.train(*loaded),f)
-		# with open('../data/model/generator.pkl','rb') as f:
-		# 	model = pickle.load(f)
-		# 	predictor.params = model
-		# result = predictor.predict(model,*loaded)
-		# print result
+		
 
 		pass		

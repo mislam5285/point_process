@@ -42,7 +42,7 @@ def screen():
         with open(patent_data,'w') as fw:
             fw.writelines(result)
 
-def draw_fix_train_total_xiao(dataset_id, train_all=False):
+def draw_fix_train_total_xiao(dataset_id, nb_type=1):
     will_train_mtpp = False
     will_train_single = False
     will_draw = True
@@ -53,11 +53,11 @@ def draw_fix_train_total_xiao(dataset_id, train_all=False):
     mape_acc_data = root + '/data/' + dataset_id + '.hawkes.mape_acc.txt'
     if will_train_mtpp == True :
         predictor = MTPP()
-        loaded = predictor.load(dataset_path,cut=10)
+        loaded = predictor.load(dataset_path,cut=10,nb_type=nb_type)
         proposed_10_result = predictor.predict(predictor.train(*loaded,max_iter=0,max_outer_iter=0),*loaded)
-        loaded = predictor.load(dataset_path,cut=15)
+        loaded = predictor.load(dataset_path,cut=15,nb_type=nb_type)
         proposed_15_result = predictor.predict(predictor.train(*loaded,max_iter=0,max_outer_iter=0),*loaded)
-        loaded = predictor.load(dataset_path,cut=20)
+        loaded = predictor.load(dataset_path,cut=20,nb_type=nb_type)
         proposed_20_result = predictor.predict(predictor.train(*loaded,max_iter=0,max_outer_iter=0),*loaded)
         with open(mape_acc_data) as fr :
             result = json.load(fr)
@@ -72,7 +72,7 @@ def draw_fix_train_total_xiao(dataset_id, train_all=False):
 
     if will_train_single == True :
         predictor = Single()
-        loaded = predictor.load(dataset_path)
+        loaded = predictor.load(dataset_path,nb_type=nb_type)
         single_10_result = predictor.predict(predictor.train(*loaded,cut=10,max_outer_iter=0),*loaded)
         single_15_result = predictor.predict(predictor.train(*loaded,cut=15,max_outer_iter=0),*loaded)
         single_20_result = predictor.predict(predictor.train(*loaded,cut=20,max_outer_iter=0),*loaded)
@@ -133,7 +133,7 @@ def draw_fix_train_total_xiao(dataset_id, train_all=False):
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
         
-def draw_fix_train_non_self_m_hawkes(dataset_id, train_all=False):
+def draw_fix_train_non_self_m_hawkes(dataset_id, nb_type=1):
     will_train_mtpp = False
     will_train_hawkes = False
     will_draw = True
@@ -144,7 +144,7 @@ def draw_fix_train_non_self_m_hawkes(dataset_id, train_all=False):
     mape_acc_data = root + '/data/' + dataset_id + '.hawkes.mape_acc.txt'
     if will_train_mtpp == True :
         predictor = MTPP()
-        loaded = predictor.load(dataset_path,cut=10)
+        loaded = predictor.load(dataset_path,cut=10,nb_type=nb_type)
         proposed_10_result = predictor.predict(predictor.train(*loaded,max_iter=0,max_outer_iter=0),*loaded)
         with open(mape_acc_data) as fr :
             result = json.load(fr)
@@ -159,7 +159,7 @@ def draw_fix_train_non_self_m_hawkes(dataset_id, train_all=False):
 
     if will_train_hawkes == True :
         predictor = MHawkes()
-        loaded = predictor.load(dataset_path,cut=10)
+        loaded = predictor.load(dataset_path,cut=10,nb_type=nb_type)
         hawkes_10_result = predictor.predict(predictor.train(*loaded,max_iter=0,max_outer_iter=0),*loaded)
         with open(mape_acc_data) as fr :
             result = json.load(fr)
@@ -214,7 +214,7 @@ def draw_fix_train_non_self_m_hawkes(dataset_id, train_all=False):
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
+def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
     will_train_hawkes_3_40 = False
     will_train_hawkes_3_30 = False
     will_train_hawkes_3_20 = False
@@ -242,7 +242,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=15)
             sys.stdout = old_stdout
 
@@ -251,7 +251,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=12,alpha_iter=3,w_iter=40)
             sys.stdout = old_stdout
 
@@ -260,7 +260,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=25,alpha_iter=3,w_iter=20)
             sys.stdout = old_stdout
 
@@ -269,7 +269,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=40,alpha_iter=3,w_iter=10)
             sys.stdout = old_stdout
 
@@ -278,7 +278,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=45,alpha_iter=1,w_iter=10)
             sys.stdout = old_stdout
 
@@ -287,7 +287,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=90,alpha_iter=1,w_iter=5)
             sys.stdout = old_stdout
 
@@ -296,7 +296,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=450,alpha_iter=1,w_iter=1)
             sys.stdout = old_stdout
 
@@ -305,7 +305,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=90,alpha_iter=5,w_iter=1)
             sys.stdout = old_stdout
     # drawing
@@ -536,7 +536,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
                 plt.savefig(root + '/pic/%s'%key)
 
 
-def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
+def draw_full_train_learning_gan_potential_ability(dataset_id, nb_type=1):
     will_train_mle_only = False
     will_train_mle_to_gan = False
     will_train_gan_only = False
@@ -567,7 +567,7 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=10)
             sys.stdout = old_stdout
 
@@ -588,12 +588,12 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
 
@@ -607,7 +607,7 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
             gan = HawkesGAN()
             gan.gen.sequence_weights = None
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False)
             sys.stdout = old_stdout
 
@@ -622,7 +622,7 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
             gan = HawkesGAN()
             gan.gen.sequence_weights = None
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False,need_noise_dropout=True,stddev=stddev)
             sys.stdout = old_stdout
 
@@ -638,12 +638,12 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,stddev=stddev)
             sys.stdout = old_stdout
 
@@ -659,12 +659,12 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,stddev=stddev)
             sys.stdout = old_stdout
 
@@ -682,12 +682,12 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
                 stddev=stddev,sample_stddev=sample_stddev,wgan_clip=wgan_clip)
             sys.stdout = old_stdout
@@ -704,12 +704,12 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True)
             sys.stdout = old_stdout
 
@@ -726,12 +726,12 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
                 stddev=stddev,sample_stddev=sample_stddev)
             sys.stdout = old_stdout
@@ -750,12 +750,12 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
                 stddev=stddev,sample_stddev=sample_stddev,wgan_clip=wgan_clip)
             sys.stdout = old_stdout
@@ -952,7 +952,7 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
 
 
 
-def draw_full_train_learning_mle_mse_potential_ability(dataset_id, train_all=False):
+def draw_full_train_learning_mle_mse_potential_ability(dataset_id, nb_type=1):
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
@@ -972,7 +972,7 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, train_all=Fal
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=10)
             sys.stdout = old_stdout
 
@@ -993,12 +993,12 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, train_all=Fal
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
 
@@ -1012,7 +1012,7 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, train_all=Fal
             gan = HawkesGAN()
             gan.gen.sequence_weights = None
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False)
             sys.stdout = old_stdout
 
@@ -1026,7 +1026,7 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, train_all=Fal
             gan = HawkesGAN()
             gan.gen.sequence_weights = None
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False,need_noise_dropout=True)
             sys.stdout = old_stdout
 
@@ -1041,12 +1041,12 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, train_all=Fal
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True)
             sys.stdout = old_stdout
 
@@ -1061,12 +1061,12 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, train_all=Fal
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=False,hawkes_output_loss='mae')
             sys.stdout = old_stdout
 
@@ -1191,7 +1191,7 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, train_all=Fal
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, train_all=False):
+def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, nb_type=1):
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
@@ -1210,7 +1210,7 @@ def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, trai
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path)
+            loaded = predictor.load(dataset_path,nb_type=nb_type)
             model = predictor.pre_train(*loaded,max_outer_iter=10)
             sys.stdout = old_stdout
 
@@ -1231,12 +1231,12 @@ def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, trai
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
 
@@ -1250,7 +1250,7 @@ def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, trai
             gan = HawkesGAN()
             gan.gen.sequence_weights = None
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False)
             sys.stdout = old_stdout
 
@@ -1264,7 +1264,7 @@ def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, trai
             gan = HawkesGAN()
             gan.gen.sequence_weights = None
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_pretrain=False,need_noise_dropout=True)
             sys.stdout = old_stdout
 
@@ -1279,12 +1279,12 @@ def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, trai
             try:
                 gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
             except:
-                loaded = gan.gen.load(dataset_path)
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
                 with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
-            loaded = gan.load(dataset_path)
+            loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True)
             sys.stdout = old_stdout
 
@@ -1389,18 +1389,23 @@ def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, trai
             plt.savefig(root + '/pic/%s'%key)
 
             
-def draw_full_train_with_early_stopping(dataset_id, train_all=False):
+def draw_full_train_with_early_stopping(dataset_id, nb_type=1):
     pass
 
 
 if __name__ == '__main__' :
     screen()
-    for dataset_id in ['paper3']:
-        # draw_fix_train_total_xiao(dataset_id)
-        # draw_fix_train_non_self_m_hawkes(dataset_id)
-        draw_hawkes_generator_pretrain_convergence(dataset_id)
-        # draw_full_train_learning_gan_potential_ability(dataset_id)
-        # draw_full_train_learning_mle_mse_potential_ability(dataset_id)
-        # draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id)
+    event_types = {
+        'paper3':1,
+        'patent3':2,
+        'sensor3':24,
+    }
+    for dataset_id in ['patent3']:
+        # draw_fix_train_total_xiao(dataset_id,np_type=event_types[dataset_id])
+        # draw_fix_train_non_self_m_hawkes(dataset_id,np_type=event_types[dataset_id])
+        draw_hawkes_generator_pretrain_convergence(dataset_id,np_type=event_types[dataset_id])
+        # draw_full_train_learning_gan_potential_ability(dataset_id,np_type=event_types[dataset_id])
+        # draw_full_train_learning_mle_mse_potential_ability(dataset_id,np_type=event_types[dataset_id])
+        # draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id,np_type=event_types[dataset_id])
         pass
     # plt.show()
