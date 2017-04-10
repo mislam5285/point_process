@@ -12,7 +12,7 @@ from keras.layers import Input
 from keras.models import Model
 
 class HawkesLayer(Layer):
-	def __init__(self, sequences_value, pred_length, delta = 1., sequence_weights=None, proxy_layer=None, **kwargs):
+	def __init__(self, sequences_value, pred_length, delta = 1., sequence_weights=None, proxy_layer=None, sample_stddev=None, **kwargs):
 		"""
 		can only be the first layer of an architecture
 			
@@ -30,6 +30,7 @@ class HawkesLayer(Layer):
 		self.pred_length = pred_length
 		self.delta = delta
 		self.proxy_layer = proxy_layer
+		self.sample_stddev = sample_stddev
 
 		if self.proxy_layer:
 			super(HawkesLayer, self).__init__(**kwargs)
@@ -90,15 +91,19 @@ class HawkesLayer(Layer):
 		# seq_id = K.gather(seq_id, 0)
 		# seq_id = seq_id[0,0]
 		seq_id = K.gather(K.gather(seq_id,0),0)
+		self.train_seq = K.gather(self.sequences, seq_id)[:,:,0] # currently only support the 1st feature
+		if self.sample_stddev:
+			self.train_seq = self.train_seq + K.random_normal(shape=K.shape(self.train_seq),
+										mean=0.,
+										stddev=self.sample_stddev)
 
 		if self.proxy_layer:
-			self.train_seq = K.gather(self.sequences, seq_id)[:,:,0] # currently only support the 1st feature
 			spont  = K.gather(self.proxy_layer.spontaneous, seq_id)
 			theta = K.gather(self.proxy_layer.Theta, seq_id)
 			w = K.gather(self.proxy_layer.W, seq_id)
 			alpha = K.gather(self.proxy_layer.Alpha, seq_id)
 		else:
-			self.train_seq = K.gather(self.sequences, seq_id)[:,:,0] # currently only support the 1st feature
+			#self.train_seq = K.gather(self.sequences, seq_id)[:,:,0] # currently only support the 1st feature
 			spont  = K.gather(self.spontaneous, seq_id)
 			theta = K.gather(self.Theta, seq_id)
 			w = K.gather(self.W, seq_id)

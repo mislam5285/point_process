@@ -986,7 +986,7 @@ class Single(object):
 						break
 				if ir != len(real) - 1 and int(real[ir][0]) != int(p[0]):
 					ir -= 1
-				diff.append((p[0],(p[1] - real[ir][1])/float(real[ir][1]) ))
+				diff.append((p[0],(p[1] - real[ir][1])/float(real[ir][1]) + 0.1))
 			diffs.append(diff)
 			if ll > len(diff) : ll = len(diff)
 		mape = [0.0] * ll

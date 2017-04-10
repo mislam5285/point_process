@@ -11,15 +11,18 @@ class HawkesGenerator(object):
 		self.params = {}
 		self.sequence_weights = None
 
-	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=None,predict_year=2000,
-			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30):
-
+	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=15,predict_year=None,
+			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30,val_length=5):
+		""" 
+			cut == observed length. One of cut and predict_year should be passed.
+		"""
 		if cut is None:
 			T = numpy.array([predict_year - publish_year + 1 for publish_year in publish_years],dtype=float)
 			train_times = T
 		else :
 			T = numpy.array([cut+0.001] * len(publish_years))
 			train_times = T
+			predict_year = -1
 
 		[train_count,num_feature] = [len(features),len(features[0])] 
 		rho = 1
@@ -38,8 +41,10 @@ class HawkesGenerator(object):
 		init_clock = time.clock()
 
 		likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
-		self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
-		mape_acc = self.predict(self.params,sequences,features,publish_years,pids,threshold)
+		self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
+		mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,cut=cut)
+		mape_acc_val = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,
+			duration=val_length,pred_year=predict_year-val_length,cut=cut-val_length)
 
 		print {
 			'source':'initial',
@@ -54,6 +59,8 @@ class HawkesGenerator(object):
 			'mean_beta':numpy.mean(beta),
 			'mape':mape_acc['mape'],
 			'acc':mape_acc['acc'],
+			'mape_val':mape_acc_val['mape'],
+			'acc_val':mape_acc_val['acc'],
 		}
 		sys.stdout.flush()
 
@@ -105,9 +112,14 @@ class HawkesGenerator(object):
 				Z = self.shrinkage(beta+U, lam/float(rho)) 
 				U = U + beta - Z 
 
+				# likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
+				# self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
+				# mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold)
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
-				self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
-				mape_acc = self.predict(self.params,sequences,features,publish_years,pids,threshold)
+				self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
+				mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,cut=cut)
+				mape_acc_val = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,
+					duration=val_length,pred_year=predict_year-val_length,cut=cut-val_length)
 
 				print {
 					'source':'update alpha beta',
@@ -122,6 +134,8 @@ class HawkesGenerator(object):
 					'mean_beta':numpy.mean(beta),
 					'mape':mape_acc['mape'],
 					'acc':mape_acc['acc'],
+					'mape_val':mape_acc_val['mape'],
+					'acc_val':mape_acc_val['acc'],
 				}
 				sys.stdout.flush()
 
@@ -166,9 +180,14 @@ class HawkesGenerator(object):
 					W1[sam] = sw1
 					W2[sam] = sw2
 
+				# likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
+				# self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
+				# mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold)
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
-				self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
-				mape_acc = self.predict(self.params,sequences,features,publish_years,pids,threshold)
+				self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
+				mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,cut=cut)
+				mape_acc_val = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,
+					duration=val_length,pred_year=predict_year-val_length,cut=cut-val_length)
 
 				print {
 					'source':'update w1 w2',
@@ -183,6 +202,8 @@ class HawkesGenerator(object):
 					'mean_beta':numpy.mean(beta),
 					'mape':mape_acc['mape'],
 					'acc':mape_acc['acc'],
+					'mape_val':mape_acc_val['mape'],
+					'acc_val':mape_acc_val['acc'],
 				}
 				sys.stdout.flush()
 
@@ -195,7 +216,7 @@ class HawkesGenerator(object):
 		self.update_sequence_weights(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
 		return self.params
 
-	def update_params(self,pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2):
+	def update_params(self,pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=None):
 
 		patent = {}
 		for item in range(len(alpha)):
@@ -210,6 +231,7 @@ class HawkesGenerator(object):
 
 		params = {}
 		params['predict_year'] = predict_year
+		params['cut_point'] = cut
 		params['train_count'] = len(patent)
 		params['beta'] = beta.tolist()[0]
 		params['patent'] = patent
@@ -278,13 +300,17 @@ class HawkesGenerator(object):
 		obj = obj - (spontaneous/w1) * (1 - numpy.exp(-w1*T))
 		return obj
 
-	def predict(self,model,sequences,features,publish_years,pids,threshold):
+	def compute_mape_acc(self,model,sequences,features,publish_years,pids,threshold,duration=10,pred_year=None,cut=None):
 		patents = self.params['patent']
 		diffs = []
 		ll = 20
 		for i, key in enumerate(patents):
+			if cut is None:
+				pred_year = pred_year or self.params['predict_year']
+			else:
+				pred_year = cut + int(float((patents[key]['year'])))
 			real = self.real_one(key)
-			pred = self.predict_one(key,10,self.params['predict_year'])
+			pred = self.predict_one(key,duration=duration,pred_year=pred_year)
 			diff = []
 			ir = 0 # index_real
 			for p in pred:
@@ -293,9 +319,9 @@ class HawkesGenerator(object):
 					if ir >= len(real):
 						ir = len(real) - 1
 						break
-				if ir != len(real) - 1 and int(real[ir][0]) != int(p[0]):
-					ir -= 1
-				diff.append((p[0],(p[1] - real[ir][1])/float(real[ir][1]) ))
+				# if ir != len(real) - 1 and int(real[ir][0]) != int(p[0]):
+				# 	ir -= 1
+				diff.append((p[0],(p[1] - real[ir][1])/float(real[ir][1] + 0.1) ))
 			diffs.append(diff)
 			if ll > len(diff) : ll = len(diff)
 		mape = [0.0] * ll
@@ -365,14 +391,14 @@ class HawkesGenerator(object):
 			pred.append(ct)
 		return pred
 
-	def create_trainable_model(self,sequences, pred_length, proxy_layer=None, need_noise_dropout=False, stddev=5.):
+	def create_trainable_model(self,sequences, pred_length, proxy_layer=None, need_noise_dropout=False, stddev=5.,sample_stddev=None):
 		from keras.layers import Input, GaussianNoise
 		from keras.models import Model
 
 		from pp_layer import HawkesLayer
 
 		x = Input(batch_shape=(1,1), dtype='int32')
-		hawkes_layer = HawkesLayer(sequences,pred_length,sequence_weights=self.sequence_weights,proxy_layer=proxy_layer)
+		hawkes_layer = HawkesLayer(sequences,pred_length,sequence_weights=self.sequence_weights,proxy_layer=proxy_layer,sample_stddev=sample_stddev)
 		y = hawkes_layer(x)
 		if need_noise_dropout == True:
 			y = GaussianNoise(stddev)(y)

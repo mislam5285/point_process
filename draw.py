@@ -198,6 +198,9 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
     will_train_hawkes_3_20 = False
     will_train_hawkes_3_10 = False
     will_train_hawkes_1_10 = False
+    will_train_hawkes_1_5 = False
+    will_train_hawkes_1_1 = False
+    will_train_hawkes_5_1 = False
     will_draw = True
     # preprocess
     dataset_path = root + '/data/' + dataset_id + '.txt'
@@ -207,6 +210,9 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
     log_pre_train_3_20 = root + '/data/' + dataset_id + '.pretrain.log.3.20.txt'
     log_pre_train_3_10 = root + '/data/' + dataset_id + '.pretrain.log.3.10.txt'
     log_pre_train_1_10 = root + '/data/' + dataset_id + '.pretrain.log.1.10.txt'
+    log_pre_train_1_5 = root + '/data/' + dataset_id + '.pretrain.log.1.5.txt'
+    log_pre_train_1_1 = root + '/data/' + dataset_id + '.pretrain.log.1.1.txt'
+    log_pre_train_5_1 = root + '/data/' + dataset_id + '.pretrain.log.5.1.txt'
 
     if will_train_hawkes_3_30 == True :
         with open(log_pre_train,'w') as f:
@@ -214,7 +220,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
             sys.stdout = f
             predictor = HawkesGenerator()
             loaded = predictor.load(dataset_path)
-            model = predictor.pre_train(*loaded,max_outer_iter=10)
+            model = predictor.pre_train(*loaded,max_outer_iter=15)
             sys.stdout = old_stdout
 
     if will_train_hawkes_3_20 == True :
@@ -223,7 +229,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
             sys.stdout = f
             predictor = HawkesGenerator()
             loaded = predictor.load(dataset_path)
-            model = predictor.pre_train(*loaded,max_outer_iter=20,alpha_iter=3,w_iter=20)
+            model = predictor.pre_train(*loaded,max_outer_iter=25,alpha_iter=3,w_iter=20)
             sys.stdout = old_stdout
 
     if will_train_hawkes_3_10 == True :
@@ -232,7 +238,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
             sys.stdout = f
             predictor = HawkesGenerator()
             loaded = predictor.load(dataset_path)
-            model = predictor.pre_train(*loaded,max_outer_iter=30,alpha_iter=3,w_iter=10)
+            model = predictor.pre_train(*loaded,max_outer_iter=40,alpha_iter=3,w_iter=10)
             sys.stdout = old_stdout
 
     if will_train_hawkes_1_10 == True :
@@ -241,7 +247,34 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
             sys.stdout = f
             predictor = HawkesGenerator()
             loaded = predictor.load(dataset_path)
-            model = predictor.pre_train(*loaded,max_outer_iter=40,alpha_iter=1,w_iter=10)
+            model = predictor.pre_train(*loaded,max_outer_iter=45,alpha_iter=1,w_iter=10)
+            sys.stdout = old_stdout
+
+    if will_train_hawkes_1_5 == True :
+        with open(log_pre_train_1_5,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            predictor = HawkesGenerator()
+            loaded = predictor.load(dataset_path)
+            model = predictor.pre_train(*loaded,max_outer_iter=90,alpha_iter=1,w_iter=5)
+            sys.stdout = old_stdout
+
+    if will_train_hawkes_1_1 == True :
+        with open(log_pre_train_1_1,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            predictor = HawkesGenerator()
+            loaded = predictor.load(dataset_path)
+            model = predictor.pre_train(*loaded,max_outer_iter=450,alpha_iter=1,w_iter=1)
+            sys.stdout = old_stdout
+
+    if will_train_hawkes_5_1 == True :
+        with open(log_pre_train_5_1,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            predictor = HawkesGenerator()
+            loaded = predictor.load(dataset_path)
+            model = predictor.pre_train(*loaded,max_outer_iter=90,alpha_iter=5,w_iter=1)
             sys.stdout = old_stdout
     # drawing
     if will_draw == True :
@@ -347,14 +380,18 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
 def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=False):
     will_train_mle_only = False
     will_train_mle_to_gan = False
-    will_train_mle_to_wgan = False
     will_train_gan_only = False
     will_train_gan_only_noise = False
     will_train_gan_noise_dropout = False
     will_train_mle_gan_aternative = False
+
+    will_train_mle_to_wgan = False
     will_train_wgan_only = False
     will_train_wgan_only_noise = False
     will_train_wgan_noise_dropout = False
+    will_train_wgan_noise_sample = False
+    will_train_mse_noise_sample = False
+    will_train_mse_with_wgan_noise_sample = False
 
 
     will_train_mse_noise_dropout = False
@@ -376,16 +413,16 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
             sys.stdout = old_stdout
 
     # full-training
-    log_mle_to_gan = root + '/data/' + dataset_id + '.fulltrain.gan.log.txt'
+    log_mle_to_wgan = root + '/data/' + dataset_id + '.fulltrain.wgan.log.txt'
     pretrain_iter = 1
     alpha_iter=3
     w_iter=30
     full_train_start = pretrain_iter * (alpha_iter + w_iter)
 
-    if will_train_mle_to_gan == True :
+    if will_train_mle_to_wgan == True :
         mse_weight = 0.
         gan_weight = 1.
-        with open(log_mle_to_gan,'w') as f:
+        with open(log_mle_to_wgan,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
             gan = HawkesGAN()
@@ -398,7 +435,7 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
             loaded = gan.load(dataset_path)
-            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
+            gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
             sys.stdout = old_stdout
 
     log_gan_only = root + '/data/' + dataset_id + '.fulltrain.gan_only.log.txt'
@@ -472,6 +509,30 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
             gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,stddev=stddev)
             sys.stdout = old_stdout
 
+    log_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.wgan_noise_sample.log.txt'
+    if will_train_wgan_noise_sample == True:
+        mse_weight = 0.
+        gan_weight = 1.
+        stddev = 10.
+        sample_stddev = 10.
+        wgan_clip = 2.
+        with open(log_wgan_noise_sample,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(dataset_path)
+                gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(dataset_path)
+            gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
+                stddev=stddev,sample_stddev=sample_stddev,wgan_clip=wgan_clip)
+            sys.stdout = old_stdout
+
 
     log_mse_noise = root + '/data/' + dataset_id + '.fulltrain.mse_noise.log.txt'
     if will_train_mse_noise_dropout == True:
@@ -493,6 +554,53 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True)
             sys.stdout = old_stdout
 
+    log_mse_noise_sample = root + '/data/' + dataset_id + '.fulltrain.mse_noise_sample.log.txt'
+    if will_train_mse_noise_sample == True:
+        mse_weight = 1.
+        gan_weight = 0.
+        stddev = 15.
+        sample_stddev = 15.
+        with open(log_mse_noise_sample,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(dataset_path)
+                gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(dataset_path)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
+                stddev=stddev,sample_stddev=sample_stddev)
+            sys.stdout = old_stdout
+
+    log_mse_with_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.mse_wgan.noise_sample.log.txt'
+    if will_train_mse_with_wgan_noise_sample == True:
+        mse_weight = 0.8
+        gan_weight = 0.2
+        stddev = 15.
+        sample_stddev = 15.
+        wgan_clip = 2.
+        with open(log_mse_with_wgan_noise_sample,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(dataset_path)
+                gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(dataset_path)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
+                stddev=stddev,sample_stddev=sample_stddev,wgan_clip=wgan_clip)
+            sys.stdout = old_stdout
+
     # drawing
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
@@ -502,6 +610,8 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
             'gan_only':'blue',
             'wgan_noise':'purple',
             'mse_noise':'orange',
+            'gan_only_noise':'yellow',
+            'gan_noise':'black',
         }
         keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
         labels_prefix = ['ACC','MAPE']
@@ -511,20 +621,33 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
             'gan_only':'GAN only',# with optimal $\\beta$',
             'wgan_noise':'ppGAN',
             'mse_noise':'MSE',
+            'gan_only_noise':'gan only noise',
+            'gan_noise':'gan_noise',
         }
 
         f_mle_only = open(log_mle_only)
-        f_mle_to_gan = open(log_mle_to_gan)
-        # f_gan_only = open(log_gan_only)
-        # f_gan_only_noise = open(log_gan_only_noise)
+        f_mle_to_wgan = open(log_mle_to_wgan)
+        f_gan_only = open(log_gan_only)
+        f_gan_only_noise = open(log_gan_only_noise)
+        f_gan_noise = open(log_gan_noise)
         f_wgan_noise = open(log_wgan_noise)
         f_mse_noise = open(log_mse_noise)
+
+        f_wgan_noise_sample = open(log_wgan_noise_sample)
+        f_mse_noise_sample = open(log_mse_noise_sample)
+        f_mse_with_wgan_noise_sample = open(log_mse_with_wgan_noise_sample)
+
         nodes_mle_only = []
-        nodes_mle_to_gan = []
-        # nodes_gan_only = []
-        # nodes_gan_only_noise = []
+        nodes_mle_to_wgan = []
+        nodes_gan_only = []
+        nodes_gan_only_noise = []
+        nodes_gan_noise = []
         nodes_wgan_noise = []
         nodes_mse_noise = []
+
+        nodes_wgan_noise_sample = []
+        nodes_mse_noise_sample = []
+        nodes_mse_with_wgan_noise_sample = []
 
         for line in f_mle_only:
             try:
@@ -533,26 +656,33 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
             except:
                 print 'error'
 
-        for line in f_mle_to_gan:
+        for line in f_mle_to_wgan:
             try:
                 node = eval(line)
-                nodes_mle_to_gan.append(node)
+                nodes_mle_to_wgan.append(node)
             except:
                 print 'error'
 
-        # for line in f_gan_only:
-        #     try:
-        #         node = eval(line)
-        #         nodes_gan_only.append(node)
-        #     except:
-        #         print 'error'
+        for line in f_gan_only:
+            try:
+                node = eval(line)
+                nodes_gan_only.append(node)
+            except:
+                print 'error'
 
-        # for line in f_gan_only_noise:
-        #     try:
-        #         node = eval(line)
-        #         nodes_gan_only_noise.append(node)
-        #     except:
-        #         print 'error'
+        for line in f_gan_only_noise:
+            try:
+                node = eval(line)
+                nodes_gan_only_noise.append(node)
+            except:
+                print 'error'
+
+        for line in f_gan_noise:
+            try:
+                node = eval(line)
+                nodes_gan_noise.append(node)
+            except:
+                print 'error'
 
         for line in f_wgan_noise:
             try:
@@ -568,41 +698,82 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
             except:
                 print 'error'
 
+
+        for line in f_wgan_noise_sample:
+            try:
+                node = eval(line)
+                nodes_wgan_noise_sample.append(node)
+            except:
+                print 'error'
+
+        for line in f_mse_noise_sample:
+            try:
+                node = eval(line)
+                nodes_mse_noise_sample.append(node)
+            except:
+                print 'error'
+
+        for line in f_mse_with_wgan_noise_sample:
+            try:
+                node = eval(line)
+                nodes_mse_with_wgan_noise_sample.append(node)
+            except:
+                print 'error'
+
         for i in range(len(keys)):
             plt.figure()
 
             # arrange layout
             y_mle_only = np.array([float(keys[i](node)) for node in nodes_mle_only])
-            y_mle_to_gan = np.array([float(keys[i](node)) for node in nodes_mle_to_gan])
-            # y_gan_only = np.array([float(keys[i](node)) for node in nodes_gan_only])
-            # y_gan_only_noise = np.array([float(keys[i](node)) for node in nodes_gan_only_noise])
+            y_mle_to_wgan = np.array([float(keys[i](node)) for node in nodes_mle_to_wgan])
+            y_gan_only = np.array([float(keys[i](node)) for node in nodes_gan_only])
+            y_gan_only_noise = np.array([float(keys[i](node)) for node in nodes_gan_only_noise])
+            y_gan_noise = np.array([float(keys[i](node)) for node in nodes_gan_noise])
             y_wgan_noise = np.array([float(keys[i](node)) for node in nodes_wgan_noise])
             y_mse_noise = np.array([float(keys[i](node)) for node in nodes_mse_noise])
+
+            y_wgan_noise_sample = np.array([float(keys[i](node)) for node in nodes_wgan_noise_sample])
+            y_mse_noise_sample = np.array([float(keys[i](node)) for node in nodes_mse_noise_sample])
+            y_mse_with_wgan_noise_sample = np.array([float(keys[i](node)) for node in nodes_mse_with_wgan_noise_sample])
+
 
             delta = max(np.max(y_mle_only),np.max(y_wgan_noise)) - min(np.min(y_mle_only),np.min(y_wgan_noise))
             delta /= 30.
             x_left_limit = 0
-            x_right_limit = 300
+            x_right_limit = 500
             if y_mle_only[0] > y_mle_only[-1]:
-                y_lower_limit = min(np.min(y_mle_only),np.min(y_wgan_noise)) - delta
+                y_lower_limit = min(np.min(y_mle_only),np.min(y_wgan_noise),np.min(y_mse_noise)) - delta
                 y_upper_limit = 0.25 * np.max(y_mle_only) + 0.75 * np.min(y_mle_only)
             else:
                 y_lower_limit = 0.75 * np.max(y_mle_only) + 0.25 * np.min(y_mle_only)
-                y_upper_limit = max(np.max(y_mle_only),np.max(y_wgan_noise)) + delta
+                y_upper_limit = max(np.max(y_mle_only),np.max(y_wgan_noise),np.max(y_mse_noise)) + delta
 
+            # y_lower_limit = y_lower_limit if y_lower_limit < 0.5 else 0.6
+            # y_upper_limit = y_upper_limit if y_upper_limit > 0.5 else 0.4
             plt.ylim(y_lower_limit, y_upper_limit)
             plt.xlim(0,x_right_limit)
 
             # draw curve
             plt.plot(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=1.2,
                 label=labels_suffix['mle_only'])
-            # plt.plot(np.arange(0,len(y_gan_only)+0),y_gan_only,c=colors['gan_only'],lw=1.2,
-                # label=labels_suffix['gan_only'])
+            plt.plot(np.arange(0,len(y_gan_only)+0),y_gan_only,c=colors['gan_only'],lw=1.2,
+                label=labels_suffix['gan_only'])
+            plt.plot(np.arange(0,len(y_gan_only_noise)+0),y_gan_only_noise,c=colors['gan_only_noise'],lw=1.2,
+                label=labels_suffix['gan_only_noise'])
+            plt.plot(np.arange(full_train_start,len(y_gan_noise)+full_train_start),y_gan_noise,c=colors['gan_noise'],lw=1.2,
+                label=labels_suffix['gan_noise'])
             plt.plot(np.arange(full_train_start,len(y_wgan_noise)+full_train_start),y_wgan_noise,c=colors['wgan_noise'],lw=1.2,
                 label=labels_suffix['wgan_noise'])
-            plt.plot(np.arange(full_train_start,len(y_mle_to_gan)+full_train_start),y_mle_to_gan,c=colors['mle_gan'],lw=1.2,
+            plt.plot(np.arange(full_train_start,len(y_mle_to_wgan)+full_train_start),y_mle_to_wgan,c=colors['mle_gan'],lw=1.2,
                 label=labels_suffix['mle_gan'])
             plt.plot(np.arange(full_train_start,len(y_mse_noise)+full_train_start),y_mse_noise,c=colors['mse_noise'],lw=1.2,
+                label=labels_suffix['mse_noise'])
+
+            plt.plot(np.arange(full_train_start,len(y_wgan_noise_sample)+full_train_start),y_wgan_noise_sample,c=colors['wgan_noise'],lw=1.2,
+                label=labels_suffix['wgan_noise'])
+            plt.plot(np.arange(full_train_start,len(y_mse_noise_sample)+full_train_start),y_mse_noise_sample,c=colors['mle_gan'],lw=1.2,
+                label=labels_suffix['mle_gan'])
+            plt.plot(np.arange(full_train_start,len(y_mse_with_wgan_noise_sample)+full_train_start),y_mse_with_wgan_noise_sample,c=colors['mse_noise'],lw=1.2,
                 label=labels_suffix['mse_noise'])
 
 
@@ -628,7 +799,8 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, full_process=
     will_train_mse_only = False
     will_train_mse_only_noise = False
     will_train_mse_noise_dropout = False
-    will_train_mle_mse_aternative = False
+
+    will_train_mle_mae = False
     will_draw = True
     # preprocess
     dataset_path = root + '/data/' + dataset_id + '.txt'
@@ -719,27 +891,50 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, full_process=
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True)
             sys.stdout = old_stdout
 
+    log_mle_to_mae = root + '/data/' + dataset_id + '.fulltrain.mae.log.txt'
+    if will_train_mle_mae == True:
+        mse_weight = 1.
+        gan_weight = 0.
+        with open(log_mle_to_mae,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(dataset_path)
+                gan.gen.pre_train(*loaded,max_outer_iter=pretrain_iter)
+                with open(root + '/data/' + dataset_id + '.pretrain.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(dataset_path)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=False,hawkes_output_loss='mae')
+            sys.stdout = old_stdout
+
 
     # drawing
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
-        colors = {'mle_only':'red','mle_mse':'green','mse_only':'blue','mse_noise':'purple'}
+        colors = {'mle_only':'red','mle_mse':'green','mle_mae':'orange','mse_only':'blue','mse_noise':'purple'}
         keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
         labels_prefix = ['ACC','MAPE']
         labels_suffix = {
             'mle_only':'MLE only',
             'mle_mse':'MSE without noise',
+            'mle_mae':'MAE without noise',
             'mse_only':'MSE only',# with optimal $\\beta$',
             'mse_noise':'MSE after MLE',
         }
 
         f_mle_only = open(log_mle_only)
         f_mle_to_mse = open(log_mle_to_mse)
+        f_mle_to_mae = open(log_mle_to_mae)
         f_mse_only = open(log_mse_only)
         f_mse_only_noise = open(log_mse_only_noise)
         f_mse_noise = open(log_mse_noise)
         nodes_mle_only = []
         nodes_mle_to_mse = []
+        nodes_mle_to_mae = []
         nodes_mse_only = []
         nodes_mse_only_noise = []
         nodes_mse_noise = []
@@ -755,6 +950,13 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, full_process=
             try:
                 node = eval(line)
                 nodes_mle_to_mse.append(node)
+            except:
+                print 'error'
+
+        for line in f_mle_to_mae:
+            try:
+                node = eval(line)
+                nodes_mle_to_mae.append(node)
             except:
                 print 'error'
 
@@ -785,6 +987,7 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, full_process=
             # arrange layout
             y_mle_only = np.array([float(keys[i](node)) for node in nodes_mle_only])
             y_mle_to_mse = np.array([float(keys[i](node)) for node in nodes_mle_to_mse])
+            y_mle_to_mae = np.array([float(keys[i](node)) for node in nodes_mle_to_mae])
             y_mse_only = np.array([float(keys[i](node)) for node in nodes_mse_only])
             y_mse_only_noise = np.array([float(keys[i](node)) for node in nodes_mse_only_noise])
             y_mse_noise = np.array([float(keys[i](node)) for node in nodes_mse_noise])
@@ -812,6 +1015,8 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, full_process=
                 label=labels_suffix['mse_noise'])
             plt.plot(np.arange(full_train_start,len(y_mle_to_mse)+full_train_start),y_mle_to_mse,c=colors['mle_mse'],lw=1.2,
                 label=labels_suffix['mle_mse'])
+            plt.plot(np.arange(full_train_start,len(y_mle_to_mae)+full_train_start),y_mle_to_mae,c=colors['mle_mae'],lw=1.2,
+                label=labels_suffix['mle_mae'])
 
 
             plt.xlabel('iterations')
@@ -1033,8 +1238,8 @@ if __name__ == '__main__' :
     for dataset_id in ['paper3']:
         # draw_fix_train_total_xiao(dataset_id)
         # draw_fix_train_non_self_m_hawkes(dataset_id)
-        # draw_hawkes_generator_pretrain_convergence(dataset_id)
-        draw_full_train_learning_gan_potential_ability(dataset_id)
+        draw_hawkes_generator_pretrain_convergence(dataset_id)
+        # draw_full_train_learning_gan_potential_ability(dataset_id)
         # draw_full_train_learning_mle_mse_potential_ability(dataset_id)
         # draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id)
     plt.show()

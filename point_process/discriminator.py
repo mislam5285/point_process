@@ -184,12 +184,12 @@ class CNNDiscriminator(object):
 		self.model = model
 		return model
 
-	def create_trainable_wasserstein(self,nb_event,nb_type,nb_feature):
+	def create_trainable_wasserstein(self,nb_event,nb_type,nb_feature,wgan_clip=1.):
 		from keras.layers import Input, Dense, Flatten, Convolution2D, Activation, Dropout, merge
 		from keras.models import Model
 		from keras.constraints import MinMaxNorm
-		c = 1.
-		constraint = MinMaxNorm(min_value=-c,max_value=c)
+
+		constraint = MinMaxNorm(min_value= - wgan_clip,max_value=wgan_clip)
 
 		x = Input(batch_shape=(1, nb_event, nb_type, nb_feature), dtype='float')
 		y = Convolution2D(128, kernel_size=[nb_event-10+1, 1], strides=(2,1), activation='relu',

@@ -17,7 +17,7 @@ class HawkesGAN(object):
 
 	def full_train(self,full_sequences,observed_sequences,train_sequences,features,publish_years,pids,superparams,
 			max_fulltrain_iter=400,train_gan_method='gan',mse_weight=0.,gan_weight=1.,need_pretrain=True,need_noise_dropout=False,
-			stddev=5.):
+			stddev=5.,sample_stddev=0.,gan_stddev=0.,wgan_stddev=0.,hawkes_output_loss='mse',wgan_clip=1.):
 		from keras.layers import Input
 		from keras.models import Model
 		from keras.optimizers import SGD
@@ -35,7 +35,7 @@ class HawkesGAN(object):
 		if need_pretrain == True and self.gen.sequence_weights is None:
 			raise Exception('generator not pretrained, or weights not loaded')
 		# self.gen.create_trainable_model(observed_sequences,test_length)
-		self.gen.create_trainable_model(train_sequences,val_length,need_noise_dropout=need_noise_dropout,stddev=stddev)
+		self.gen.create_trainable_model(train_sequences,val_length,need_noise_dropout=need_noise_dropout,stddev=stddev,sample_stddev=sample_stddev)
 		self.gen_full.create_trainable_model(observed_sequences,test_length,proxy_layer=self.gen.hawkes_layer)
 
 		# build keras models
@@ -59,12 +59,12 @@ class HawkesGAN(object):
 			full_gen_model = Model(inputs=[z], outputs=[full_g_z])
 			gan_model = Model(inputs=[z], outputs=[g_z,y])
 			gan_model.compile(optimizer='rmsprop', 
-				loss={'dis_output':'categorical_crossentropy','hawkes_output':'mse'},
+				loss={'dis_output':'categorical_crossentropy','hawkes_output':hawkes_output_loss},
 				loss_weights={'dis_output':gan_weight,'hawkes_output':mse_weight},
 				metrics=['categorical_accuracy'])
 		elif train_gan_method == 'wgan':
 			from pp_loss import wasserstein_d_loss, wasserstein_g_loss
-			self.dis.create_trainable_wasserstein(observed_length,nb_type,nb_feature)
+			self.dis.create_trainable_wasserstein(observed_length,nb_type,nb_feature,wgan_clip=wgan_clip)
 			self.dis.model.compile(optimizer='rmsprop', loss=wasserstein_d_loss)
 
 			self.dis.model.trainable = False
@@ -78,7 +78,7 @@ class HawkesGAN(object):
 			full_gen_model = Model(inputs=[z], outputs=[full_g_z])
 			gan_model = Model(inputs=[z], outputs=[g_z,y])
 			gan_model.compile(optimizer='rmsprop', 
-				loss={'dis_output':wasserstein_g_loss,'hawkes_output':'mse'},
+				loss={'dis_output':wasserstein_g_loss,'hawkes_output':hawkes_output_loss},
 				loss_weights={'dis_output':gan_weight,'hawkes_output':mse_weight})
 
 
