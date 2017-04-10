@@ -9,7 +9,7 @@ import cookielib
 import database
 import json
 
-import preprocess_config
+from preprocess_config import patent_config
 
 def make_cookie(name='org', value='uspto.gov'):
     return cookielib.Cookie(
@@ -61,7 +61,7 @@ def download_fulltext(task_queue,instruct_queue):
 			except Exception, e:
 				print e
 			else:
-				with open(preprocess_config.crawed_uspto_text_dir + '/' + str(pid) + '.html','w') as f:
+				with open(patent_config.crawed_uspto_text_dir + '/' + str(pid) + '.html','w') as f:
 					f.write(html)
 
 def download_lifecycle(task_queue,instruct_queue):
@@ -87,7 +87,7 @@ def download_lifecycle(task_queue,instruct_queue):
 			except Exception, e:
 				print e
 			else:
-				with open(preprocess_config.crawed_uspto_lifecycle_dir + '/' + str(pid) + '.html','w') as f:
+				with open(patent_config.crawed_uspto_lifecycle_dir + '/' + str(pid) + '.html','w') as f:
 					f.write(html)
 
 task_queue = Queue.Queue()
@@ -118,7 +118,7 @@ def current_download_threads():
 	return current
 
 def crawl():
-	files = os.listdir(preprocess_config.crawed_uspto_text_dir)
+	files = os.listdir(patent_config.crawed_uspto_text_dir)
 	local_pids = [int(x[0:-5]) for x in files if len(x) > 5 and x[-5:] == '.html' and x[0:-5].isdigit()]
 	local_pids = dict(zip(local_pids,[0]*len(local_pids)))
 
@@ -136,11 +136,11 @@ def crawl():
 		thread[0].join()
 
 def crawl_citation():
-	files = os.listdir(preprocess_config.crawed_uspto_text_dir)
+	files = os.listdir(patent_config.crawed_uspto_text_dir)
 	local_pids = [int(x[0:-5]) for x in files if len(x) > 5 and x[-5:] == '.html' and x[0:-5].isdigit()]
 	local_pids = dict(zip(local_pids,[0]*len(local_pids)))
 
-	with open(preprocess_config.multihawkes_json) as f:
+	with open(patent_config.multihawkes_json) as f:
 		citation = json.load(f)
 	cited_by = citation['cited_by']
 	cite = citation['cite']
@@ -165,7 +165,7 @@ def crawl_citation():
 
 
 def crawl_lifecycle():
-	files = os.listdir(preprocess_config.crawed_uspto_text_dir)
+	files = os.listdir(patent_config.crawed_uspto_text_dir)
 	local_pids = [int(x[0:-5]) for x in files if len(x) > 5 and x[-5:] == '.html' and x[0:-5].isdigit()]
 	local_pids = dict(zip(local_pids,[0]*len(local_pids)))
 
@@ -183,7 +183,7 @@ def crawl_lifecycle():
 		thread[0].join()
 
 	all_pids = [int(x[0:-5]) for x in files if len(x) > 5 and x[-5:] == '.html' and x[0:-5].isdigit()]
-	files = os.listdir(preprocess_config.crawed_uspto_lifecycle_dir)
+	files = os.listdir(patent_config.crawed_uspto_lifecycle_dir)
 	local_pids = [int(x[0:-5]) for x in files if len(x) > 5 and x[-5:] == '.html' and x[0:-5].isdigit()]
 	local_pids = dict(zip(local_pids,[0]*len(local_pids)))
 
@@ -197,7 +197,7 @@ def crawl_lifecycle():
 	reg = re.compile('\d+\/\d+,\d+')#*Appl\.\s*No\..*\d+').*?(\d+\/\d+,\d+)')
 	spliter = re.compile('[/,]')
 	for pid in all_pids:
-		with open(preprocess_config.crawed_uspto_text_dir + '/' + str(pid) + '.html') as f:
+		with open(patent_config.crawed_uspto_text_dir + '/' + str(pid) + '.html') as f:
 			m = reg.search(f.read())
 			try:
 				app_id = int(''.join(spliter.split(m.group())))

@@ -20,12 +20,12 @@ import re
 import database
 import math
 
-import preprocess_config
+from preprocess_config import patent_config
 
 
 def select_some_htmls():
-	_dir = preprocess_config.crawed_uspto_text_dir + '/'
-	with open(preprocess_config.pid_csv) as f:
+	_dir = patent_config.crawed_uspto_text_dir + '/'
+	with open(patent_config.pid_csv) as f:
 		pids = []
 		for ln in f:
 			pid = str(ln.split(',')[0]).strip()
@@ -109,30 +109,30 @@ def similarity():
 
 	prefix = ['abstracts','claims','descriptions']
 
-	numpy.save(preprocess_config.similarity + '_pids',numpy.array(pids))
+	numpy.save(patent_config.similarity + '_pids',numpy.array(pids))
 	del pids
 
 	for i, docs in enumerate([abstracts,claims,descriptions]):
 		X_tfidf = vectorize(docs,'tfidf')
 		# dist = pairwise_distances(X_tfidf)
-		# numpy.save(preprocess_config.similarity + '_' + prefix[i] + '_tfidf',dist,False)
+		# numpy.save(patent_config.similarity + '_' + prefix[i] + '_tfidf',dist,False)
 		# del dist
 		# X_count = vectorize(docs,'count')
 		# dist = pairwise_distances(X_count)
-		# numpy.save(preprocess_config.similarity + '_' + prefix[i] + '_count',dist,False)
+		# numpy.save(patent_config.similarity + '_' + prefix[i] + '_count',dist,False)
 		X_svd_tfidf = svd(X_tfidf,100)
 		del X_tfidf
 		dist = pairwise_distances(X_svd_tfidf)
 		del X_svd_tfidf
-		numpy.save(preprocess_config.similarity + '_' + prefix[i] + '_svd_tfidf',dist,False)
+		numpy.save(patent_config.similarity + '_' + prefix[i] + '_svd_tfidf',dist,False)
 		del dist
 		# X_svd_count = svd(X_count,100)
 		# dist = pairwise_distances(X_svd_count)
-		# numpy.save(preprocess_config.similarity + '_' + prefix[i] + '_svd_count',dist,False)
+		# numpy.save(patent_config.similarity + '_' + prefix[i] + '_svd_count',dist,False)
 		X_lda = lda(docs,100)
 		dist = pairwise_distances(X_lda)
 		del X_lda
-		numpy.save(preprocess_config.similarity + '_' + prefix[i] + '_lda',dist,False)
+		numpy.save(patent_config.similarity + '_' + prefix[i] + '_lda',dist,False)
 		del dist
 
 def distance_distribution():
@@ -144,11 +144,11 @@ def distance_distribution():
 	D_svd_count = []
 	D_lda = []
 	for i in range(len(prefix)):
-		# D_tfidf.append(numpy.load(preprocess_config.similarity + '_' + prefix[i] + '_tfidf.npy'))
-		# D_count.append(numpy.load(preprocess_config.similarity + '_' + prefix[i] + '_count.npy'))
-		D_svd_tfidf.append(numpy.load(preprocess_config.similarity + '_' + prefix[i] + '_svd_tfidf.npy'))
-		# D_svd_count.append(numpy.load(preprocess_config.similarity + '_' + prefix[i] + '_svd_count.npy'))
-		D_lda.append(numpy.load(preprocess_config.similarity + '_' + prefix[i] + '_lda.npy'))
+		# D_tfidf.append(numpy.load(patent_config.similarity + '_' + prefix[i] + '_tfidf.npy'))
+		# D_count.append(numpy.load(patent_config.similarity + '_' + prefix[i] + '_count.npy'))
+		D_svd_tfidf.append(numpy.load(patent_config.similarity + '_' + prefix[i] + '_svd_tfidf.npy'))
+		# D_svd_count.append(numpy.load(patent_config.similarity + '_' + prefix[i] + '_svd_count.npy'))
+		D_lda.append(numpy.load(patent_config.similarity + '_' + prefix[i] + '_lda.npy'))
 
 	max_dist = 0.0
 	for dist_matrices in [D_svd_tfidf,D_lda]:
@@ -175,21 +175,21 @@ def distance_distribution():
 						curve[units-1] += 1
 			curves.append(curve)
 	print len(curves)
-	with open(preprocess_config.sim_distribution,'w') as f:
+	with open(patent_config.sim_distribution,'w') as f:
 		json.dump({'curves':curves,'max_dist':max_dist},f)
 
 def topic_words_and_svd_weights():
 	pass
 
 def statistics():
-	# pkl = pickle.load(open(preprocess_config.similarity_pkl))
+	# pkl = pickle.load(open(patent_config.similarity_pkl))
 	# X_lda = pkl['claims'+'lda']
 	# print X_lda[100,200]
-	# numpy.save(preprocess_config.similarity + 'lda',numpy.ones((5000,5000)),False)
-	# ar = numpy.load(preprocess_config.similarity + 'lda.npy')
+	# numpy.save(patent_config.similarity + 'lda',numpy.ones((5000,5000)),False)
+	# ar = numpy.load(patent_config.similarity + 'lda.npy')
 	# print ar[100,100]
 	# curves = [1]
-	# with open(preprocess_config.sim_distribution,'w') as f:
+	# with open(patent_config.sim_distribution,'w') as f:
 	# 	json.dump(curves,f)
 	pass
 	

@@ -409,7 +409,7 @@ class HawkesGenerator(object):
 		self.hawkes_layer = hawkes_layer
 		return model
 
-	def load(self,f,event_types=1):
+	def load(self,f,nb_type=1):
 		data = []
 		pids = []
 		for i,row in enumerate(csv.reader(file(f,'r'))):
