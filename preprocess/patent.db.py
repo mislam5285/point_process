@@ -7,8 +7,7 @@ import numpy
 import time,math
 from pymongo import MongoClient
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/' + '..')
-import config
+import preprocess_config
 
 # database definition
 
@@ -89,12 +88,12 @@ def create_database():
 	conn.close()
 
 def get_connect():
-	dbfile = config.db_file
+	dbfile = preprocess_config.db_file
 	conn = sqlite3.connect(dbfile)
 	return conn
 
 def get_mongo():
-	mongo = MongoClient(**config.mongodb)
+	mongo = MongoClient(**preprocess_config.mongodb)
 	return mongo
 
 # insert data from dictionary without commit
@@ -117,7 +116,7 @@ def insert_row_dict(conn,tablename,row_dict):
 		else:
 			sql += ','
 		#sql += "'" + str(item[1]) + "'"
-		if config.db_type == 'mysql':
+		if preprocess_config.db_type == 'mysql':
 			sql += '%s'
 		else:
 			sql += '?'
@@ -143,9 +142,9 @@ location = {
 }
 
 def insert_citation():
-	cite = config.original_text_dir + '/cite75_99.txt'
-	pat = config.original_text_dir + '/apat63_99.txt'
-	inventor = config.original_text_dir + '/ainventor.txt'
+	cite = preprocess_config.original_text_dir + '/cite75_99.txt'
+	pat = preprocess_config.original_text_dir + '/apat63_99.txt'
+	inventor = preprocess_config.original_text_dir + '/ainventor.txt'
 	pat_iter = open(pat)
 	cite_iter = open(cite)
 	inventor_iter = open(inventor)
@@ -222,9 +221,9 @@ def db2csv():
 
 	print len(features),len(cites),len(pids)
 
-	feature = open(config.feature_csv,'w')
-	cite = open(config.citation_csv,'w')
-	pid = open(config.pid_csv,'w')
+	feature = open(preprocess_config.feature_csv,'w')
+	cite = open(preprocess_config.citation_csv,'w')
+	pid = open(preprocess_config.pid_csv,'w')
 	for line in features:
 		feature.writelines(["%s," % item for item in line])
 		feature.write("\n")
@@ -238,7 +237,7 @@ def db2csv():
 	conn.close()
 
 def insert_patents():
-	pat = config.original_text_dir + '/apat63_99.txt'
+	pat = preprocess_config.original_text_dir + '/apat63_99.txt'
 	pat_iter = open(pat)
 	pat_iter.next()
 	patents = []
@@ -262,11 +261,11 @@ def insert_patents():
 	mongo.close()
 
 def insert_similarity_citation():
-	cite = config.original_text_dir + '/cite75_99.txt'
+	cite = preprocess_config.original_text_dir + '/cite75_99.txt'
 	cite_iter = open(cite)
 	cite_iter.next()
 
-	with open(config.params_json[0:-5] + '1995.json') as f:
+	with open(preprocess_config.params_json[0:-5] + '1995.json') as f:
 		param = json.load(f)
 		_patents_sample = param['patent']
 		patents_sample = {}
@@ -305,7 +304,7 @@ def insert_similarity_citation():
 
 	print len(cited_by),len(cite)
 
-	with open(config.multihawkes_json,'w') as f:
+	with open(preprocess_config.multihawkes_json,'w') as f:
 		json.dump({'cited_by':cited_by,'cite':cite},f)
 
 	mongo.close()
@@ -333,9 +332,9 @@ def parse(html):
 	return abstract,claims,description
 
 def insert_text_info():
-	_dir = config.crawed_uspto_text_dir + '/'
+	_dir = preprocess_config.crawed_uspto_text_dir + '/'
 
-	with open(config.multihawkes_json) as f:
+	with open(preprocess_config.multihawkes_json) as f:
 		citation = json.load(f)
 	cited_by = citation['cited_by']
 	cite = citation['cite']
@@ -392,9 +391,9 @@ def generate_similarity_json():
 	D_svd_tfidf = []
 	D_lda = []
 	for i in range(len(prefix)):
-		D_svd_tfidf.append(numpy.load(config.similarity + '_' + prefix[i] + '_svd_tfidf.npy'))
-		D_lda.append(numpy.load(config.similarity + '_' + prefix[i] + '_lda.npy'))
-	pids = numpy.load(config.similarity + '_pids.npy')
+		D_svd_tfidf.append(numpy.load(preprocess_config.similarity + '_' + prefix[i] + '_svd_tfidf.npy'))
+		D_lda.append(numpy.load(preprocess_config.similarity + '_' + prefix[i] + '_lda.npy'))
+	pids = numpy.load(preprocess_config.similarity + '_pids.npy')
 
 	pid_idx = dict([(str(pid),i) for i,pid in enumerate(pids)])
 	print pid_idx[pids[100]]
@@ -410,7 +409,7 @@ def generate_similarity_json():
 	max_dist = max_dist * 1.01
 	print max_dis
 
-	with open(config.multihawkes_json) as f:
+	with open(preprocess_config.multihawkes_json) as f:
 		citation = json.load(f)
 	cited_by = citation['cited_by']
 	cite = citation['cite']
@@ -449,7 +448,7 @@ def generate_similarity_json():
 
 	print len(features)
 
-	with open(config.similarity_correlation,'w') as f:
+	with open(preprocess_config.similarity_correlation,'w') as f:
 		json.dump({
 			'features':features,
 			'forward_lda':forward_lda,
@@ -459,11 +458,11 @@ def generate_similarity_json():
 			},f)
 
 def generate_similarity_sequence():
-	with open(config.params_json[0:-5] + '1995.json') as f:
+	with open(preprocess_config.params_json[0:-5] + '1995.json') as f:
 		param = json.load(f)
 		patents = param['patent']
 
-	with open(config.similarity_correlation,'r') as f:
+	with open(preprocess_config.similarity_correlation,'r') as f:
 		data = json.load(f)
 		forward_lda = data['forward_lda']
 		forward_svd = data['forward_svd']
@@ -490,15 +489,15 @@ def generate_similarity_sequence():
 		print len(txt)
 	for key in txts:
 		txt = txts[key]
-		with open(config.similarity_sequence + '_' + str(key) + '.txt','w') as f:
+		with open(preprocess_config.similarity_sequence + '_' + str(key) + '.txt','w') as f:
 			for line in txt:
 				f.writelines(["%s," % item for item in line[0:-1]])
 				f.write("%s" % line[-1])
 				f.write("\n")
 
 def get_self_citation_share():
-	cite = config.original_text_dir + '/cite75_99.txt'
-	pat = config.original_text_dir + '/apat63_99.txt'
+	cite = preprocess_config.original_text_dir + '/cite75_99.txt'
+	pat = preprocess_config.original_text_dir + '/apat63_99.txt'
 	pat_iter = open(pat)
 	cite_iter = open(cite)
 	pat_iter.next()
@@ -528,8 +527,8 @@ def get_self_citation_share():
 	print 'self_lower =',self_lower,'self_upper =',self_upper
 
 def generate_multi_csv():
-	cite = config.original_text_dir + '/cite75_99.txt'
-	pat = config.original_text_dir + '/apat63_99.txt'
+	cite = preprocess_config.original_text_dir + '/cite75_99.txt'
+	pat = preprocess_config.original_text_dir + '/apat63_99.txt'
 	pat_iter = open(pat)
 	cite_iter = open(cite)
 	pat_iter.next()
@@ -554,7 +553,7 @@ def generate_multi_csv():
 	print len(patents)
 
 
-	with open(config.params_json[0:-5] + '1995.json') as f:
+	with open(preprocess_config.params_json[0:-5] + '1995.json') as f:
 		param = json.load(f)
 		patents_sample = param['patent']
 	print len(patents_sample)
@@ -605,15 +604,15 @@ def generate_multi_csv():
 		txt.append(feature)
 		
 
-	with open(config.train_sequence,'w') as f:
+	with open(preprocess_config.train_sequence,'w') as f:
 		for line in txt:
 			f.writelines(["%s," % item for item in line[0:-1]])
 			f.write("%s" % line[-1])
 			f.write("\n")
 
 def generate_multi_csv():
-	cite = config.original_text_dir + '/cite75_99.txt'
-	pat = config.original_text_dir + '/apat63_99.txt'
+	cite = preprocess_config.original_text_dir + '/cite75_99.txt'
+	pat = preprocess_config.original_text_dir + '/apat63_99.txt'
 	pat_iter = open(pat)
 	cite_iter = open(cite)
 	pat_iter.next()
@@ -638,7 +637,7 @@ def generate_multi_csv():
 	print len(patents)
 
 
-	with open(config.params_json[0:-5] + '1995.json') as f:
+	with open(preprocess_config.params_json[0:-5] + '1995.json') as f:
 		param = json.load(f)
 		patents_sample = param['patent']
 	print len(patents_sample)
@@ -689,20 +688,20 @@ def generate_multi_csv():
 		txt.append(feature)
 		
 
-	with open(config.train_sequence,'w') as f:
+	with open(preprocess_config.train_sequence,'w') as f:
 		for line in txt:
 			f.writelines(["%s," % item for item in line[0:-1]])
 			f.write("%s" % line[-1])
 			f.write("\n")
 
 def read(count):
-	citation_csv = file(config.citation_csv,'r')
+	citation_csv = file(preprocess_config.citation_csv,'r')
 	citing_events = []
 	for row in csv.reader(citation_csv):
 		row = [float(x) for x in row[0:-1]]
 		citing_events.append(row)
 
-	feature_csv = file(config.feature_csv,'r')
+	feature_csv = file(preprocess_config.feature_csv,'r')
 	fea = []
 	for row in csv.reader(feature_csv):
 		row = [float(x) for x in row[0:-1]]
@@ -711,7 +710,7 @@ def read(count):
 		new_row = [(x - _min)/float(_max - _min) for x in row]
 		fea.append(new_row)
 
-	pid_csv = file(config.pid_csv,'r')
+	pid_csv = file(preprocess_config.pid_csv,'r')
 	pids = [row for row in csv.reader(pid_csv)]
 	
 	publish_years = []
@@ -740,8 +739,8 @@ def read(count):
 	return selected_pids,selected_cites,selected_feas,publish_years
 
 def generate_long_multi_csv():
-	cite = config.original_text_dir + '/cite75_99.txt'
-	pat = config.original_text_dir + '/apat63_99.txt'
+	cite = preprocess_config.original_text_dir + '/cite75_99.txt'
+	pat = preprocess_config.original_text_dir + '/apat63_99.txt'
 	pat_iter = open(pat)
 	cite_iter = open(cite)
 	pat_iter.next()
@@ -766,7 +765,7 @@ def generate_long_multi_csv():
 	print len(patents)
 
 
-	# with open(config.params_json[0:-5] + '1995.json') as f:
+	# with open(preprocess_config.params_json[0:-5] + '1995.json') as f:
 	# 	param = json.load(f)
 	# 	patents_sample = param['patent']
 	# print len(patents_sample)
@@ -824,20 +823,20 @@ def generate_long_multi_csv():
 		txt.append(feature)
 		
 
-	with open(config.train_sequence,'w') as f:
+	with open(preprocess_config.train_sequence,'w') as f:
 		for line in txt:
 			f.writelines(["%s," % item for item in line[0:-1]])
 			f.write("%s" % line[-1])
 			f.write("\n")
 
 def read_large_long(count):
-	citation_csv = file(config.citation_csv,'r')
+	citation_csv = file(preprocess_config.citation_csv,'r')
 	citing_events = []
 	for row in csv.reader(citation_csv):
 		row = [float(x) for x in row[0:-1]]
 		citing_events.append(row)
 
-	feature_csv = file(config.feature_csv,'r')
+	feature_csv = file(preprocess_config.feature_csv,'r')
 	fea = []
 	for row in csv.reader(feature_csv):
 		row = [float(x) for x in row[0:-1]]
@@ -846,7 +845,7 @@ def read_large_long(count):
 		new_row = [(x - _min)/float(_max - _min) for x in row]
 		fea.append(new_row)
 
-	pid_csv = file(config.pid_csv,'r')
+	pid_csv = file(preprocess_config.pid_csv,'r')
 	pids = [row for row in csv.reader(pid_csv)]
 	
 	publish_years = []
@@ -875,8 +874,8 @@ def read_large_long(count):
 	return selected_pids,selected_cites,selected_feas,publish_years
 
 def generate_large_long_multi_csv():
-	cite = config.original_text_dir + '/cite75_99.txt'
-	pat = config.original_text_dir + '/apat63_99.txt'
+	cite = preprocess_config.original_text_dir + '/cite75_99.txt'
+	pat = preprocess_config.original_text_dir + '/apat63_99.txt'
 	pat_iter = open(pat)
 	cite_iter = open(cite)
 	pat_iter.next()
@@ -901,7 +900,7 @@ def generate_large_long_multi_csv():
 	print len(patents)
 
 
-	# with open(config.params_json[0:-5] + '1995.json') as f:
+	# with open(preprocess_config.params_json[0:-5] + '1995.json') as f:
 	# 	param = json.load(f)
 	# 	patents_sample = param['patent']
 	# print len(patents_sample)
@@ -959,15 +958,15 @@ def generate_large_long_multi_csv():
 		txt.append(feature)
 		
 
-	with open(config.train_sequence,'w') as f:
+	with open(preprocess_config.train_sequence,'w') as f:
 		for line in txt:
 			f.writelines(["%s," % item for item in line[0:-1]])
 			f.write("%s" % line[-1])
 			f.write("\n")
 
 def generate_citation_distribution():
-	cite = config.original_text_dir + '/cite75_99.txt'
-	pat = config.original_text_dir + '/apat63_99.txt'
+	cite = preprocess_config.original_text_dir + '/cite75_99.txt'
+	pat = preprocess_config.original_text_dir + '/apat63_99.txt'
 	pat_iter = open(pat)
 	cite_iter = open(cite)
 	pat_iter.next()
@@ -996,7 +995,7 @@ def generate_citation_distribution():
 	print len(patents)
 
 
-	# with open(config.params_json[0:-5] + '1995.json') as f:
+	# with open(preprocess_config.params_json[0:-5] + '1995.json') as f:
 	# 	param = json.load(f)
 	# 	patents_sample = param['patent']
 	# print len(patents_sample)
@@ -1049,12 +1048,12 @@ def generate_citation_distribution():
 	distri_self = [x/len(self_cited_by) for x in distri_self]
 	distri_nonself = [x/len(self_cited_by) for x in distri_nonself]
 
-	with open(config.citation_distri,'w') as f:
+	with open(preprocess_config.citation_distri,'w') as f:
 		json.dump({'total':distri,'self':distri_self,'nonself':distri_nonself},f)
 
 def generate_citation_distribution_by_count():
-	cite = config.original_text_dir + '/cite75_99.txt'
-	pat = config.original_text_dir + '/apat63_99.txt'
+	cite = preprocess_config.original_text_dir + '/cite75_99.txt'
+	pat = preprocess_config.original_text_dir + '/apat63_99.txt'
 	pat_iter = open(pat)
 	cite_iter = open(cite)
 	pat_iter.next()
@@ -1083,7 +1082,7 @@ def generate_citation_distribution_by_count():
 	print len(patents)
 
 
-	# with open(config.params_json[0:-5] + '1995.json') as f:
+	# with open(preprocess_config.params_json[0:-5] + '1995.json') as f:
 	# 	param = json.load(f)
 	# 	patents_sample = param['patent']
 	# print len(patents_sample)
@@ -1134,7 +1133,7 @@ def generate_citation_distribution_by_count():
 	distri_self = [x/len(self_cited_by) for x in distri_self]
 	distri_nonself = [x/len(self_cited_by) for x in distri_nonself]
 
-	with open(config.citation_distri_by_count,'w') as f:
+	with open(preprocess_config.citation_distri_by_count,'w') as f:
 		json.dump({'total':distri,'self':distri_self,'nonself':distri_nonself},f)
 
 

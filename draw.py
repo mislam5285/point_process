@@ -15,13 +15,34 @@ from point_process.hawkes import MHawkes, MTPP, Single
 from point_process.generator import HawkesGenerator
 from point_process.gan import HawkesGAN
 
+from preprocess.screen import Screenor
+
 np.random.seed(137)
 os.environ["KERAS_BACKEND"] = "tensorflow"
 
 import os, sys
 root = os.path.abspath(os.path.dirname(__file__))
 
-def draw_fix_train_total_xiao(dataset_id, full_process=False):
+def screen():
+    will_screen_paper = False
+    will_screen_patent = False
+    if will_screen_paper == True:
+        screenor = Screenor()
+        paper_data = root + '/data/paper3.txt'
+        paper_data_raw = root + '/data/paper2.txt'
+        result = screenor.screen_paper(paper_data_raw)
+        with open(paper_data,'w') as fw:
+            fw.writelines(result)
+
+    if will_screen_patent == True:
+        screenor = Screenor()
+        patent_data = root + '/data/patent3.txt'
+        patent_data_raw = root + '/data/patent2.txt'
+        result = screenor.screen_patent(patent_data_raw)
+        with open(patent_data,'w') as fw:
+            fw.writelines(result)
+
+def draw_fix_train_total_xiao(dataset_id, train_all=False):
     will_train_mtpp = False
     will_train_single = False
     will_draw = True
@@ -112,7 +133,7 @@ def draw_fix_train_total_xiao(dataset_id, full_process=False):
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
         
-def draw_fix_train_non_self_m_hawkes(dataset_id, full_process=False):
+def draw_fix_train_non_self_m_hawkes(dataset_id, train_all=False):
     will_train_mtpp = False
     will_train_hawkes = False
     will_draw = True
@@ -193,7 +214,8 @@ def draw_fix_train_non_self_m_hawkes(dataset_id, full_process=False):
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
+def draw_hawkes_generator_pretrain_convergence(dataset_id, train_all=False):
+    will_train_hawkes_3_40 = False
     will_train_hawkes_3_30 = False
     will_train_hawkes_3_20 = False
     will_train_hawkes_3_10 = False
@@ -207,6 +229,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
     
     # training
     log_pre_train = root + '/data/' + dataset_id + '.pretrain.log.3.30.txt'
+    log_pre_train_3_40 = root + '/data/' + dataset_id + '.pretrain.log.3.40.txt'
     log_pre_train_3_20 = root + '/data/' + dataset_id + '.pretrain.log.3.20.txt'
     log_pre_train_3_10 = root + '/data/' + dataset_id + '.pretrain.log.3.10.txt'
     log_pre_train_1_10 = root + '/data/' + dataset_id + '.pretrain.log.1.10.txt'
@@ -221,6 +244,15 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
             predictor = HawkesGenerator()
             loaded = predictor.load(dataset_path)
             model = predictor.pre_train(*loaded,max_outer_iter=15)
+            sys.stdout = old_stdout
+
+    if will_train_hawkes_3_40 == True :
+        with open(log_pre_train_3_40,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            predictor = HawkesGenerator()
+            loaded = predictor.load(dataset_path)
+            model = predictor.pre_train(*loaded,max_outer_iter=12,alpha_iter=3,w_iter=40)
             sys.stdout = old_stdout
 
     if will_train_hawkes_3_20 == True :
@@ -280,19 +312,16 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
         # colors = ['red','green','purple']
-        keys = [lambda x:x['LL'], lambda x:x['acc'][-1], lambda x:x['mape'][-1], lambda x:x['acc_val'][-1], lambda x:x['mape_val'][-1]]
-        colors = {'3:30':'red','3:20':'green','3:10':'blue','1:10':'purple'}
+        keys = [lambda x:x['LL'], lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
+        keys_val = [lambda x:x['LL'], lambda x:x['acc_val'][-1], lambda x:x['mape_val'][-1]]
+        colors = {'test':'red','val':'blue','early_stop':'green','test_best':'purple'}
         # keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
-        labels_prefix = ['Loss','ACC','MAPE','ACC on val.', 'MAPE on val.']
-        labels_suffix = {
-            '3:30':'3:30',
-            '3:20':'3:20',
-            '3:10':'3:10',# with optimal $\\beta$',
-            '1:10':'1:10',
-        }
+        labels_prefix = ['Loss','ACC','MAPE']
 
         f_pre_train = open(log_pre_train)
         nodes_pre_train = []
+        f_pre_train_3_40 = open(log_pre_train_3_40)
+        nodes_pre_train_3_40 = []
         f_pre_train_3_20 = open(log_pre_train_3_20)
         nodes_pre_train_3_20 = []
         f_pre_train_3_10 = open(log_pre_train_3_10)
@@ -300,10 +329,24 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
         f_pre_train_1_10 = open(log_pre_train_1_10)
         nodes_pre_train_1_10 = []
 
+        f_pre_train_1_5 = open(log_pre_train_1_5)
+        nodes_pre_train_1_5 = []
+        f_pre_train_1_1 = open(log_pre_train_1_1)
+        nodes_pre_train_1_1 = []
+        f_pre_train_5_1 = open(log_pre_train_5_1)
+        nodes_pre_train_5_1 = []
+
         for line in f_pre_train:
             try:
                 node = eval(line)
                 nodes_pre_train.append(node)
+            except:
+                print 'error'
+
+        for line in f_pre_train_3_40:
+            try:
+                node = eval(line)
+                nodes_pre_train_3_40.append(node)
             except:
                 print 'error'
 
@@ -328,56 +371,172 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, full_process=False):
             except:
                 print 'error'
 
-        for i in range(3):
-            plt.figure()
+        for line in f_pre_train_1_5:
+            try:
+                node = eval(line)
+                nodes_pre_train_1_5.append(node)
+            except:
+                print 'error'
 
-            # arrange layout
-            y_pre_train = np.array([float(keys[i](node)) for node in nodes_pre_train])
-            y_pre_train_3_20 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_20])
-            y_pre_train_3_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_10])
-            y_pre_train_1_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_10])
+        for line in f_pre_train_1_1:
+            try:
+                node = eval(line)
+                nodes_pre_train_1_1.append(node)
+            except:
+                print 'error'
 
-            delta = max(np.max(y_pre_train),np.max(y_pre_train)) - min(np.min(y_pre_train),np.min(y_pre_train))
-            delta /= 30.
+        for line in f_pre_train_5_1:
+            try:
+                node = eval(line)
+                nodes_pre_train_5_1.append(node)
+            except:
+                print 'error'
+
+        for i in range(3): # acc or mape or loss
             x_left_limit = 0
             x_right_limit = 200
-            if y_pre_train[0] > y_pre_train[-1]:
-                y_lower_limit = min(np.min(y_pre_train),np.min(y_pre_train)) - delta
-                y_upper_limit = 0.25 * np.max(y_pre_train) + 0.75 * np.min(y_pre_train)
-            else:
-                y_lower_limit = 0.75 * np.max(y_pre_train) + 0.25 * np.min(y_pre_train)
-                y_upper_limit = max(np.max(y_pre_train),np.max(y_pre_train)) + delta
 
-            plt.ylim(y_lower_limit, y_upper_limit)
-            plt.xlim(0,x_right_limit)
-
-            # draw curve
-            plt.plot(np.arange(1,len(y_pre_train_1_10)+1),y_pre_train_1_10,c=colors['1:10'],lw=1.2,
-                label=labels_suffix['1:10'])
-            plt.plot(np.arange(1,len(y_pre_train_3_10)+1),y_pre_train_3_10,c=colors['3:10'],lw=1.2,
-                label=labels_suffix['3:10'])
-            plt.plot(np.arange(1,len(y_pre_train_3_20)+1),y_pre_train_3_20,c=colors['3:20'],lw=1.2,
-                label=labels_suffix['3:20'])
-            plt.plot(np.arange(1,len(y_pre_train)+1),y_pre_train,c=colors['3:30'],lw=1.2,
-                label=labels_suffix['3:30'])
+            y_pre_train = np.array([float(keys[i](node)) for node in nodes_pre_train])[x_left_limit:x_right_limit+1]
+            y_pre_train_3_40 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_40])[x_left_limit:x_right_limit+1]
+            y_pre_train_3_20 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_20])[x_left_limit:x_right_limit+1]
+            y_pre_train_3_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_10])[x_left_limit:x_right_limit+1]
+            y_pre_train_1_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_10])[x_left_limit:x_right_limit+1]
+            y_pre_train_1_5 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_5])[x_left_limit:x_right_limit+1]
+            y_pre_train_1_1 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_1])[x_left_limit:x_right_limit+1]
+            y_pre_train_5_1 = np.array([float(keys[i](node)) for node in nodes_pre_train_5_1])[x_left_limit:x_right_limit+1]
 
 
-            plt.xlabel('iterations')
-            plt.title('learning curve for ' + labels_prefix[i])
-            plt.legend(loc='upper right')
-            plt.gcf().set_size_inches(5., 5., forward=True)
+            y_pre_train_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train])[x_left_limit:x_right_limit+1]
+            y_pre_train_3_40_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_40])[x_left_limit:x_right_limit+1]
+            y_pre_train_3_20_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_20])[x_left_limit:x_right_limit+1]
+            y_pre_train_3_10_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_10])[x_left_limit:x_right_limit+1]
+            y_pre_train_1_10_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_10])[x_left_limit:x_right_limit+1]
+            y_pre_train_1_5_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_5])[x_left_limit:x_right_limit+1]
+            y_pre_train_1_1_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_1])[x_left_limit:x_right_limit+1]
+            y_pre_train_5_1_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_5_1])[x_left_limit:x_right_limit+1]
 
-            if i == 0: key = '' + dataset_id + '.gan.pretrain.learning.NLL.png'
-            if i == 1: key = '' + dataset_id + '.gan.pretrain.learning.ACC.png'
-            if i == 2: key = '' + dataset_id + '.gan.pretrain.learning.MAPE.png'
-            plt.xticks(fontsize=13)
-            plt.yticks(fontsize=13)
-            plt.legend(fontsize=13)
-            if i == 0: plt.yticks(fontsize=11)
-            plt.savefig(root + '/pic/%s'%key)
+            curves = [
+                {
+                    'rate':'3:30',
+                    'y_test':y_pre_train,
+                    'y_val':y_pre_train_val,
+                },
+                {
+                    'rate':'3:40',
+                    'y_test':y_pre_train_3_40,
+                    'y_val':y_pre_train_3_40_val,
+                },
+                {
+                    'rate':'3:20',
+                    'y_test':y_pre_train_3_20,
+                    'y_val':y_pre_train_3_20_val,
+                },
+                {
+                    'rate':'3:10',
+                    'y_test':y_pre_train_3_10,
+                    'y_val':y_pre_train_3_10_val,
+                },
+                {
+                    'rate':'1:10',
+                    'y_test':y_pre_train_1_10,
+                    'y_val':y_pre_train_1_10_val,
+                },
+                {
+                    'rate':'1:5',
+                    'y_test':y_pre_train_1_5,
+                    'y_val':y_pre_train_1_5_val,
+                },
+                {
+                    'rate':'1:1',
+                    'y_test':y_pre_train_1_1,
+                    'y_val':y_pre_train_1_1_val,
+                },
+                {
+                    'rate':'5:1',
+                    'y_test':y_pre_train_5_1,
+                    'y_val':y_pre_train_5_1_val,
+                },
+            ]
+
+            for curve in curves: # each curve
+                fig = plt.figure()
+
+                # arrange layout
+                delta = max(np.max(curve['y_test']),np.max(curve['y_test'])) - min(np.min(curve['y_test']),np.min(curve['y_test']))
+                delta /= 30.
+                if curve['y_test'][0] > curve['y_test'][-1]:
+                    y_lower_limit = min(np.min(curve['y_test']),np.min(curve['y_test'])) - delta
+                    y_upper_limit = 0.25 * np.max(curve['y_test']) + 0.75 * np.min(curve['y_test'])
+                else:
+                    y_lower_limit = 0.75 * np.max(curve['y_test']) + 0.25 * np.min(curve['y_test'])
+                    y_upper_limit = max(np.max(curve['y_test']),np.max(curve['y_test'])) + delta
+
+                # draw curve
+                plt.ylim(y_lower_limit, y_upper_limit)
+                plt.xlim(x_left_limit,x_right_limit)
+
+                plt.plot(np.arange(1,len(curve['y_test'])+1),curve['y_test'],c=colors['test'],lw=1.2,
+                    label=labels_prefix[i] + ' on test.')
+                if i == 2:
+                    j = np.argmin(curve['y_test'])
+                    plt.plot([j,j],[y_lower_limit,curve['y_test'][j]+delta],'--',c=colors['test_best'],lw=1.2,
+                        label='best point')
+
+                plt.xticks(fontsize=13)
+                plt.yticks(fontsize=13)
+                plt.legend(loc='center right',fontsize=13)
+
+                if i > 0:
+                    # arrange layout
+                    delta = max(np.max(curve['y_val']),np.max(curve['y_val'])) - min(np.min(curve['y_val']),np.min(curve['y_val']))
+                    delta /= 30.
+                    if curve['y_val'][0] > curve['y_val'][-1]:
+                        y_lower_limit = min(np.min(curve['y_val']),np.min(curve['y_val'])) - delta
+                        y_upper_limit = 0.25 * np.max(curve['y_val']) + 0.75 * np.min(curve['y_val'])
+                    else:
+                        y_lower_limit = 0.75 * np.max(curve['y_val']) + 0.25 * np.min(curve['y_val'])
+                        y_upper_limit = max(np.max(curve['y_val']),np.max(curve['y_val'])) + delta
+
+                    # draw curve
+                    ax = plt.subplot(111).twinx()
+                    # ax.ylim(y_lower_limit, y_upper_limit)
+                    # ax.xlim(x_left_limit,x_right_limit)
+                    ax.set_ylim(y_lower_limit, y_upper_limit)
+
+                    ax.plot(np.arange(1,len(curve['y_val'])+1),curve['y_val'],'--',c=colors['val'],lw=1.2,
+                        label=labels_prefix[i] + ' on val.')
+                    if i == 2:
+                        early_stop = -1
+                        moving_average = curve['y_val'][0]
+                        k = 20.
+                        for j in range(1,len(curve['y_val'])):
+                            av = curve['y_val'][j] * (1./k) + moving_average * (k - 1.) / k
+                            if moving_average - av <= 0.001:
+                                early_stop = j
+                                break
+                            moving_average = av
+                        if early_stop > 0:
+                            ax.plot([j,j],[y_lower_limit,curve['y_val'][j]+delta],'--',c=colors['early_stop'],lw=1.2,
+                                label='signal of early stop')
+                    plt.xticks(fontsize=13)
+                    plt.yticks(fontsize=13)
+                    # plt.legend()
+                    plt.legend(loc='upper right',fontsize=13) #bbox_to_anchor=(0.31,0.8)
+                    # plt.legend(fontsize=13)
+                    # plt.gca().add_artist(legend_test)
+
+                plt.xlabel('iterations')
+                plt.title('learning curve for ' + labels_prefix[i] + ' when $N_{em}:N_{grad}$=' + curve['rate'])
+                plt.gcf().set_size_inches(5., 5., forward=True)
+
+                if i == 0: key = '' + dataset_id + '.gan.pretrain.learning.NLL.' + curve['rate'] +'.png'
+                if i == 1: key = '' + dataset_id + '.gan.pretrain.learning.ACC.' + curve['rate'] +'.png'
+                if i == 2: key = '' + dataset_id + '.gan.pretrain.learning.MAPE.' + curve['rate'] +'.png'
+                if i == 0: plt.yticks(fontsize=11)
+                plt.savefig(root + '/pic/%s'%key)
 
 
-def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=False):
+def draw_full_train_learning_gan_potential_ability(dataset_id, train_all=False):
     will_train_mle_only = False
     will_train_mle_to_gan = False
     will_train_gan_only = False
@@ -793,7 +952,7 @@ def draw_full_train_learning_gan_potential_ability(dataset_id, full_process=Fals
 
 
 
-def draw_full_train_learning_mle_mse_potential_ability(dataset_id, full_process=False):
+def draw_full_train_learning_mle_mse_potential_ability(dataset_id, train_all=False):
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
@@ -1032,7 +1191,7 @@ def draw_full_train_learning_mle_mse_potential_ability(dataset_id, full_process=
             plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
 
-def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, full_process=False):
+def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, train_all=False):
     will_train_mle_only = False
     will_train_mle_to_mse = False
     will_train_mse_only = False
@@ -1230,11 +1389,12 @@ def draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id, full
             plt.savefig(root + '/pic/%s'%key)
 
             
-def draw_full_train_with_early_stopping(dataset_id, full_process=False):
+def draw_full_train_with_early_stopping(dataset_id, train_all=False):
     pass
 
 
 if __name__ == '__main__' :
+    screen()
     for dataset_id in ['paper3']:
         # draw_fix_train_total_xiao(dataset_id)
         # draw_fix_train_non_self_m_hawkes(dataset_id)
@@ -1242,4 +1402,5 @@ if __name__ == '__main__' :
         # draw_full_train_learning_gan_potential_ability(dataset_id)
         # draw_full_train_learning_mle_mse_potential_ability(dataset_id)
         # draw_full_train_mape_acc_contrast_mle_mse_potential_ability(dataset_id)
-    plt.show()
+        pass
+    # plt.show()
