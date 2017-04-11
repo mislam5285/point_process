@@ -12,7 +12,7 @@ class HawkesGenerator(object):
 		self.sequence_weights = None
 
 	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=15,predict_year=None,
-			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30,val_length=5):
+			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30,val_length=5,early_stop=None):
 		""" 
 			cut == observed length. One of cut and predict_year should be passed.
 		"""
@@ -46,6 +46,7 @@ class HawkesGenerator(object):
 		mape_acc_val = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,
 			duration=val_length,pred_year=predict_year-val_length,cut=cut-val_length)
 
+		iterations = 1
 		print {
 			'source':'initial',
 			'outer_iter':0,
@@ -135,6 +136,8 @@ class HawkesGenerator(object):
 					'acc_val':mape_acc_val['acc'],
 				}
 				sys.stdout.flush()
+				iterations += 1
+				if early_stop is not None and iterations >= early_stop: break
 
 			# print 'step 2 : update w by gradient descent ...'
 
@@ -200,12 +203,13 @@ class HawkesGenerator(object):
 					'acc_val':mape_acc_val['acc'],
 				}
 				sys.stdout.flush()
+				iterations += 1
+				if early_stop is not None and iterations >= early_stop: break
 
 			# print 'step 3 : check terminate condition ...'
 
-			if outer_times > max_outer_iter:
-				break
-			outer_times += 1
+			iterations += 1
+			if early_stop is not None and iterations >= early_stop: break
 
 		self.update_sequence_weights(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
 		return self.params
