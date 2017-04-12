@@ -10,6 +10,8 @@ class HawkesGenerator(object):
 	def __init__(self):
 		self.params = {}
 		self.sequence_weights = None
+		self.model = None
+		self.hawkes_layer = None
 
 	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=15,predict_year=None,
 			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30,val_length=5,early_stop=None):
@@ -25,16 +27,17 @@ class HawkesGenerator(object):
 			predict_year = -1
 
 		[train_count,num_feature] = [len(features),len(features[0])] 
+		nb_type = len(sequences[0])
 		rho = 1
 		lam = 2
-		Z = numpy.mat([1.0]*num_feature)
-		U = numpy.mat([0.0]*num_feature)
+		Z = numpy.mat([[1.0] * nb_type]*num_feature)
+		U = numpy.mat([[0.0] * nb_type]*num_feature)
 		
-		beta = numpy.mat([1.0]*num_feature)  
-		alpha = [1.0]*train_count
+		beta = numpy.mat([[1.0] * nb_type]*num_feature)
+		alpha = [[[1.0] * nb_type] * nb_type]*train_count
 		# sw1 = 0.05
-		W1 = [0.05]*train_count
-		W2 = [1.0]*train_count
+		W1 = [[0.05] * nb_type]*train_count
+		W2 = [[1.0] * nb_type]*train_count
 		# sw2 = 1.0
 
 		init_time = time.time()
@@ -262,8 +265,9 @@ class HawkesGenerator(object):
 			sw2 = W2[item]
 			salpha = alpha[item]
 			s = sequences[item]
-			s = [x for x in s if x <= train_times[item]]
-			obj = self.calculate_objective(beta*fea.T,sw1,salpha,sw2,s,train_times[item])
+			for m in range(len(s)):
+				s[m] = [x for x in s[m] if x <= train_times[item]]
+			obj = self.calculate_objective(fea*beta,sw1,salpha,sw2,s,train_times[item])
 			likelihood -= obj[0,0]
 		likelihood /= train_count
 		return likelihood
@@ -280,8 +284,32 @@ class HawkesGenerator(object):
 					mat2[i,j] = 0
 		return mat1 - mat2
 
-	def calculate_objective(self,spontaneous,w1,alpha,w2,events,train_times):
-		T=train_times
+	def calculate_objective(self,spontaneous,sw1,salpha,sw2,events,train_time):
+		T=train_time
+		result = 0.
+		for m in range(len(events)):
+			N=len(events[m])
+			s=events[m]
+			w1 = sw1[m]
+			w2 = sw2[m]
+			old_sum2 = 0
+			obj = numpy.log(spontaneous*numpy.exp(-w1*s[0]))
+			for i in range(1,N):
+				mu = spontaneous*numpy.exp(-w1*s[i])
+				trigger = 0.
+				sum2 = (old_sum2 + alpha)*numpy.exp(-w2*(s[i]-s[i-1]))
+				old_sum2 = sum2
+				obj=obj+numpy.log(mu+sum2)
+			activate = numpy.exp(-w2*(T-numpy.mat(s)))
+			activate_sum = numpy.sum((1-activate))*alpha/float(w2)
+			obj= obj - activate_sum 
+			obj = obj - (spontaneous/w1) * (1 - numpy.exp(-w1*T))
+
+			result += obj
+		return result
+
+	def calculate_objective_single(self,spontaneous,w1,alpha,w2,events,train_time):
+		T=train_time
 		N=len(events)
 		s=events
 		old_sum2 = 0
@@ -409,21 +437,20 @@ class HawkesGenerator(object):
 
 	def load(self,f,nb_type=1):
 		"""
-			event types, nb_type lines
-			start time, one line
-			profile feature, one line
+			data format : types | start time | feature
+			the value of time interval unit must be 1. if the system of unit is too large, change it.
 		"""
 		if nb_type > 1:
 			data = []
 			pids = []
 			span = nb_type + 2
 			for i,row in enumerate(csv.reader(file(f,'r'))):
-				if i % span == nb_type: # start time
+				if i % span == span - 2: # start time
 					pids.append(str(row[0]))
 					row = [float(row[1])]
-				elif i % span < nb_type: # event types
+				elif i % span < span - 2: # event types
 					row = [float(x) for x in row[1:]]
-				elif i % span == nb_type + 1: # profile feature
+				elif i % span == span - 1: # profile feature
 					_row = [float(x) for x in row[1:]]
 					_max = max(_row)
 					_min = min(_row)
@@ -437,11 +464,14 @@ class HawkesGenerator(object):
 			features = []
 			publish_years = []
 			for i in range(I):
-				publish_year = data[i * span + nb_type][0]
-				feature = data[i * span + nb_type + 1]
+				publish_year = data[i * span + span - 2][0]
+				feature = data[i * span + span - 1]
 				# time_seq = self_seq + nonself_seq
 				# time_seq.sort()
-				sequence = data[(i*span):(i*span + nb_type)]
+				sequence = data[(i*span):(i*span + span - 2)]
+
+				for j in range(span - 2):
+					sequence[j] = [float(int(x)) for x in sequence[j] if x > -1.]
 
 				sequences.append(sequence)
 				features.append(feature)
@@ -450,36 +480,53 @@ class HawkesGenerator(object):
 			threshold = 0.01
 			return sequences,features,publish_years,pids,threshold
 		else:
+			span = 0
+			key_prev = ''
+			for i,row in enumerate(csv.reader(file(f,'r'))):
+				key = str(row[0])
+				if key == key_prev or key_prev == '': 
+					span += 1
+					key_prev = key
+				else:
+					break
+
 			data = []
 			pids = []
 			for i,row in enumerate(csv.reader(file(f,'r'))):
-				if i % 4 == 2:
+				if i % span == span - 2: # start time
 					pids.append(str(row[0]))
 					row = [float(row[1])]
-				elif i % 4 == 0 or i % 4 == 1:
+				elif i % span < span - 2: # event types
 					row = [float(x) for x in row[1:]]
-				elif i % 4 == 3:
+				elif i % span == span - 1: # profile feature
 					_row = [float(x) for x in row[1:]]
 					_max = max(_row)
 					_min = min(_row)
 					row = [(x - _min)/float(_max - _min) for x in _row]
 				data.append(row)
 			
-			I = int(len(data)/4)
+			I = int(len(data)/span)
 			train_seq = []
 			test_seq = []
 			sequences = []
 			features = []
 			publish_years = []
 			for i in range(I):
-				publish_year = data[i * 4 + 2][0]
-				self_seq = data[i * 4]
-				nonself_seq = data[i * 4 + 1]
-				feature = data[i * 4 + 3]
-				time_seq = self_seq + nonself_seq
+				publish_year = data[i * span + span - 2][0]
+				feature = data[i * span + span - 1]
+				# time_seq = self_seq + nonself_seq
+				# time_seq.sort()
+				sequence = data[(i*span):(i*span + span - 2)]
+
+				for j in range(span - 2):
+					sequence[j] = [float(int(x)) for x in sequence[j] if x > -1.]
+
+				time_seq = []
+				for seq in sequence:
+					time_seq += seq
 				time_seq.sort()
 
-				sequences.append(time_seq)
+				sequences.append([time_seq])
 				features.append(feature)
 				publish_years.append(publish_year)
 
@@ -650,8 +697,10 @@ if __name__ == '__main__':
 			exit()
 		predictor = HawkesGenerator()
 		# loaded = predictor.load('../data/paper3.txt')
-		loaded = predictor.load('../data/patent3.txt',nb_type=2)
+		loaded = predictor.load('../data/paper3.txt',nb_type=2)
 		print loaded[0][0]
+		print loaded[0][1]
+		print loaded[0][2]
 		model = predictor.pre_train(*loaded)
 		
 
