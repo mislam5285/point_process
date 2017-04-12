@@ -44,7 +44,7 @@ class HawkesLayer(Layer):
 			self.W_initializer = Constant(np.array([[x['w'] for j in range(self.nb_type)] for x in sequence_weights]))
 			self.Alpha_initializer = Constant(np.array([[[x['alpha'] for k in range(self.nb_type)] for j in range(self.nb_type)] for x in sequence_weights]))
 		else:
-			self.spont_initializer = Constant(np.array([[1.237 for j in range(self.nb_type)] for i in range(self.nb_sequence)]))
+			self.spont_initializer = Constant(np.array([[1.3 for j in range(self.nb_type)] for i in range(self.nb_sequence)]))
 			self.Theta_initializer = Constant(np.array([[0.05 for j in range(self.nb_type)] for i in range(self.nb_sequence)]))
 			self.W_initializer = Constant(np.array([[1. for j in range(self.nb_type)] for i in range(self.nb_sequence)]))
 			self.Alpha_initializer = Constant(np.array([[[1. for k in range(self.nb_type)] for j in range(self.nb_type)] for i in range(self.nb_sequence)]))

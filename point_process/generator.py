@@ -418,12 +418,12 @@ class HawkesGenerator(object):
 			pids = []
 			span = nb_type + 2
 			for i,row in enumerate(csv.reader(file(f,'r'))):
-				if i % span == nb_type:
+				if i % span == nb_type: # start time
 					pids.append(str(row[0]))
 					row = [float(row[1])]
-				elif i % span < nb_type:
+				elif i % span < nb_type: # event types
 					row = [float(x) for x in row[1:]]
-				elif i % span == nb_type + 1:
+				elif i % span == nb_type + 1: # profile feature
 					_row = [float(x) for x in row[1:]]
 					_max = max(_row)
 					_min = min(_row)
