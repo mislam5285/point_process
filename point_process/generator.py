@@ -3,12 +3,14 @@ import numpy
 import os,sys,time
 import json,csv
 import cPickle as pickle
+import copy
 numpy.random.seed(1337)
 
 
 class HawkesGenerator(object):
 	def __init__(self):
 		self.nb_type = None
+		self.delta = 1.
 		self.params = {}
 		self.sequence_weights = None
 		self.model = None
@@ -17,20 +19,22 @@ class HawkesGenerator(object):
 	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=15,predict_year=None,
 			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30,val_length=5,early_stop=None):
 		""" 
-			cut == observed length. One of cut and predict_year should be passed.
+			cut == observed length
+			T == pred_year - pub_year + 1. == cut * delta, where delta is the value of scale (should be 1).
+			At least one of cut and predict_year should be passed.
 		"""
 		if cut is None:
 			T = numpy.array([predict_year - publish_year + 1 for publish_year in publish_years],dtype=float)
 			train_times = T
 		else :
-			T = numpy.array([cut+0.001] * len(publish_years))
+			T = numpy.array([float(cut)] * len(publish_years),dtype=float)
 			train_times = T
 			predict_year = -1
 
 		[train_count,num_feature] = [len(features),len(features[0])] 
 		nb_type = self.nb_type
-		penalty = 1
-		reg_beta = 10
+		penalty = 1.
+		reg_beta = 20.
 		Z = numpy.mat([[1.0] * nb_type]*num_feature)
 		U = numpy.mat([[0.0] * nb_type]*num_feature)
 		
@@ -78,7 +82,7 @@ class HawkesGenerator(object):
 				v2 = numpy.mat([0.0]*num_feature)
 				for sam in range(train_count): 
 					s = sequences[sam]
-					s = [x for x in s if x <= train_times[sam]]
+					s = [x for x in s if x < train_times[sam]]
 					n = len(s)
 					fea = numpy.mat(features[sam])
 					sw1 = W1[sam]
@@ -151,7 +155,7 @@ class HawkesGenerator(object):
 				step_size /= 1 + 10 * step_size
 				for sam in range(train_count):
 					s = sequences[sam]
-					s = numpy.mat([x for x in s if x <= train_times[sam]])
+					s = numpy.mat([x for x in s if x < train_times[sam]])
 					n = s.shape[1]
 					fea = numpy.mat(features[sam])
 					sw1 = W1[sam]
@@ -212,7 +216,6 @@ class HawkesGenerator(object):
 
 			# print 'step 3 : check terminate condition ...'
 
-			iterations += 1
 			if early_stop is not None and iterations >= early_stop: break
 
 		self.update_sequence_weights(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
@@ -235,7 +238,7 @@ class HawkesGenerator(object):
 		params['predict_year'] = predict_year
 		params['cut_point'] = cut
 		params['train_count'] = len(patent)
-		params['beta'] = beta.tolist()[0]
+		params['beta'] = beta.tolist()
 		params['patent'] = patent
 		params['feature_name'] = []
 
@@ -252,7 +255,8 @@ class HawkesGenerator(object):
 			seq['theta'] = W1[i]
 			seq['w'] = W2[i]
 			seq['alpha'] = alpha[i]
-			seq['spont'] = (beta*fea.T)[0,0]
+			seq['beta'] = beta.tolist()
+			seq['spont'] = (fea*beta).tolist()[0]
 			result.append(seq)
 
 		self.sequence_weights = result
@@ -266,7 +270,7 @@ class HawkesGenerator(object):
 			sw2 = W2[item]
 			salpha = alpha[item]
 			s = sequences[item]
-			s = [x for x in s if x[0] <= train_times[item]]
+			s = [x for x in s if x[0] < train_times[item]]
 			obj = self.calculate_objective((fea*beta).tolist()[0],sw1,salpha,sw2,s,train_times[item])
 			likelihood -= obj
 		likelihood /= train_count
@@ -383,17 +387,18 @@ class HawkesGenerator(object):
 			patent = self.params['patent'][str(_id)]
 		except KeyError,e:
 			return None
-		w1 = patent['w1']
-		alpha = patent['alpha']
-		w2 = patent['w2']
+		sw1 = patent['w1']
+		salpha = patent['alpha']
+		sw2 = patent['w2']
 		fea = numpy.mat(patent['fea'])
 		ti = patent['cite']
 		beta = numpy.mat(self.params['beta'])
 
-		cut_point = pred_year - int(float((patent['year'])))
-		tr = numpy.mat([x for x in ti if x <= cut_point])
+		cut_point = pred_year - int(float((patent['year']))) + 1
+		tr = [x for x in ti if x[0] < cut_point]
+
 		pred = self.predict_year_by_year(tr,cut_point,duration,
-			beta*numpy.mat(fea).T,w1,alpha,w2)
+			(fea*beta).tolist()[0],sw1,salpha,sw2)
 
 		_dict = {}
 		for i in range(len(pred)):
@@ -407,15 +412,66 @@ class HawkesGenerator(object):
 			patent = self.params['patent'][str(_id)]
 		except KeyError,e:
 			return None
+
 		cites = patent['cite']
 		_dict = {}
+		counts = [0.] * self.nb_type
 		for i in range(len(cites)):
-			year = int(float(cites[i])) + int(float(patent['year']))
-			_dict[year] = i + 1
+			counts[cites[i][1]] += 1.
+			year = int(float(cites[i][0])) + int(float(patent['year']))
+			_dict[year] = copy.copy(counts)
 		_list = sorted(_dict.items(),key=lambda x:x[0])
 		return _list
 
-	def predict_year_by_year(self,tr,cut_point,duration,spontaneous,w1,alpha,w2):
+	def predict_year_by_year(self,tr,cut_point,duration,spont,sw1,salpha,sw2):
+		N = len(tr)
+		pred_seq = [[0.] * self.nb_type] * cut_point
+
+		# copy unit
+		left = 0
+		for t in range(cut_point):
+			while left < N and tr[left][0] < t + 1:
+				pred_seq[t][tr[left][1]] += 1.
+				left += 1
+
+		# prediction_unit
+		spont = numpy.mat(spont)
+		theta = numpy.mat(sw1)
+		w = numpy.mat(sw2)
+		alpha = numpy.mat(salpha)
+		for t in range(cut_point,cut_point+duration):
+			term1 = numpy.multiply(spont/theta,
+				(numpy.exp(-theta*t) - numpy.exp(-theta*(t + 1.))))
+			# triggering_unit
+			effect = numpy.mat([0.] * self.nb_type)
+			for tao in range(t):
+				counts = numpy.mat(pred_seq[tao])
+				effect_unit = numpy.multiply(counts,
+					(numpy.exp(- w * (t - tao)) - numpy.exp(- w * (t + 1 - tao))))
+				effect += effect_unit
+			term2 = (alpha * (effect.T)).T / w
+			pred_seq.append((term1 + term2).tolist()[0])
+
+		
+		return pred
+
+		pred = []
+		for t in range(cut_point+1,cut_point+duration+1):
+			delta_ct = spontaneous/w1*(numpy.exp(-w1*(t-1))-numpy.exp(-w1*t)) + \
+				alpha/w2*(numpy.sum(numpy.exp(-w2*((t-1)-tr)))-numpy.sum(numpy.exp(-w2*(t-tr))))
+			delta_ct = delta_ct[0,0]
+			if len(pred) == 0:
+				ct = N + delta_ct
+			else :
+				ct = pred[-1] + delta_ct
+			tr = tr.tolist()[0]
+			tr.extend([t for i in range(int(delta_ct))])
+			tr = numpy.mat(tr)
+			pred.append(ct)
+		return pred
+
+
+	def predict_year_by_year_single(self,tr,cut_point,duration,spont,sw1,salpha,sw2):
 		N = tr.shape[1] 
 		pred = []
 		for t in range(cut_point+1,cut_point+duration+1):
@@ -453,7 +509,8 @@ class HawkesGenerator(object):
 	def load(self,f,nb_type=1):
 		"""
 			data format : types | start time | feature
-			the value of time interval unit must be 1. if the system of unit is too large, change it.
+			the value of time scale should be 1. 
+			if the distance between adjacent scale mark is too long, it should be splitted.
 		"""
 		self.nb_type = nb_type
 		if nb_type > 1:
