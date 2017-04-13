@@ -18,13 +18,7 @@ This project is an experiment for modeling events sequence data based on Poisson
 
 Firstly, we train our point process by maximizing log likelihood on observed sequence, and predict events in the future time interval by time interval. The learning curve is shown as follows.
 
-![negative log likelihood on observed sequence](./doc/paper.gan.pretrain.learning.NLL.png)
-
 We can see that the objective declines as the training proceeds, that the objective decreases dramatically each time we employ our efficient EM algorithm. However, pure MLE leads to overfitting too quickly, too much training on observed sequence leads to performance degredation on long-term prediction, which is shown as follows.
-
-![Mean persentage error on test sequence](./doc/paper.gan.pretrain.learning.MAPE.png)
-
-![Accurcy on test sequence](./doc/paper.gan.pretrain.learning.ACC.png)
 
 Due to this, we split the observed sequence into train sequence and validation sequence to capture signal of overfitting. After performing early stopping of MLE, we will further train our model to gain more accuracy.
 
@@ -32,15 +26,6 @@ Due to this, we split the observed sequence into train sequence and validation s
 ##### Training with MLE and MSE
 
 We *discretize the timestamp of each event*, this approximate approach leads to deterministic expectation of total events in each time interval, which enables the gradients computation of any loss function w.r.t. parameters in point process model, without losing prediction accuracy in the experiment. This method enables further enhance of accuracy provided that MLE has already overfitted. We choose mean squared error on the validation sequence as our objetive functions, empirical results on real data (e.g. paper citations) has shown the efficacy.
-
-![Learning curve for ACC](./doc/paper.gan.fulltrain.learning.mle_mse.test.ACC.png)
-
-![Learning curve for MAPE](./doc/paper.gan.fulltrain.learning.mle_mse.test.MAPE.png)
-
-![final ACC metrics](./doc/paper.gan.fulltrain.mape_acc.mle_mse.test.ACC.png)
-
-![final MAPE metrics](./doc/paper.gan.fulltrain.mape_acc.mle_mse.test.MAPE.png)
-
 
 We notice that $\beta$ must be fixed in MSE-only experiment, otherwise the loss may be rather unstable and even becomes invalid value during training process. In order to test the potential ability of MSE-only method, we fix $\beta$ to be the optimal value estimated by MLE.
 
