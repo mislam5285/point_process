@@ -8,6 +8,7 @@ numpy.random.seed(1337)
 
 class HawkesGenerator(object):
 	def __init__(self):
+		self.nb_type = None
 		self.params = {}
 		self.sequence_weights = None
 		self.model = None
@@ -27,9 +28,9 @@ class HawkesGenerator(object):
 			predict_year = -1
 
 		[train_count,num_feature] = [len(features),len(features[0])] 
-		nb_type = len(sequences[0])
-		rho = 1
-		lam = 2
+		nb_type = self.nb_type
+		penalty = 1
+		reg_beta = 10
 		Z = numpy.mat([[1.0] * nb_type]*num_feature)
 		U = numpy.mat([[0.0] * nb_type]*num_feature)
 		
@@ -109,11 +110,11 @@ class HawkesGenerator(object):
 
 				# update beta, beta = v1./v2;
 				for find in range(num_feature): 
-					B = v2[0,find] + rho * (U[0,find] - Z[0,find]) 
-					beta[0,find] = (numpy.sqrt(B**2 + 4*rho*v1[0,find]) - B) /float(2*rho)
+					B = v2[0,find] + penalty * (U[0,find] - Z[0,find]) 
+					beta[0,find] = (numpy.sqrt(B**2 + 4*penalty*v1[0,find]) - B) /float(2*penalty)
 				
 				# z-update without relaxation
-				Z = self.shrinkage(beta+U, lam/float(rho)) 
+				Z = self.shrinkage(beta+U, reg_beta/float(penalty)) 
 				U = U + beta - Z 
 
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
@@ -265,10 +266,9 @@ class HawkesGenerator(object):
 			sw2 = W2[item]
 			salpha = alpha[item]
 			s = sequences[item]
-			for m in range(len(s)):
-				s[m] = [x for x in s[m] if x <= train_times[item]]
-			obj = self.calculate_objective(fea*beta,sw1,salpha,sw2,s,train_times[item])
-			likelihood -= obj[0,0]
+			s = [x for x in s if x[0] <= train_times[item]]
+			obj = self.calculate_objective((fea*beta).tolist()[0],sw1,salpha,sw2,s,train_times[item])
+			likelihood -= obj
 		likelihood /= train_count
 		return likelihood
 
@@ -284,47 +284,62 @@ class HawkesGenerator(object):
 					mat2[i,j] = 0
 		return mat1 - mat2
 
-	def calculate_objective(self,spontaneous,sw1,salpha,sw2,events,train_time):
-		T=train_time
-		result = 0.
-		for m in range(len(events)):
-			N=len(events[m])
-			s=events[m]
-			w1 = sw1[m]
-			w2 = sw2[m]
-			old_sum2 = 0
-			obj = numpy.log(spontaneous*numpy.exp(-w1*s[0]))
-			for i in range(1,N):
-				mu = spontaneous*numpy.exp(-w1*s[i])
-				trigger = 0.
-				sum2 = (old_sum2 + alpha)*numpy.exp(-w2*(s[i]-s[i-1]))
-				old_sum2 = sum2
-				obj=obj+numpy.log(mu+sum2)
-			activate = numpy.exp(-w2*(T-numpy.mat(s)))
-			activate_sum = numpy.sum((1-activate))*alpha/float(w2)
-			obj= obj - activate_sum 
-			obj = obj - (spontaneous/w1) * (1 - numpy.exp(-w1*T))
+	def calculate_objective(self,spont,sw1,salpha,sw2,events,train_time):
+		T = train_time
+		N = len(events)
+		s = events
+		spontaneous = spont[s[0][1]]
+		w1 = sw1[s[0][1]]
+		obj = numpy.log(spontaneous*numpy.exp(-w1*s[0][0]))
 
-			result += obj
-		return result
-
-	def calculate_objective_single(self,spontaneous,w1,alpha,w2,events,train_time):
-		T=train_time
-		N=len(events)
-		s=events
-		old_sum2 = 0
-		obj = numpy.log(spontaneous*numpy.exp(-w1*s[0]))
+		old_sum2 = 0.
 		for i in range(1,N):
-			mu = spontaneous*numpy.exp(-w1*s[i])
+			spontaneous = spont[s[i][1]]
+			w1 = sw1[s[i][1]]
+			w2 = sw2[s[i][1]]
+			alpha = salpha[s[i][1]][s[i-1][1]]
+			mu = spontaneous*numpy.exp(-w1*s[i][0])
 			sum1 = mu
-			sum2 = (old_sum2 + alpha)*numpy.exp(-w2*(s[i]-s[i-1]))
+			sum2 = (old_sum2 + alpha)*numpy.exp(-w2*(s[i][0]-s[i-1][0]))
 			old_sum2 = sum2
-			obj=obj+numpy.log(sum1+sum2)
-		activate = numpy.exp(-w2*(T-numpy.mat(s)))
-		activate_sum = numpy.sum((1-activate))*alpha/float(w2)
-		obj= obj - activate_sum 
-		obj = obj - (spontaneous/w1) * (1 - numpy.exp(-w1*T))
+			obj += numpy.log(sum1+sum2)
+
+		for m in range(self.nb_type):
+			w2 = sw2[m]
+			activate_sum = 0.
+			for i in range(N):
+				alpha = salpha[m][s[i][1]]
+				activate = numpy.exp(-w2*(T-s[i][0]))
+				activate_sum += (1. - activate) * alpha / float(w2)
+			obj -= activate_sum
+		# activate = numpy.exp(-w2*(T-(numpy.mat(s)[:,0])))
+		# activate_sum = numpy.sum((1-activate))*alpha/float(w2)
+		# obj= obj - activate_sum
+
+		for m in range(self.nb_type):
+			spontaneous = spont[m]
+			w1 = sw1[m]
+			obj -= (spontaneous/w1) * (1 - numpy.exp(-w1*T))
+
 		return obj
+
+	# def calculate_objective_single(self,spontaneous,w1,alpha,w2,events,train_time):
+	# 	T=train_time
+	# 	N=len(events)
+	# 	s=events
+	# 	old_sum2 = 0
+	# 	obj = numpy.log(spontaneous*numpy.exp(-w1*s[0]))
+	# 	for i in range(1,N):
+	# 		mu = spontaneous*numpy.exp(-w1*s[i])
+	# 		sum1 = mu
+	# 		sum2 = (old_sum2 + alpha)*numpy.exp(-w2*(s[i]-s[i-1]))
+	# 		old_sum2 = sum2
+	# 		obj=obj+numpy.log(sum1+sum2)
+	# 	activate = numpy.exp(-w2*(T-numpy.mat(s)))
+	# 	activate_sum = numpy.sum((1-activate))*alpha/float(w2)
+	# 	obj= obj - activate_sum 
+	# 	obj = obj - (spontaneous/w1) * (1 - numpy.exp(-w1*T))
+	# 	return obj
 
 	def compute_mape_acc(self,model,sequences,features,publish_years,pids,threshold,duration=10,pred_year=None,cut=None):
 		patents = self.params['patent']
@@ -440,6 +455,7 @@ class HawkesGenerator(object):
 			data format : types | start time | feature
 			the value of time interval unit must be 1. if the system of unit is too large, change it.
 		"""
+		self.nb_type = nb_type
 		if nb_type > 1:
 			data = []
 			pids = []
@@ -473,7 +489,12 @@ class HawkesGenerator(object):
 				for j in range(span - 2):
 					sequence[j] = [float(int(x)) for x in sequence[j] if x > -1.]
 
-				sequences.append(sequence)
+				time_seq = []
+				for k,seq in enumerate(sequence):
+					time_seq += [(x,k) for x in seq]
+				time_seq.sort(key=lambda x:x[0])
+
+				sequences.append(time_seq)
 				features.append(feature)
 				publish_years.append(publish_year)
 
@@ -523,10 +544,10 @@ class HawkesGenerator(object):
 
 				time_seq = []
 				for seq in sequence:
-					time_seq += seq
-				time_seq.sort()
+					time_seq += [(x,0) for x in seq]
+				time_seq.sort(key=lambda x:x[0])
 
-				sequences.append([time_seq])
+				sequences.append(time_seq)
 				features.append(feature)
 				publish_years.append(publish_year)
 

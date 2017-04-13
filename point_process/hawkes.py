@@ -578,9 +578,9 @@ class MTPP(object):
 				real = N + len([x for x in test_seq[i]['times'] if x + model['superparams']['cut_point'] < T + year])
 				real_self = N_self + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['superparams']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 0])
 				real_nonself = N_nonself + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['superparams']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 1])
-				mape.append(abs(pred - real) / float(real + 0.001))
-				mape_self.append(abs(pred_self - real_self) / float(real_self + 0.001))
-				mape_nonself.append(abs(pred_nonself - real_nonself) / float(real_nonself + 0.001))
+				mape.append(abs(pred - real) / float(real + 0.01))
+				mape_self.append(abs(pred_self - real_self) / float(real_self + 0.01))
+				mape_nonself.append(abs(pred_nonself - real_nonself) / float(real_nonself + 0.01))
 
 				pred_seq.append(pred)
 				pred_seq_self.append(pred_self)
