@@ -20,11 +20,12 @@ class HawkesGenerator(object):
 			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30,val_length=5,early_stop=None):
 		""" 
 			cut == observed length
-			T == pred_year - pub_year + 1. == cut * delta, where delta is the value of scale (should be 1).
+			predict_year is the firt year to begin predict
+			T == pred_year - pub_year == cut * delta, where delta is the value of scale (should be 1).
 			At least one of cut and predict_year should be passed.
 		"""
 		if cut is None:
-			T = numpy.array([predict_year - publish_year + 1 for publish_year in publish_years],dtype=float)
+			T = numpy.array([predict_year - publish_year for publish_year in publish_years],dtype=float)
 			train_times = T
 		else :
 			T = numpy.array([float(cut)] * len(publish_years),dtype=float)
@@ -35,14 +36,14 @@ class HawkesGenerator(object):
 		nb_type = self.nb_type
 		penalty = 1.
 		reg_beta = 20.
-		Z = numpy.mat([[1.0] * nb_type]*num_feature)
-		U = numpy.mat([[0.0] * nb_type]*num_feature)
+		Z = numpy.asmatrix(numpy.ones([num_feature,nb_type])) #numpy.mat([[1.0] * nb_type]*num_feature)
+		U = numpy.asmatrix(numpy.zeros([num_feature,nb_type])) #numpy.mat([[0.0] * nb_type]*num_feature)
 		
-		beta = numpy.mat([[1.0] * nb_type]*num_feature)
-		alpha = [[[1.0] * nb_type] * nb_type]*train_count
+		beta = numpy.asmatrix(numpy.ones([num_feature,nb_type])) #numpy.mat([[1.0] * nb_type]*num_feature)
+		alpha = numpy.ones([train_count,nb_type,nb_type]).tolist() #[[[1.0] * nb_type] * nb_type]*train_count
 		# sw1 = 0.05
-		W1 = [[0.05] * nb_type]*train_count
-		W2 = [[1.0] * nb_type]*train_count
+		W1 = (numpy.zeros([train_count,nb_type]) + 0.05).tolist() #[[0.05] * nb_type]*train_count
+		W2 = numpy.ones([train_count,nb_type]).tolist() #[[1.0] * nb_type]*train_count
 		# sw2 = 1.0
 
 		init_time = time.time()
@@ -250,11 +251,13 @@ class HawkesGenerator(object):
 		for i in range(len(pids)):
 			seq = {}
 			fea = numpy.mat(features[i])
+			beta = numpy.mat(beta)
 			seq['seq_id'] = i
 			seq['paper_id'] = pids[i]
 			seq['theta'] = W1[i]
 			seq['w'] = W2[i]
 			seq['alpha'] = alpha[i]
+			seq['fea'] = features[item]
 			seq['beta'] = beta.tolist()
 			seq['spont'] = (fea*beta).tolist()[0]
 			result.append(seq)
@@ -394,7 +397,7 @@ class HawkesGenerator(object):
 		ti = patent['cite']
 		beta = numpy.mat(self.params['beta'])
 
-		cut_point = pred_year - int(float((patent['year']))) + 1
+		cut_point = pred_year - int(float((patent['year'])))
 		tr = [x for x in ti if x[0] < cut_point]
 
 		pred = self.predict_year_by_year(tr,cut_point,duration,
@@ -402,7 +405,7 @@ class HawkesGenerator(object):
 
 		_dict = {}
 		for i in range(len(pred)):
-			year = pred_year + i + 1
+			year = pred_year + i
 			_dict[year] = pred[i]
 		_list = sorted(_dict.items(),key=lambda x:x[0])
 		return _list
@@ -425,7 +428,7 @@ class HawkesGenerator(object):
 
 	def predict_year_by_year(self,tr,cut_point,duration,spont,sw1,salpha,sw2):
 		N = len(tr)
-		pred_seq = [[0.] * self.nb_type] * cut_point
+		pred_seq = numpy.zeros([cut_point,self.nb_type]).tolist()
 
 		# copy unit
 		left = 0
@@ -452,7 +455,8 @@ class HawkesGenerator(object):
 			term2 = (alpha * (effect.T)).T / w
 			pred_seq.append((term1 + term2).tolist()[0])
 
-		
+		print pred_seq
+		exit()
 		return pred
 
 		pred = []
@@ -776,9 +780,9 @@ if __name__ == '__main__':
 		predictor = HawkesGenerator()
 		# loaded = predictor.load('../data/paper3.txt')
 		loaded = predictor.load('../data/paper3.txt',nb_type=2)
-		print loaded[0][0]
-		print loaded[0][1]
-		print loaded[0][2]
+		# print loaded[0][0]
+		# print loaded[0][1]
+		# print loaded[0][2]
 		model = predictor.pre_train(*loaded)
 		
 
