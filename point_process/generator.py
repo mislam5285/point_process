@@ -1,5 +1,6 @@
 #coding:utf-8
 import numpy
+import numpy as np
 import os,sys,time
 import json,csv
 import cPickle as pickle
@@ -20,7 +21,7 @@ class HawkesGenerator(object):
 			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30,val_length=5,early_stop=None):
 		""" 
 			cut == observed length
-			predict_year is the firt year to begin predict
+			cut_point == predict_year is the firt year to begin predict
 			T == pred_year - pub_year == cut * delta, where delta is the value of scale (should be 1).
 			At least one of cut and predict_year should be passed.
 		"""
@@ -83,7 +84,7 @@ class HawkesGenerator(object):
 				v2 = numpy.mat([0.0]*num_feature)
 				for sam in range(train_count): 
 					s = sequences[sam]
-					s = [x for x in s if x < train_times[sam]]
+					s = [x for x in s if x[0] < train_times[sam]]
 					n = len(s)
 					fea = numpy.mat(features[sam])
 					sw1 = W1[sam]
@@ -156,7 +157,7 @@ class HawkesGenerator(object):
 				step_size /= 1 + 10 * step_size
 				for sam in range(train_count):
 					s = sequences[sam]
-					s = numpy.mat([x for x in s if x < train_times[sam]])
+					s = numpy.mat([x for x in s if x[0] < train_times[sam]])
 					n = s.shape[1]
 					fea = numpy.mat(features[sam])
 					sw1 = W1[sam]
@@ -350,40 +351,73 @@ class HawkesGenerator(object):
 
 	def compute_mape_acc(self,model,sequences,features,publish_years,pids,threshold,duration=10,pred_year=None,cut=None):
 		patents = self.params['patent']
-		diffs = []
-		ll = 20
+		g_z = []
+		x = []
 		for i, key in enumerate(patents):
 			if cut is None:
 				pred_year = pred_year or self.params['predict_year']
 			else:
 				pred_year = cut + int(float((patents[key]['year'])))
-			real = self.real_one(key)
+			real = self.real_one(key,cut_point=pred_year - int(float((patents[key]['year']))) + duration)
 			pred = self.predict_one(key,duration=duration,pred_year=pred_year)
-			diff = []
-			ir = 0 # index_real
-			for p in pred:
-				while int(real[ir][0]) < int(p[0]):
-					ir += 1
-					if ir >= len(real):
-						ir = len(real) - 1
-						break
-				# if ir != len(real) - 1 and int(real[ir][0]) != int(p[0]):
-				# 	ir -= 1
-				diff.append((p[0],(p[1] - real[ir][1])/float(real[ir][1] + 0.1) ))
-			diffs.append(diff)
-			if ll > len(diff) : ll = len(diff)
-		mape = [0.0] * ll
-		acc = [0.0] * ll
-		for diff in diffs:
-			for i in range(ll):
-				mape[i] += abs(diff[i][1])
-				if abs(diff[i][1]) < 0.3 :
-					acc[i] += 1
-		for i in range(ll):
-			mape[i] /= float(len(diffs))
-			acc[i] /= float(len(diffs))
+			x.append(real)
+			g_z.append(pred)
+
+		x = numpy.array(x)
+		g_z = numpy.array(g_z)
+		assert g_z.shape == x.shape
+		count_g_z = np.sum(g_z,2)
+		count_x = np.sum(x,2)
+		for i in range(1,g_z.shape[1]):
+			count_g_z[:,i] += count_g_z[:,i-1]
+			count_x[:,i] += count_x[:,i-1]
+		count_g_z = count_g_z[:,-duration:]
+		count_x = count_x[:,-duration:]
+
+		mape = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1),0)
+		acc = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1) < 0.3,0)
+
+		return {
+			'mape':mape.tolist(),
+			'acc':acc.tolist(),
+		}
+
+	# def compute_mape_acc_single(self,model,sequences,features,publish_years,pids,threshold,duration=10,pred_year=None,cut=None):
+	# 	patents = self.params['patent']
+	# 	diffs = []
+	# 	ll = 20
+	# 	for i, key in enumerate(patents):
+	# 		if cut is None:
+	# 			pred_year = pred_year or self.params['predict_year']
+	# 		else:
+	# 			pred_year = cut + int(float((patents[key]['year'])))
+	# 		real = self.real_one(key)
+	# 		pred = self.predict_one(key,duration=duration,pred_year=pred_year)
+	# 		diff = []
+	# 		ir = 0 # index_real
+	# 		for p in pred:
+	# 			while int(real[ir][0]) < int(p[0]):
+	# 				ir += 1
+	# 				if ir >= len(real):
+	# 					ir = len(real) - 1
+	# 					break
+	# 			# if ir != len(real) - 1 and int(real[ir][0]) != int(p[0]):
+	# 			# 	ir -= 1
+	# 			diff.append((p[0],(p[1] - real[ir][1])/float(real[ir][1] + 0.1) ))
+	# 		diffs.append(diff)
+	# 		if ll > len(diff) : ll = len(diff)
+	# 	mape = [0.0] * ll
+	# 	acc = [0.0] * ll
+	# 	for diff in diffs:
+	# 		for i in range(ll):
+	# 			mape[i] += abs(diff[i][1])
+	# 			if abs(diff[i][1]) < 0.3 :
+	# 				acc[i] += 1
+	# 	for i in range(ll):
+	# 		mape[i] /= float(len(diffs))
+	# 		acc[i] /= float(len(diffs))
 		
-		return {'mape':mape,'acc':acc}
+	# 	return {'mape':mape,'acc':acc}
 
 	def predict_one(self,_id,duration,pred_year):
 		try:
@@ -400,31 +434,69 @@ class HawkesGenerator(object):
 		cut_point = pred_year - int(float((patent['year'])))
 		tr = [x for x in ti if x[0] < cut_point]
 
-		pred = self.predict_year_by_year(tr,cut_point,duration,
+		return self.predict_year_by_year(tr,cut_point,duration,
 			(fea*beta).tolist()[0],sw1,salpha,sw2)
 
-		_dict = {}
-		for i in range(len(pred)):
-			year = pred_year + i
-			_dict[year] = pred[i]
-		_list = sorted(_dict.items(),key=lambda x:x[0])
-		return _list
-
-	def real_one(self,_id):
+	def real_one(self,_id,cut_point):
 		try:
 			patent = self.params['patent'][str(_id)]
 		except KeyError,e:
 			return None
 
 		cites = patent['cite']
-		_dict = {}
-		counts = [0.] * self.nb_type
-		for i in range(len(cites)):
-			counts[cites[i][1]] += 1.
-			year = int(float(cites[i][0])) + int(float(patent['year']))
-			_dict[year] = copy.copy(counts)
-		_list = sorted(_dict.items(),key=lambda x:x[0])
-		return _list
+		N = len(cites)
+		real_seq = numpy.zeros([cut_point,self.nb_type]).tolist()
+
+		# copy unit
+		left = 0
+		for t in range(cut_point):
+			while left < N and cites[left][0] < t + 1:
+				real_seq[t][cites[left][1]] += 1.
+				left += 1
+
+		return real_seq
+
+
+	# def predict_one_single(self,_id,duration,pred_year):
+	# 	try:
+	# 		patent = self.params['patent'][str(_id)]
+	# 	except KeyError,e:
+	# 		return None
+	# 	sw1 = patent['w1']
+	# 	salpha = patent['alpha']
+	# 	sw2 = patent['w2']
+	# 	fea = numpy.mat(patent['fea'])
+	# 	ti = patent['cite']
+	# 	beta = numpy.mat(self.params['beta'])
+
+	# 	cut_point = pred_year - int(float((patent['year'])))
+	# 	tr = [x for x in ti if x[0] < cut_point]
+
+	# 	pred = self.predict_year_by_year(tr,cut_point,duration,
+	# 		(fea*beta).tolist()[0],sw1,salpha,sw2)
+
+	# 	_dict = {}
+	# 	for i in range(len(pred)):
+	# 		year = pred_year + i
+	# 		_dict[year] = pred[i]
+	# 	_list = sorted(_dict.items(),key=lambda x:x[0])
+	# 	return _list
+
+	# def real_one_single(self,_id):
+	# 	try:
+	# 		patent = self.params['patent'][str(_id)]
+	# 	except KeyError,e:
+	# 		return None
+
+	# 	cites = patent['cite']
+	# 	_dict = {}
+	# 	counts = [0.] * self.nb_type
+	# 	for i in range(len(cites)):
+	# 		counts[cites[i][1]] += 1.
+	# 		year = int(float(cites[i][0])) + int(float(patent['year']))
+	# 		_dict[year] = copy.copy(counts)
+	# 	_list = sorted(_dict.items(),key=lambda x:x[0])
+	# 	return _list
 
 	def predict_year_by_year(self,tr,cut_point,duration,spont,sw1,salpha,sw2):
 		N = len(tr)
@@ -455,42 +527,25 @@ class HawkesGenerator(object):
 			term2 = (alpha * (effect.T)).T / w
 			pred_seq.append((term1 + term2).tolist()[0])
 
-		print pred_seq
-		exit()
-		return pred
-
-		pred = []
-		for t in range(cut_point+1,cut_point+duration+1):
-			delta_ct = spontaneous/w1*(numpy.exp(-w1*(t-1))-numpy.exp(-w1*t)) + \
-				alpha/w2*(numpy.sum(numpy.exp(-w2*((t-1)-tr)))-numpy.sum(numpy.exp(-w2*(t-tr))))
-			delta_ct = delta_ct[0,0]
-			if len(pred) == 0:
-				ct = N + delta_ct
-			else :
-				ct = pred[-1] + delta_ct
-			tr = tr.tolist()[0]
-			tr.extend([t for i in range(int(delta_ct))])
-			tr = numpy.mat(tr)
-			pred.append(ct)
-		return pred
+		return pred_seq
 
 
-	def predict_year_by_year_single(self,tr,cut_point,duration,spont,sw1,salpha,sw2):
-		N = tr.shape[1] 
-		pred = []
-		for t in range(cut_point+1,cut_point+duration+1):
-			delta_ct = spontaneous/w1*(numpy.exp(-w1*(t-1))-numpy.exp(-w1*t)) + \
-				alpha/w2*(numpy.sum(numpy.exp(-w2*((t-1)-tr)))-numpy.sum(numpy.exp(-w2*(t-tr))))
-			delta_ct = delta_ct[0,0]
-			if len(pred) == 0:
-				ct = N + delta_ct
-			else :
-				ct = pred[-1] + delta_ct
-			tr = tr.tolist()[0]
-			tr.extend([t for i in range(int(delta_ct))])
-			tr = numpy.mat(tr)
-			pred.append(ct)
-		return pred
+	# def predict_year_by_year_single(self,tr,cut_point,duration,spont,sw1,salpha,sw2):
+	# 	N = tr.shape[1] 
+	# 	pred = []
+	# 	for t in range(cut_point+1,cut_point+duration+1):
+	# 		delta_ct = spontaneous/w1*(numpy.exp(-w1*(t-1))-numpy.exp(-w1*t)) + \
+	# 			alpha/w2*(numpy.sum(numpy.exp(-w2*((t-1)-tr)))-numpy.sum(numpy.exp(-w2*(t-tr))))
+	# 		delta_ct = delta_ct[0,0]
+	# 		if len(pred) == 0:
+	# 			ct = N + delta_ct
+	# 		else :
+	# 			ct = pred[-1] + delta_ct
+	# 		tr = tr.tolist()[0]
+	# 		tr.extend([t for i in range(int(delta_ct))])
+	# 		tr = numpy.mat(tr)
+	# 		pred.append(ct)
+	# 	return pred
 
 	def create_trainable_model(self,sequences, pred_length, proxy_layer=None, need_noise_dropout=False, stddev=5.,sample_stddev=None):
 		from keras.layers import Input, GaussianNoise
