@@ -18,12 +18,12 @@ class HawkesGenerator(object):
 		self.hawkes_layer = None
 
 	def pre_train(self,sequences,features,publish_years,pids,threshold,cut=15,predict_year=None,
-			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30,val_length=5,early_stop=None):
+			max_iter=0,max_outer_iter=100,alpha_iter=3,w_iter=30,val_length=5,early_stop=None,keep_weight_sync=True):
 		""" 
-			cut == observed length
-			cut_point == predict_year is the firt year to begin predict
-			T == pred_year - pub_year == cut * delta, where delta is the value of scale (should be 1).
-			At least one of cut and predict_year should be passed.
+			cut == observed length == T / delta, is a non-dimensional value
+			predict_year is the firt year to begin predict
+			cut_point == train_time == T == pred_year - pub_year == cut * delta, where delta is the value of scale (should be 1).
+			At least one out of cut and predict_year should be specified.
 		"""
 		if cut is None:
 			T = numpy.array([predict_year - publish_year for publish_year in publish_years],dtype=float)
@@ -35,13 +35,11 @@ class HawkesGenerator(object):
 
 		[train_count,num_feature] = [len(features),len(features[0])] 
 		nb_type = self.nb_type
-		penalty = 1.
-		reg_beta = 20.
 		Z = numpy.asmatrix(numpy.ones([num_feature,nb_type])) #numpy.mat([[1.0] * nb_type]*num_feature)
 		U = numpy.asmatrix(numpy.zeros([num_feature,nb_type])) #numpy.mat([[0.0] * nb_type]*num_feature)
 		
 		beta = numpy.asmatrix(numpy.ones([num_feature,nb_type])) #numpy.mat([[1.0] * nb_type]*num_feature)
-		alpha = numpy.ones([train_count,nb_type,nb_type]).tolist() #[[[1.0] * nb_type] * nb_type]*train_count
+		Alpha = numpy.ones([train_count,nb_type,nb_type]).tolist() #[[[1.0] * nb_type] * nb_type]*train_count
 		# sw1 = 0.05
 		W1 = (numpy.zeros([train_count,nb_type]) + 0.05).tolist() #[[0.05] * nb_type]*train_count
 		W2 = numpy.ones([train_count,nb_type]).tolist() #[[1.0] * nb_type]*train_count
@@ -50,8 +48,8 @@ class HawkesGenerator(object):
 		init_time = time.time()
 		init_clock = time.clock()
 
-		likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
-		self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
+		likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,Alpha,sequences,train_times)
+		self.update_params(pids,Alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
 		mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,cut=cut)
 		mape_acc_val = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,
 			duration=val_length,pred_year=predict_year-val_length,cut=cut-val_length)
@@ -66,7 +64,7 @@ class HawkesGenerator(object):
 			'LL':likelihood,
 			'w1':numpy.mean(W1),
 			'w2':numpy.mean(W2),
-			'mean_alpha':numpy.mean(alpha),
+			'mean_alpha':numpy.mean(Alpha),
 			'mean_beta':numpy.mean(beta),
 			'mape':mape_acc['mape'],
 			'acc':mape_acc['acc'],
@@ -77,11 +75,11 @@ class HawkesGenerator(object):
 
 		for outer_times in range(max_outer_iter):
 
-			# print 'step 1 : update alpha,beta ...'
+			# print 'step 1 : update Alpha,beta ...'
 
 			for times in range(alpha_iter):
-				v1 = numpy.mat([0.0]*num_feature) 
-				v2 = numpy.mat([0.0]*num_feature)
+				D = numpy.mat([0.0]*num_feature) 
+				E = numpy.mat([0.0]*num_feature)
 				for sam in range(train_count): 
 					s = sequences[sam]
 					s = [x for x in s if x[0] < train_times[sam]]
@@ -89,8 +87,7 @@ class HawkesGenerator(object):
 					fea = numpy.mat(features[sam])
 					sw1 = W1[sam]
 					sw2 = W2[sam]
-					salpha = alpha[sam]
-					old_obj = 0 
+					salpha = Alpha[sam]
 
 					for inner_iter in range(max_iter+1):
 						# E-step
@@ -110,27 +107,29 @@ class HawkesGenerator(object):
 						alpha2 = (n - numpy.sum(numpy.exp(- sw2 * (T[sam] - numpy.array(s)))))/float(sw2)
 						salpha = (alpha1/float(alpha2))[0,0]
 
-					v1 += p1 
-					v2 += fea * (1 - numpy.exp(- sw1 * T[sam])) / float(sw1) 
-					alpha[sam] = salpha
+					D += p1 
+					E += fea * (1 - numpy.exp(- sw1 * T[sam])) / float(sw1) 
+					Alpha[sam] = salpha
 
-				# update beta, beta = v1./v2;
+				penalty = 5.
+				reg_beta = 20.
+				# update beta, beta = ( - E + sqrt(E**2 + 4 * penalty * D) ) / (2 * penalty)
 				for find in range(num_feature): 
-					B = v2[0,find] + penalty * (U[0,find] - Z[0,find]) 
-					beta[0,find] = (numpy.sqrt(B**2 + 4*penalty*v1[0,find]) - B) /float(2*penalty)
+					_E = E[0,find] + penalty * (U[0,find] - Z[0,find]) 
+					beta[0,find] = (numpy.sqrt(_E**2 + 4*penalty*D[0,find]) - _E) /float(2*penalty)
 				
 				# z-update without relaxation
 				Z = self.shrinkage(beta+U, reg_beta/float(penalty)) 
 				U = U + beta - Z 
 
-				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
-				self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
+				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,Alpha,sequences,train_times)
+				self.update_params(pids,Alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
 				mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,cut=cut)
 				mape_acc_val = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,
 					duration=val_length,pred_year=predict_year-val_length,cut=cut-val_length)
 
 				print {
-					'source':'update alpha beta',
+					'source':'update Alpha beta',
 					'outer_iter':outer_times,
 					'inner_iter':times,
 					'time':time.time() - init_time,
@@ -138,7 +137,7 @@ class HawkesGenerator(object):
 					'LL':likelihood,
 					'w1':numpy.mean(W1),
 					'w2':numpy.mean(W2),
-					'mean_alpha':numpy.mean(alpha),
+					'mean_alpha':numpy.mean(Alpha),
 					'mean_beta':numpy.mean(beta),
 					'mape':mape_acc['mape'],
 					'acc':mape_acc['acc'],
@@ -162,7 +161,7 @@ class HawkesGenerator(object):
 					fea = numpy.mat(features[sam])
 					sw1 = W1[sam]
 					sw2 = W2[sam]
-					salpha = alpha[sam]
+					salpha = Alpha[sam]
 					old_obj = 0
 					count = 0
 					# while 1:
@@ -190,8 +189,8 @@ class HawkesGenerator(object):
 					W1[sam] = sw1
 					W2[sam] = sw2
 
-				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,alpha,sequences,train_times)
-				self.update_params(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
+				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,Alpha,sequences,train_times)
+				self.update_params(pids,Alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
 				mape_acc = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,cut=cut)
 				mape_acc_val = self.compute_mape_acc(self.params,sequences,features,publish_years,pids,threshold,
 					duration=val_length,pred_year=predict_year-val_length,cut=cut-val_length)
@@ -205,7 +204,7 @@ class HawkesGenerator(object):
 					'LL':likelihood,
 					'w1':numpy.mean(W1),
 					'w2':numpy.mean(W2),
-					'mean_alpha':numpy.mean(alpha),
+					'mean_alpha':numpy.mean(Alpha),
 					'mean_beta':numpy.mean(beta),
 					'mape':mape_acc['mape'],
 					'acc':mape_acc['acc'],
@@ -220,15 +219,15 @@ class HawkesGenerator(object):
 
 			if early_stop is not None and iterations >= early_stop: break
 
-		self.update_sequence_weights(pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
+		self.update_sequence_weights(pids,Alpha,features,sequences,publish_years,predict_year,beta,W1,W2)
 		return self.params
 
-	def update_params(self,pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=None):
+	def update_params(self,pids,Alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=None):
 
 		patent = {}
-		for item in range(len(alpha)):
+		for item in range(len(Alpha)):
 			a_patent = {}
-			a_patent['alpha'] = alpha[item]
+			a_patent['alpha'] = Alpha[item]
 			a_patent['w1'] = W1[item]
 			a_patent['w2'] = W2[item]
 			a_patent['fea'] = features[item]
@@ -246,7 +245,7 @@ class HawkesGenerator(object):
 
 		self.params = params
 
-	def update_sequence_weights(self,pids,alpha,features,sequences,publish_years,predict_year,beta,W1,W2):
+	def update_sequence_weights(self,pids,Alpha,features,sequences,publish_years,predict_year,beta,W1,W2):
 
 		result = []
 		for i in range(len(pids)):
@@ -257,7 +256,7 @@ class HawkesGenerator(object):
 			seq['paper_id'] = pids[i]
 			seq['theta'] = W1[i]
 			seq['w'] = W2[i]
-			seq['alpha'] = alpha[i]
+			seq['alpha'] = Alpha[i]
 			seq['fea'] = features[item]
 			seq['beta'] = beta.tolist()
 			seq['spont'] = (fea*beta).tolist()[0]
@@ -266,13 +265,13 @@ class HawkesGenerator(object):
 		self.sequence_weights = result
 
 
-	def compute_likelihood(self,beta,train_count,features,W1,W2,alpha,sequences,train_times):
+	def compute_likelihood(self,beta,train_count,features,W1,W2,Alpha,sequences,train_times):
 		likelihood = 0.
 		for item in range(train_count):
 			fea = numpy.mat(features[item])
 			sw1 = W1[item]
 			sw2 = W2[item]
-			salpha = alpha[item]
+			salpha = Alpha[item]
 			s = sequences[item]
 			s = [x for x in s if x[0] < train_times[item]]
 			obj = self.calculate_objective((fea*beta).tolist()[0],sw1,salpha,sw2,s,train_times[item])

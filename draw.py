@@ -13,7 +13,7 @@ from matplotlib.ticker import FuncFormatter
 
 from point_process.hawkes import MHawkes, MTPP, Single
 from point_process.generator import HawkesGenerator
-from point_process.gan import HawkesGAN
+from point_process.pp_gan import HawkesGAN
 
 from preprocess.screen import Screenor
 
