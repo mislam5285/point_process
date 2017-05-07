@@ -3,13 +3,20 @@
 
 ### Introduction
 
-This project is an experiment for modeling events sequence data based on Poisson point process. The detailed description for algorithms can be found in 
+This project is an experiment for modeling events sequence data based on temporal point process.
 
-- linkes:
 
-	- IJCAI:[https://www.ijcai.org/Proceedings/16/Papers/380.pdf](https://www.ijcai.org/Proceedings/16/Papers/380.pdf)
+### Deployment
 
-	- AAAI:[http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/viewFile/14385/13934](http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/viewFile/14385/13934)
+On Ubuntu 16.04 (with Python2.7), run the following commands as root in the terminal:
+
+    $ apt update
+    $ apt -y install git python-pip python-tk
+    $ pip install numpy tensorflow keras matplotlib
+
+Then go to the root directory of this project, run:
+
+	$ python draw.py
 
 
 ### Experiment Results
@@ -32,3 +39,12 @@ We notice that $\beta$ must be fixed in MSE-only experiment, otherwise the loss 
 Gaussion noise on the output of generator is useful to mitigate overfitting. The number of samples is always limited, which may distort the real distribution of observed sequence, we could see the noise as a form of random data augmentation. Note that the noise is only active at training time.
 
 
+### Referrences
+
+ The detailed description for algorithms can be found in 
+
+- linkes:
+
+	- IJCAI:[https://www.ijcai.org/Proceedings/16/Papers/380.pdf](https://www.ijcai.org/Proceedings/16/Papers/380.pdf)
+
+	- AAAI:[http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/viewFile/14385/13934](http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/viewFile/14385/13934)

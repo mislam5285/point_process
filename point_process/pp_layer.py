@@ -56,7 +56,8 @@ class HawkesLayer(Layer):
 		assert len(input_shape) == 2
 		assert input_shape[1] == 1 # currenly only support one sample per batch
 
-		self.sequences = self.add_weight(shape=(self.nb_sequence, self.nb_event, self.nb_type, self.nb_feature),
+		self.sequences = self.add_weight(name='pp_sequences',
+									shape=(self.nb_sequence, self.nb_event, self.nb_type, self.nb_feature),
 									initializer=self.sequences_initializer,
 									trainable=False)
 
@@ -64,19 +65,23 @@ class HawkesLayer(Layer):
 			super(HawkesLayer, self).build(input_shape)
 			return
 
-		self.spontaneous = self.add_weight(shape=(self.nb_sequence, self.nb_type),
+		self.spontaneous = self.add_weight(name='pp_spontaneous',
+									shape=(self.nb_sequence, self.nb_type),
 									initializer=self.spont_initializer,
 									trainable=False)
 
-		self.Theta = self.add_weight(shape=(self.nb_sequence, self.nb_type),
+		self.Theta = self.add_weight(name='pp_Theta',
+									shape=(self.nb_sequence, self.nb_type),
 									initializer=self.Theta_initializer,
 									trainable=True)
 
-		self.W = self.add_weight(shape=(self.nb_sequence, self.nb_type),
+		self.W = self.add_weight(name='pp_W',
+									shape=(self.nb_sequence, self.nb_type),
 									initializer=self.W_initializer,
 									trainable=True)
 
-		self.Alpha = self.add_weight(shape=(self.nb_sequence, self.nb_type, self.nb_type),
+		self.Alpha = self.add_weight(name='pp_Alpha',
+									shape=(self.nb_sequence, self.nb_type, self.nb_type),
 									initializer=self.Alpha_initializer,
 									trainable=True)
 

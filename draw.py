@@ -563,7 +563,7 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
     # will_train_gan_noise_dropout = False
     # will_train_mle_gan_aternative = False
 
-    will_train_mle_to_wgan = True
+    will_train_mle_to_wgan = False
     # will_train_wgan_only = False
     # will_train_wgan_only_noise = False
 
