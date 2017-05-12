@@ -31,6 +31,7 @@ def screen():
         paper_data = root + '/data/paper3.txt'
         paper_data_raw = root + '/data/paper2.txt'
         result = screenor.screen_paper(paper_data_raw)
+        print {'number of paper result':len(result)}
         with open(paper_data,'w') as fw:
             fw.writelines(result)
 
@@ -39,6 +40,7 @@ def screen():
         patent_data = root + '/data/patent3.txt'
         patent_data_raw = root + '/data/patent2.txt'
         result = screenor.screen_patent(patent_data_raw)
+        print {'number of patent result':len(result)}
         with open(patent_data,'w') as fw:
             fw.writelines(result)
 
@@ -1408,13 +1410,13 @@ if __name__ == '__main__' :
     event_types = {
         'paper3':1,
         'patent3':2,
-        'sensor3':24,
+        'patent2':2,
     }
     for dataset_id in ['paper3']:
         # draw_fix_train_total_xiao(dataset_id,nb_type=event_types[dataset_id])
         # draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
         # draw_hawkes_generator_pretrain_convergence(dataset_id,nb_type=event_types[dataset_id])
-        draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
+        # draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_learning_mle_mse_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_mle_mse_mape_acc_constast(dataset_id,nb_type=event_types[dataset_id])
         pass

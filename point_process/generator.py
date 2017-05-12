@@ -33,17 +33,29 @@ class HawkesGenerator(object):
 			train_times = T
 			predict_year = -1
 
+		for sam in range(len(sequences)):
+			sequence = sequences[sam]
+			train_sequence = [x for x in sequence if x[0] < train_times[sam]]
+			if len(train_sequence) == 0:
+				sys.stderr.write(str({
+					'error info':'len(train_sequence) == 0',
+					'seq_index':sam,
+					'pid':pids[sam],
+				}) + '\n')
+				sys.stderr.flush()
+				sequences[sam] = [(0.,0)] + sequence # this should not affect the accuracy of model
+
 		[train_count,num_feature] = [len(features),len(features[0])] 
 		nb_type = self.nb_type
-		Z = numpy.asmatrix(numpy.ones([num_feature,nb_type])) #numpy.mat([[1.0] * nb_type]*num_feature)
-		U = numpy.asmatrix(numpy.zeros([num_feature,nb_type])) #numpy.mat([[0.0] * nb_type]*num_feature)
+		Z = numpy.asmatrix(numpy.ones([num_feature,nb_type]))
+		U = numpy.asmatrix(numpy.zeros([num_feature,nb_type]))
 		
-		beta = numpy.asmatrix(numpy.ones([num_feature,nb_type])) #numpy.mat([[1.0] * nb_type]*num_feature)
-		Alpha = numpy.ones([train_count,nb_type,nb_type]).tolist() #[[[1.0] * nb_type] * nb_type]*train_count
-		# sw1 = 0.05
-		W1 = (numpy.zeros([train_count,nb_type]) + 0.05).tolist() #[[0.05] * nb_type]*train_count
-		W2 = numpy.ones([train_count,nb_type]).tolist() #[[1.0] * nb_type]*train_count
-		# sw2 = 1.0
+		beta = numpy.asmatrix(numpy.ones([num_feature,nb_type]))
+		Alpha = numpy.ones([train_count,nb_type,nb_type]).tolist()
+
+		W1 = (numpy.zeros([train_count,nb_type]) + 0.05).tolist()
+		W2 = numpy.ones([train_count,nb_type]).tolist()
+
 
 		init_time = time.time()
 		init_clock = time.clock()
@@ -78,8 +90,8 @@ class HawkesGenerator(object):
 			# print 'step 1 : update Alpha,beta ...'
 
 			for times in range(alpha_iter):
-				D = numpy.asmatrix(numpy.zeros([num_feature,nb_type]))# numpy.mat([0.0]*num_feature) 
-				E = numpy.asmatrix(numpy.zeros([num_feature,nb_type]))# numpy.mat([0.0]*num_feature)
+				D = numpy.asmatrix(numpy.zeros([num_feature,nb_type]))
+				E = numpy.asmatrix(numpy.zeros([num_feature,nb_type]))
 				for sam in range(train_count): 
 					s = sequences[sam]
 					s = [x for x in s if x[0] < train_times[sam]]
@@ -88,10 +100,6 @@ class HawkesGenerator(object):
 					sw1 = W1[sam]
 					sw2 = W2[sam]
 					salpha = Alpha[sam]
-
-					# for inner_iter in range(max_iter+1):
-						# psi = numpy.multiply(beta,fea) / (beta * fea.T) 
-					# betam = beta[:,m]
 
 					# Expectation-step
 					psi = [numpy.multiply(fea,beta[:,s[0][1]].T) / float(fea * beta[:,s[0][1]])] # all psi in AAAI paper
@@ -103,17 +111,12 @@ class HawkesGenerator(object):
 						w2 = sw2[s[i][1]]
 						alpha = salpha[s[i][1]][s[i-1][1]]
 						betam = beta[:,s[i][1]]
-						# mu = beta * fea.T * numpy.exp(- sw1 * s[i])
 						mu = float(fea * betam) * numpy.exp(-w1*s[i][0])
-						# sum1 = mu[0,0]
 						sum1 = mu
-						# sum2 = (old_sum2 + salpha) * numpy.exp(- sw2 * (s[i] - s[i-1]))
 						sum2 = (old_sum2 + alpha) * numpy.exp(-w2*(s[i][0]-s[i-1][0]))
 						old_sum2 = sum2
 						lambda_ = sum1 + sum2
-						# psi += numpy.multiply(beta, fea) * numpy.exp(- sw1 * s[i]) / float(lambda_)
 						psi += [numpy.multiply(fea,betam.T) * numpy.exp(-w1*s[i][0]) / float(lambda_)]
-						# phi += [1 - mu/float(lambda_)]
 						Phi[s[i][1],s[i-1][1]] += 1. - mu/float(lambda_)
 
 					# Minimization-step
@@ -126,7 +129,6 @@ class HawkesGenerator(object):
 						w2 = sw2[m]
 						for d in range(self.nb_type):
 							alpha1 = Phi[m,d]
-							# alpha2 = (n - numpy.sum(numpy.exp(- sw2 * (T[sam] - numpy.array(s)))))/float(sw2)
 							sm = numpy.mat([x[0] for x in s if x[1] == d])
 							alpha2 = numpy.sum(1. - numpy.exp(-w2*(T[sam] - sm))) / float(w2)
 							salpha[m][d] = alpha1/float(alpha2) if alpha2 != 0. else 1.
@@ -142,57 +144,14 @@ class HawkesGenerator(object):
 									'salpha':salpha,
 								}) + '\n')
 
-					Alpha[sam] = salpha # actually it's unnecessary because of referrence of list
-				# for sam in range(train_count): 
-				# 	s = sequences[sam]
-				# 	s = [x for x in s if x[0] < train_times[sam]]
-				# 	n = len(s)
-				# 	fea = numpy.mat(features[sam])
-				# 	sw1 = W1[sam]
-				# 	sw2 = W2[sam]
-				# 	salpha = Alpha[sam]
-
-				# 	# for inner_iter in range(max_iter+1):
-				# 	for m in range(self.nb_type):
-				# 		# E-step
-				# 		# psi = numpy.multiply(beta,fea) / (beta * fea.T) 
-				# 		betam = beta[:,m]
-				# 		psi = numpy.multiply(fea,betam.T) / float(fea * betam)
-				# 		phi = 0.
-				# 		old_sum2 = 0.
-				# 		for i in range(1,n): 
-				# 			spontaneous = spont[s[i][1]]
-				# 			w1 = sw1[s[i][1]]
-				# 			w2 = sw2[s[i][1]]
-				# 			# mu = beta * fea.T * numpy.exp(- sw1 * s[i])
-				# 			mu = float(fea * betam) * numpy.exp(- )
-				# 			sum1 = mu[0,0]
-				# 			sum2 = (old_sum2 + salpha) * numpy.exp(- sw2 * (s[i] - s[i-1]))
-				# 			old_sum2 = sum2
-				# 			lambda_ = sum1 + sum2
-				# 			psi += numpy.multiply(beta, fea) * numpy.exp(- sw1 * s[i]) / float(lambda_)
-				# 			phi += 1 - mu/float(lambda_)
-				# 		# M-step
-				# 		alpha1 = phi
-				# 		alpha2 = (n - numpy.sum(numpy.exp(- sw2 * (T[sam] - numpy.array(s)))))/float(sw2)
-				# 		salpha = (alpha1/float(alpha2))[0,0]
-
-
-					# D += p1 
-					# E += fea * (1 - numpy.exp(- sw1 * T[sam])) / float(sw1) 
-					# Alpha[sam] = salpha
+					Alpha[sam] = salpha
 
 				penalty = 5.
 				reg_beta = 20.
 				E_ = E + penalty * (U - Z)
 				beta = (numpy.sqrt(numpy.multiply(E_,E_) + 4 * penalty * D) - E_) / float(2 * penalty)
-				# for find in range(num_feature): 
-				# 	_E = E[0,find] + penalty * (U[0,find] - Z[0,find]) 
-				# 	beta[0,find] = (numpy.sqrt(_E**2 + 4*penalty*D[0,find]) - _E) /float(2*penalty)
-				
-				# z-update without relaxation
+
 				Z = self.shrinkage(beta + U, reg_beta/float(penalty)) 
-				# U = U + beta - Z
 				U += beta - Z
 
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,Alpha,sequences,train_times)
@@ -228,21 +187,15 @@ class HawkesGenerator(object):
 				step_size /= 1 + 10 * step_size
 				for sam in range(train_count):
 					s = sequences[sam]
-					# s = numpy.mat([x for x in s if x[0] < train_times[sam]])
 					s = [x for x in s if x[0] < train_times[sam]]
 					s_full = numpy.mat([x[0] for x in s])
-					# n = s.shape[1]
 					n = len(s)
 					fea = numpy.mat(features[sam])
 					sw1 = W1[sam]
 					sw2 = W2[sam]
 					salpha = Alpha[sam]
-					# count = 0
-					# while 1:
-					# pw1 = -s[0,0]
 					pw1 = 0.
 					pw2 = 0.
-					# pw2 = numpy.mat(0.0)
 					old_sum2 = 0.
 					for i in range(1,n):
 						w1 = sw1[s[i][1]]
@@ -251,38 +204,25 @@ class HawkesGenerator(object):
 						betam = beta[:,s[i][1]]
 						s_past = numpy.mat([x[0] for x in s[0:i]])
 
-						# mu = beta * fea.T * numpy.exp(- sw1 * s[0,i])
 						mu = float(fea * betam) * numpy.exp(-w1*s[i][0])
 						sum1 = mu
-						# sum2 = (old_sum2 + salpha) * numpy.exp(- sw2 *(s[0,i] - s[0,i-1]))
 						sum2 = (old_sum2 + alpha) * numpy.exp(-w2*(s[i][0]-s[i-1][0]))
 						old_sum2 = sum2
 						lambda_ = sum1 + sum2
-						# pw2t = salpha * numpy.sum(numpy.multiply(numpy.exp(- sw2 * \
-							# (s[0,i] - s[0,0:i])),-(s[0,i] - s[0,0:i])))
 						pw2t = alpha * numpy.sum(numpy.multiply(
 							numpy.exp(-w2*(s[i][0]-s_past)),-(s[i][0]-s_past)))
-						# pw1 = pw1 + beta * fea.T * numpy.exp(- sw1 * s[0,i]) * (-s[0,i]) / float(lambda_)
 						pw1 += float(fea * betam) * numpy.exp(-w1*s[i][0]) * (-s[i][0]) / float(lambda_)
-						# pw2 = pw2 + pw2t / float(lambda_)
 						pw2 += float(pw2t) / float(lambda_)
-					# pw1 = pw1 - beta * fea.T * (numpy.exp(-sw1*T[sam]) * T[sam] * sw1 - \
-					# 	(1 - numpy.exp(-sw1*T[sam]))) /float(sw1**2)
 					pw1 -= float(fea * betam) * (
 						numpy.exp(-w1*T[sam]) * T[sam] * w1 - (1. - numpy.exp(-w1*T[sam]))) / float(w1**2)
 
-					# second_order = numpy.multiply(numpy.exp(-sw2*(T[sam]-s)),((T[sam]-s)*sw2))
 					second_order = numpy.multiply(numpy.exp(-w2*(T[sam]-s_full)),(T[sam]-s_full)*w2)
-					# first_order = (1-numpy.exp(-sw2*(T[sam]-s)))
 					first_order = 1. - numpy.exp(-w2*(T[sam]-s_full))
-					# pw2 = pw2 - salpha*numpy.sum(( second_order - first_order )/float(sw2**2))
 					pw2 -= alpha * numpy.sum((second_order - first_order) / float(w2**2))
-					# sw1 += step_size*numpy.sign(pw1)[0,0]
-					# sw2 += step_size*numpy.sign(pw2)[0,0]
-					# W1[sam] = sw1
-					# W2[sam] = sw2
-					W1[sam] = (numpy.array(sw1) + step_size*numpy.sign(pw1)).tolist()
-					W2[sam] = (numpy.array(sw2) + step_size*numpy.sign(pw2)).tolist()
+					step1 = pw1 if numpy.abs(pw1) < 1. else numpy.sign(pw1)
+					step2 = pw2 if numpy.abs(pw2) < 1. else numpy.sign(pw2)
+					W1[sam] = (numpy.array(sw1) + step_size*step1).tolist()
+					W2[sam] = (numpy.array(sw2) + step_size*step2).tolist()
 
 
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,Alpha,sequences,train_times)
@@ -379,12 +319,7 @@ class HawkesGenerator(object):
 	def shrinkage(self,vector,kappa):
 		mat1 = vector - kappa
 		mat2 = -vector - kappa
-		# for i in range(mat1.shape[0]):
-		# 	for j in range(mat1.shape[1]):
-		# 		if mat1[i,j] < 0 :
-		# 			mat1[i,j] = 0
-		# 		if mat2[i,j] < 0 :
-		# 			mat2[i,j] = 0
+
 		mat1 = numpy.clip(mat1,0.,numpy.inf)
 		mat2 = numpy.clip(mat2,0.,numpy.inf)
 		return mat1 - mat2
@@ -417,9 +352,6 @@ class HawkesGenerator(object):
 				activate = numpy.exp(-w2*(T-s[i][0]))
 				activate_sum += (1. - activate) * alpha / float(w2)
 			obj -= activate_sum
-		# activate = numpy.exp(-w2*(T-(numpy.mat(s)[:,0])))
-		# activate_sum = numpy.sum((1-activate))*alpha/float(w2)
-		# obj= obj - activate_sum
 
 		for m in range(self.nb_type):
 			spontaneous = spont[m]
@@ -428,23 +360,6 @@ class HawkesGenerator(object):
 
 		return obj
 
-	# def calculate_objective_single(self,spontaneous,w1,alpha,w2,events,train_time):
-	# 	T=train_time
-	# 	N=len(events)
-	# 	s=events
-	# 	old_sum2 = 0
-	# 	obj = numpy.log(spontaneous*numpy.exp(-w1*s[0]))
-	# 	for i in range(1,N):
-	# 		mu = spontaneous*numpy.exp(-w1*s[i])
-	# 		sum1 = mu
-	# 		sum2 = (old_sum2 + alpha)*numpy.exp(-w2*(s[i]-s[i-1]))
-	# 		old_sum2 = sum2
-	# 		obj=obj+numpy.log(sum1+sum2)
-	# 	activate = numpy.exp(-w2*(T-numpy.mat(s)))
-	# 	activate_sum = numpy.sum((1-activate))*alpha/float(w2)
-	# 	obj= obj - activate_sum 
-	# 	obj = obj - (spontaneous/w1) * (1 - numpy.exp(-w1*T))
-	# 	return obj
 
 	def compute_mape_acc(self,model,sequences,features,publish_years,pids,threshold,duration=10,pred_year=None,cut=None):
 		patents = self.params['patent']
@@ -479,42 +394,6 @@ class HawkesGenerator(object):
 			'acc':acc.tolist(),
 		}
 
-	# def compute_mape_acc_single(self,model,sequences,features,publish_years,pids,threshold,duration=10,pred_year=None,cut=None):
-	# 	patents = self.params['patent']
-	# 	diffs = []
-	# 	ll = 20
-	# 	for i, key in enumerate(patents):
-	# 		if cut is None:
-	# 			pred_year = pred_year or self.params['predict_year']
-	# 		else:
-	# 			pred_year = cut + int(float((patents[key]['year'])))
-	# 		real = self.real_one(key)
-	# 		pred = self.predict_one(key,duration=duration,pred_year=pred_year)
-	# 		diff = []
-	# 		ir = 0 # index_real
-	# 		for p in pred:
-	# 			while int(real[ir][0]) < int(p[0]):
-	# 				ir += 1
-	# 				if ir >= len(real):
-	# 					ir = len(real) - 1
-	# 					break
-	# 			# if ir != len(real) - 1 and int(real[ir][0]) != int(p[0]):
-	# 			# 	ir -= 1
-	# 			diff.append((p[0],(p[1] - real[ir][1])/float(real[ir][1] + 0.1) ))
-	# 		diffs.append(diff)
-	# 		if ll > len(diff) : ll = len(diff)
-	# 	mape = [0.0] * ll
-	# 	acc = [0.0] * ll
-	# 	for diff in diffs:
-	# 		for i in range(ll):
-	# 			mape[i] += abs(diff[i][1])
-	# 			if abs(diff[i][1]) < 0.3 :
-	# 				acc[i] += 1
-	# 	for i in range(ll):
-	# 		mape[i] /= float(len(diffs))
-	# 		acc[i] /= float(len(diffs))
-		
-	# 	return {'mape':mape,'acc':acc}
 
 	def predict_one(self,_id,duration,pred_year):
 		try:
@@ -554,47 +433,6 @@ class HawkesGenerator(object):
 		return real_seq
 
 
-	# def predict_one_single(self,_id,duration,pred_year):
-	# 	try:
-	# 		patent = self.params['patent'][str(_id)]
-	# 	except KeyError,e:
-	# 		return None
-	# 	sw1 = patent['w1']
-	# 	salpha = patent['alpha']
-	# 	sw2 = patent['w2']
-	# 	fea = numpy.mat(patent['fea'])
-	# 	ti = patent['cite']
-	# 	beta = numpy.mat(self.params['beta'])
-
-	# 	cut_point = pred_year - int(float((patent['year'])))
-	# 	tr = [x for x in ti if x[0] < cut_point]
-
-	# 	pred = self.predict_year_by_year(tr,cut_point,duration,
-	# 		(fea*beta).tolist()[0],sw1,salpha,sw2)
-
-	# 	_dict = {}
-	# 	for i in range(len(pred)):
-	# 		year = pred_year + i
-	# 		_dict[year] = pred[i]
-	# 	_list = sorted(_dict.items(),key=lambda x:x[0])
-	# 	return _list
-
-	# def real_one_single(self,_id):
-	# 	try:
-	# 		patent = self.params['patent'][str(_id)]
-	# 	except KeyError,e:
-	# 		return None
-
-	# 	cites = patent['cite']
-	# 	_dict = {}
-	# 	counts = [0.] * self.nb_type
-	# 	for i in range(len(cites)):
-	# 		counts[cites[i][1]] += 1.
-	# 		year = int(float(cites[i][0])) + int(float(patent['year']))
-	# 		_dict[year] = copy.copy(counts)
-	# 	_list = sorted(_dict.items(),key=lambda x:x[0])
-	# 	return _list
-
 	def predict_year_by_year(self,tr,cut_point,duration,spont,sw1,salpha,sw2):
 		N = len(tr)
 		pred_seq = numpy.zeros([cut_point,self.nb_type]).tolist()
@@ -627,22 +465,6 @@ class HawkesGenerator(object):
 		return pred_seq
 
 
-	# def predict_year_by_year_single(self,tr,cut_point,duration,spont,sw1,salpha,sw2):
-	# 	N = tr.shape[1] 
-	# 	pred = []
-	# 	for t in range(cut_point+1,cut_point+duration+1):
-	# 		delta_ct = spontaneous/w1*(numpy.exp(-w1*(t-1))-numpy.exp(-w1*t)) + \
-	# 			alpha/w2*(numpy.sum(numpy.exp(-w2*((t-1)-tr)))-numpy.sum(numpy.exp(-w2*(t-tr))))
-	# 		delta_ct = delta_ct[0,0]
-	# 		if len(pred) == 0:
-	# 			ct = N + delta_ct
-	# 		else :
-	# 			ct = pred[-1] + delta_ct
-	# 		tr = tr.tolist()[0]
-	# 		tr.extend([t for i in range(int(delta_ct))])
-	# 		tr = numpy.mat(tr)
-	# 		pred.append(ct)
-	# 	return pred
 
 	def create_trainable_model(self,sequences, pred_length, proxy_layer=None, need_noise_dropout=False, stddev=5.,sample_stddev=None):
 		from keras.layers import Input, GaussianNoise
@@ -768,174 +590,17 @@ class HawkesGenerator(object):
 			return sequences,features,publish_years,pids,threshold
 
 
-class RNNGenerator(object):
-	def __init__(self):
-		self.params = {}
-		self.l1 = 1.
-		self.l2 = 1.
-
-	def train(self,sequences,labels,features,publish_years,pids,superparams,cut=None,predict_year=2000,max_iter=0,max_outer_iter=100):
-		from keras.layers import Input, Dense, Masking, LSTM, Activation, Dropout, merge
-		from keras.models import Model
-		from keras.regularizers import l1,l2
-
-		f = Input(shape=(1,len(features[0])),dtype='float')
-		# features[paper][feature], sequences[paper][day][feature]
-		k = Dense(len(sequences[0][0]),activation='relu',W_regularizer=l1(self.l1))(f)
-		# k = merge([k,k],mode='concat',concat_axis=1)
-		k1 = Dropout(0.5)(k)
-		k2 = Input(shape=(len(sequences[0]),len(sequences[0][0])),dtype='float')
-		g1 = merge([k1,k2],mode='concat',concat_axis=1)
-		m1 = Masking(mask_value= -1.)(g1)
-		n1 = LSTM(len(sequences[0][0]),activation='relu',W_regularizer=l2(self.l2),dropout_W=0.5,dropout_U=0.5)(m1)
-		# n1 = Dense(16)(n1)
-		# n1 = Activation('tanh')(n1)
-		# n1 = Dropout(0.5)(n1)
-		# n1 = Dense(4)(n1)
-		# n1 = Activation('tanh')(n1)
-		# n1 = Dense(len(sequences[0][0]))(n1)
-
-		model = Model(inputs=[f,k2], outputs=[n1])
-		model.compile(optimizer='adam', loss='mape')
-		model.fit(
-			[numpy.array([[f] for f in features]),numpy.array(sequences)], [numpy.array(labels)],
-			epochs=500, batch_size=10,
-			verbose=1,validation_split=0.2)
-		self.params['model'] = model
-		# embeddings = model.layers[1].W.get_value()
-		return model
-
-	def load(self,f,cut=15):
-		# features[paper][feature], sequences[paper][day][feature]
-		data = []
-		pids = []
-		for i,row in enumerate(csv.reader(file(f,'r'))):
-			if i % 4 == 2:
-				pids.append(str(row[0]))
-				row = [float(row[1])]
-			elif i % 4 == 0 or i % 4 == 1:
-				row = [float(x) for x in row[1:]]
-			elif i % 4 == 3:
-				_row = [float(x) for x in row[1:]]
-				_max = max(_row)
-				_min = min(_row)
-				row = [(x - _min)/float(_max - _min) for x in _row]
-			data.append(row)
-		
-		I = int(len(data)/4)
-		#train_seq = []
-		# test_seq = []
-		sequences = []
-		labels = []
-		features = []
-		publish_years = []
-		for i in range(I):
-			publish_year = data[i * 4 + 2][0]
-			self_seq = data[i * 4]
-			nonself_seq = data[i * 4 + 1]
-			feature = data[i * 4 + 3]
-			#time_seq = self_seq + nonself_seq
-			#time_seq.sort()
-
-			# sequences.append(time_seq)
-			sequence = []
-			for year in range(cut) :
-				self_count = len([x for x in self_seq if year <= x and x < year + 1])
-				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
-				sequence.append([self_count,nonself_count])
-			sequences.append(sequence)
-
-			self_count = len([x for x in self_seq if cut <= x and x < cut + 1])
-			nonself_count = len([x for x in nonself_seq if cut <= x and x < cut + 1])
-			labels.append([self_count,nonself_count])
-
-			features.append(feature)
-			publish_years.append(publish_year)
-
-		superparams = {}
-		return sequences,labels,features,publish_years,pids,superparams	
-
-	def load_events(self,f,cut=15):
-		# features[paper][feature], sequences[paper][day][feature]
-		data = []
-		pids = []
-		for i,row in enumerate(csv.reader(file(f,'r'))):
-			if i % 4 == 2:
-				pids.append(str(row[0]))
-				row = [float(row[1])]
-			elif i % 4 == 0 or i % 4 == 1:
-				row = [float(x) for x in row[1:]]
-			elif i % 4 == 3:
-				_row = [float(x) for x in row[1:]]
-				_max = max(_row)
-				_min = min(_row)
-				row = [(x - _min)/float(_max - _min) for x in _row]
-			data.append(row)
-		
-		I = int(len(data)/4)
-		#train_seq = []
-		# test_seq = []
-		sequences = []
-		labels = []
-		features = []
-		publish_years = []
-		for i in range(I):
-			publish_year = data[i * 4 + 2][0]
-			self_seq = data[i * 4]
-			nonself_seq = data[i * 4 + 1]
-			feature = data[i * 4 + 3]
-			# time_seq = self_seq + nonself_seq
-			# time_seq.sort()
-
-			# sequences.append(time_seq)
-			sequence = []
-			interval = 1
-			for year in range(cut) :
-				self_count = len([x for x in self_seq if year <= x and x < year + 1])
-				nonself_count = len([x for x in nonself_seq if year <= x and x < year + 1])
-				if self_count + nonself_count == 0 :
-					sequence.append([-1.,-1.,-1.])
-					interval += 1
-				else :
-					sequence.append([self_count,nonself_count,interval])
-					interval = 1
-			sequences.append(sequence)
-
-
-			self_count = len([x for x in self_seq if cut <= x and x < cut + 1])
-			nonself_count = len([x for x in nonself_seq if cut <= x and x < cut + 1])
-			cut2 = cut
-			while self_count + nonself_count == 0 and cut2 < cut + 10:
-				self_count = len([x for x in self_seq if cut2 <= x and x < cut2 + 1])
-				nonself_count = len([x for x in nonself_seq if cut2 <= x and x < cut2 + 1])
-				cut2 += 1
-				interval += 1
-
-			labels.append([self_count,nonself_count,interval])
-
-			features.append(feature)
-			publish_years.append(publish_year)
-
-		superparams = {}
-		return sequences,labels,features,publish_years,pids,superparams
-
-
 
 if __name__ == '__main__':
 	with open('../log/train.log','w') as f:
 		sys.stdout = f
-		if len(sys.argv) == 2:
-			predictor = RNNGenerator()
-			loaded = predictor.load('../data/paper3.txt')
-			predictor.train(*loaded)
-			exit()
 		predictor = HawkesGenerator()
 		# loaded = predictor.load('../data/paper3.txt')
 		loaded = predictor.load('../data/paper3.txt',nb_type=2)
 		# print loaded[0][0]
 		# print loaded[0][1]
 		# print loaded[0][2]
-		model = predictor.pre_train(*loaded)
+		# exit()
+		model = predictor.pre_train(*loaded,alpha_iter=1,w_iter=1)
 		
-
-		pass		
+		pass

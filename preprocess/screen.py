@@ -6,7 +6,7 @@ class Screenor(object):
     def __init__(self):
         pass
     
-    def screen_paper(self,f,self_rate=[-1,2],self_lower=1,nonself_lower=5,type='',limit=10**4) :
+    def screen_paper(self,f,self_rate=[-1,2],self_lower=1,nonself_lower=2,type='',limit=10**4-1) :
         data_raw = []
         str_lines = []
         result = []
@@ -50,7 +50,7 @@ class Screenor(object):
         sys.stdout.flush()
         return result
     
-    def screen_patent(self,f,self_rate=[-1,2],self_lower=1,nonself_lower=5,type='',limit=10**4) :
+    def screen_patent(self,f,self_rate=[-1,2],self_lower=1,nonself_lower=1,type='',limit=10**4-1) :
         data_raw = []
         str_lines = []
         result = []
@@ -88,3 +88,19 @@ class Screenor(object):
         })
         sys.stdout.flush()
         return result
+
+if __name__ == '__main__':
+    will_screen_paper = True
+    will_screen_patent = True
+    if will_screen_paper == True:
+        screenor = Screenor()
+        paper_data_raw = '../data/paper2.txt'
+        result = screenor.screen_paper(paper_data_raw)
+        print len(result) / 4.
+
+    if will_screen_patent == True:
+        screenor = Screenor()
+        patent_data_raw = '../data/patent2.txt'
+        result = screenor.screen_patent(patent_data_raw)
+        print len(result) / 4.
+    
