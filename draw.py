@@ -217,101 +217,107 @@ def draw_fix_train_non_self_m_hawkes(dataset_id, nb_type=1):
             plt.savefig(root + '/pic/%s'%key)
 
 def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
-    will_train_hawkes_3_40 = False
-    will_train_hawkes_3_30 = False
-    will_train_hawkes_3_20 = False
-    will_train_hawkes_3_10 = False
-    will_train_hawkes_1_10 = False
-    will_train_hawkes_1_5 = False
-    will_train_hawkes_1_1 = False
-    will_train_hawkes_5_1 = False
+    # will_train_hawkes_3_40 = False
+    # will_train_hawkes_3_30 = False
+    # will_train_hawkes_3_20 = False
+    # will_train_hawkes_3_10 = False
+    # will_train_hawkes_1_10 = False
+    # will_train_hawkes_1_5 = False
+    # will_train_hawkes_1_1 = False
+    # will_train_hawkes_5_1 = False
+    will_train_hawkes = {'1:1':False,'1:5':False,'5:1':False,'3:3':False}
     will_draw = True
-    will_compute_early_stop = False
+    will_draw_mle_curve = {'1:1':False,'1:5':False,'5:1':False,'3:3':False}
 
     # preprocess
     dataset_path = root + '/data/' + dataset_id + '.txt'
-    
+
+    to_ratio = lambda x:x.split(':')
     # training
-    log_pre_train = root + '/data/' + dataset_id + '.pretrain.log.3.30.txt'
-    log_pre_train_3_40 = root + '/data/' + dataset_id + '.pretrain.log.3.40.txt'
-    log_pre_train_3_20 = root + '/data/' + dataset_id + '.pretrain.log.3.20.txt'
-    log_pre_train_3_10 = root + '/data/' + dataset_id + '.pretrain.log.3.10.txt'
-    log_pre_train_1_10 = root + '/data/' + dataset_id + '.pretrain.log.1.10.txt'
-    log_pre_train_1_5 = root + '/data/' + dataset_id + '.pretrain.log.1.5.txt'
-    log_pre_train_1_1 = root + '/data/' + dataset_id + '.pretrain.log.1.1.txt'
-    log_pre_train_5_1 = root + '/data/' + dataset_id + '.pretrain.log.5.1.txt'
+    log_pre_train = {}
+    for key in will_train_hawkes:
+        log_pre_train[key] = root + '/data/' + dataset_id + '.pretrain.log.' + to_ratio(key)[0] + '.' + to_ratio(key)[1] + '.txt'
+    # log_pre_train_3_40 = root + '/data/' + dataset_id + '.pretrain.log.3.40.txt'
+    # log_pre_train_3_20 = root + '/data/' + dataset_id + '.pretrain.log.3.20.txt'
+    # log_pre_train_3_10 = root + '/data/' + dataset_id + '.pretrain.log.3.10.txt'
+    # log_pre_train_1_10 = root + '/data/' + dataset_id + '.pretrain.log.1.10.txt'
+    # log_pre_train_1_5 = root + '/data/' + dataset_id + '.pretrain.log.1.5.txt'
+    # log_pre_train_1_1 = root + '/data/' + dataset_id + '.pretrain.log.1.1.txt'
+    # log_pre_train_5_1 = root + '/data/' + dataset_id + '.pretrain.log.5.1.txt'
 
-    if will_train_hawkes_3_30 == True :
-        with open(log_pre_train,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path,nb_type=nb_type)
-            model = predictor.pre_train(*loaded,max_outer_iter=15)
-            sys.stdout = old_stdout
+    for key in will_train_hawkes:
+        if will_train_hawkes[key] == True :
+            with open(log_pre_train[key],'w') as f:
+                old_stdout = sys.stdout
+                sys.stdout = f
+                predictor = HawkesGenerator()
+                loaded = predictor.load(dataset_path,nb_type=nb_type)
+                model = predictor.pre_train(*loaded,max_outer_iter=500/(int(to_ratio(key)[0])+int(to_ratio(key)[1])),
+                    alpha_iter=int(to_ratio(key)[0]),w_iter=int(to_ratio(key)[1]))
+                sys.stdout = old_stdout
 
-    if will_train_hawkes_3_40 == True :
-        with open(log_pre_train_3_40,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path,nb_type=nb_type)
-            model = predictor.pre_train(*loaded,max_outer_iter=12,alpha_iter=3,w_iter=40)
-            sys.stdout = old_stdout
+    # if will_train_hawkes_3_40 == True :
+    #     with open(log_pre_train_3_40,'w') as f:
+    #         old_stdout = sys.stdout
+    #         sys.stdout = f
+    #         predictor = HawkesGenerator()
+    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
+    #         model = predictor.pre_train(*loaded,max_outer_iter=12,alpha_iter=3,w_iter=40)
+    #         sys.stdout = old_stdout
 
-    if will_train_hawkes_3_20 == True :
-        with open(log_pre_train_3_20,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path,nb_type=nb_type)
-            model = predictor.pre_train(*loaded,max_outer_iter=25,alpha_iter=3,w_iter=20)
-            sys.stdout = old_stdout
+    # if will_train_hawkes_3_20 == True :
+    #     with open(log_pre_train_3_20,'w') as f:
+    #         old_stdout = sys.stdout
+    #         sys.stdout = f
+    #         predictor = HawkesGenerator()
+    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
+    #         model = predictor.pre_train(*loaded,max_outer_iter=25,alpha_iter=3,w_iter=20)
+    #         sys.stdout = old_stdout
 
-    if will_train_hawkes_3_10 == True :
-        with open(log_pre_train_3_10,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path,nb_type=nb_type)
-            model = predictor.pre_train(*loaded,max_outer_iter=40,alpha_iter=3,w_iter=10)
-            sys.stdout = old_stdout
+    # if will_train_hawkes_3_10 == True :
+    #     with open(log_pre_train_3_10,'w') as f:
+    #         old_stdout = sys.stdout
+    #         sys.stdout = f
+    #         predictor = HawkesGenerator()
+    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
+    #         model = predictor.pre_train(*loaded,max_outer_iter=40,alpha_iter=3,w_iter=10)
+    #         sys.stdout = old_stdout
 
-    if will_train_hawkes_1_10 == True :
-        with open(log_pre_train_1_10,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path,nb_type=nb_type)
-            model = predictor.pre_train(*loaded,max_outer_iter=45,alpha_iter=1,w_iter=10)
-            sys.stdout = old_stdout
+    # if will_train_hawkes_1_10 == True :
+    #     with open(log_pre_train_1_10,'w') as f:
+    #         old_stdout = sys.stdout
+    #         sys.stdout = f
+    #         predictor = HawkesGenerator()
+    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
+    #         model = predictor.pre_train(*loaded,max_outer_iter=45,alpha_iter=1,w_iter=10)
+    #         sys.stdout = old_stdout
 
-    if will_train_hawkes_1_5 == True :
-        with open(log_pre_train_1_5,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path,nb_type=nb_type)
-            model = predictor.pre_train(*loaded,max_outer_iter=90,alpha_iter=1,w_iter=5)
-            sys.stdout = old_stdout
+    # if will_train_hawkes_1_5 == True :
+    #     with open(log_pre_train_1_5,'w') as f:
+    #         old_stdout = sys.stdout
+    #         sys.stdout = f
+    #         predictor = HawkesGenerator()
+    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
+    #         model = predictor.pre_train(*loaded,max_outer_iter=90,alpha_iter=1,w_iter=5)
+    #         sys.stdout = old_stdout
 
-    if will_train_hawkes_1_1 == True :
-        with open(log_pre_train_1_1,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path,nb_type=nb_type)
-            model = predictor.pre_train(*loaded,max_outer_iter=450,alpha_iter=1,w_iter=1)
-            sys.stdout = old_stdout
+    # if will_train_hawkes_1_1 == True :
+    #     with open(log_pre_train_1_1,'w') as f:
+    #         old_stdout = sys.stdout
+    #         sys.stdout = f
+    #         predictor = HawkesGenerator()
+    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
+    #         model = predictor.pre_train(*loaded,max_outer_iter=450,alpha_iter=1,w_iter=1)
+    #         sys.stdout = old_stdout
 
-    if will_train_hawkes_5_1 == True :
-        with open(log_pre_train_5_1,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            predictor = HawkesGenerator()
-            loaded = predictor.load(dataset_path,nb_type=nb_type)
-            model = predictor.pre_train(*loaded,max_outer_iter=90,alpha_iter=5,w_iter=1)
-            sys.stdout = old_stdout
+    # if will_train_hawkes_5_1 == True :
+    #     with open(log_pre_train_5_1,'w') as f:
+    #         old_stdout = sys.stdout
+    #         sys.stdout = f
+    #         predictor = HawkesGenerator()
+    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
+    #         model = predictor.pre_train(*loaded,max_outer_iter=90,alpha_iter=5,w_iter=1)
+    #         sys.stdout = old_stdout
     # drawing
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
@@ -322,145 +328,163 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
         # keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
         labels_prefix = ['Loss','ACC','MAPE']
 
-        f_pre_train = open(log_pre_train)
-        nodes_pre_train = []
-        f_pre_train_3_40 = open(log_pre_train_3_40)
-        nodes_pre_train_3_40 = []
-        f_pre_train_3_20 = open(log_pre_train_3_20)
-        nodes_pre_train_3_20 = []
-        f_pre_train_3_10 = open(log_pre_train_3_10)
-        nodes_pre_train_3_10 = []
-        f_pre_train_1_10 = open(log_pre_train_1_10)
-        nodes_pre_train_1_10 = []
+        f_pre_train = {}
+        nodes_pre_train = {}
+        for key in will_draw_mle_curve:
+            if will_draw_mle_curve[key] == True:
+                f_pre_train[key] = open(log_pre_train[key])
+                nodes_pre_train[key] = []
+        # f_pre_train_3_40 = open(log_pre_train_3_40)
+        # nodes_pre_train_3_40 = []
+        # f_pre_train_3_20 = open(log_pre_train_3_20)
+        # nodes_pre_train_3_20 = []
+        # f_pre_train_3_10 = open(log_pre_train_3_10)
+        # nodes_pre_train_3_10 = []
+        # f_pre_train_1_10 = open(log_pre_train_1_10)
+        # nodes_pre_train_1_10 = []
 
-        f_pre_train_1_5 = open(log_pre_train_1_5)
-        nodes_pre_train_1_5 = []
-        f_pre_train_1_1 = open(log_pre_train_1_1)
-        nodes_pre_train_1_1 = []
-        f_pre_train_5_1 = open(log_pre_train_5_1)
-        nodes_pre_train_5_1 = []
+        # f_pre_train_1_5 = open(log_pre_train_1_5)
+        # nodes_pre_train_1_5 = []
+        # f_pre_train_1_1 = open(log_pre_train_1_1)
+        # nodes_pre_train_1_1 = []
+        # f_pre_train_5_1 = open(log_pre_train_5_1)
+        # nodes_pre_train_5_1 = []
 
-        for line in f_pre_train:
-            try:
-                node = eval(line)
-                nodes_pre_train.append(node)
-            except:
-                print 'error'
+        for key in f_pre_train:
+            for line in f_pre_train[key]:
+                try:
+                    node = eval(line)
+                    nodes_pre_train[key].append(node)
+                except:
+                    print 'error'
 
-        for line in f_pre_train_3_40:
-            try:
-                node = eval(line)
-                nodes_pre_train_3_40.append(node)
-            except:
-                print 'error'
+        # for line in f_pre_train_3_40:
+        #     try:
+        #         node = eval(line)
+        #         nodes_pre_train_3_40.append(node)
+        #     except:
+        #         print 'error'
 
-        for line in f_pre_train_3_20:
-            try:
-                node = eval(line)
-                nodes_pre_train_3_20.append(node)
-            except:
-                print 'error'
+        # for line in f_pre_train_3_20:
+        #     try:
+        #         node = eval(line)
+        #         nodes_pre_train_3_20.append(node)
+        #     except:
+        #         print 'error'
 
-        for line in f_pre_train_3_10:
-            try:
-                node = eval(line)
-                nodes_pre_train_3_10.append(node)
-            except:
-                print 'error'
+        # for line in f_pre_train_3_10:
+        #     try:
+        #         node = eval(line)
+        #         nodes_pre_train_3_10.append(node)
+        #     except:
+        #         print 'error'
 
-        for line in f_pre_train_1_10:
-            try:
-                node = eval(line)
-                nodes_pre_train_1_10.append(node)
-            except:
-                print 'error'
+        # for line in f_pre_train_1_10:
+        #     try:
+        #         node = eval(line)
+        #         nodes_pre_train_1_10.append(node)
+        #     except:
+        #         print 'error'
 
-        for line in f_pre_train_1_5:
-            try:
-                node = eval(line)
-                nodes_pre_train_1_5.append(node)
-            except:
-                print 'error'
+        # for line in f_pre_train_1_5:
+        #     try:
+        #         node = eval(line)
+        #         nodes_pre_train_1_5.append(node)
+        #     except:
+        #         print 'error'
 
-        for line in f_pre_train_1_1:
-            try:
-                node = eval(line)
-                nodes_pre_train_1_1.append(node)
-            except:
-                print 'error'
+        # for line in f_pre_train_1_1:
+        #     try:
+        #         node = eval(line)
+        #         nodes_pre_train_1_1.append(node)
+        #     except:
+        #         print 'error'
 
-        for line in f_pre_train_5_1:
-            try:
-                node = eval(line)
-                nodes_pre_train_5_1.append(node)
-            except:
-                print 'error'
+        # for line in f_pre_train_5_1:
+        #     try:
+        #         node = eval(line)
+        #         nodes_pre_train_5_1.append(node)
+        #     except:
+        #         print 'error'
 
         for i in range(3): # acc or mape or loss
             x_left_limit = 0
             x_right_limit = 200
 
-            y_pre_train = np.array([float(keys[i](node)) for node in nodes_pre_train])[x_left_limit:x_right_limit+1]
-            y_pre_train_3_40 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_40])[x_left_limit:x_right_limit+1]
-            y_pre_train_3_20 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_20])[x_left_limit:x_right_limit+1]
-            y_pre_train_3_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_10])[x_left_limit:x_right_limit+1]
-            y_pre_train_1_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_10])[x_left_limit:x_right_limit+1]
-            y_pre_train_1_5 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_5])[x_left_limit:x_right_limit+1]
-            y_pre_train_1_1 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_1])[x_left_limit:x_right_limit+1]
-            y_pre_train_5_1 = np.array([float(keys[i](node)) for node in nodes_pre_train_5_1])[x_left_limit:x_right_limit+1]
+            y_pre_train = {}
+            for key in f_pre_train:
+                y_pre_train[key] = np.array(
+                    [float(keys[i](node)) for node in nodes_pre_train[key]])[x_left_limit:x_right_limit+1]
+            # y_pre_train_3_40 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_40])[x_left_limit:x_right_limit+1]
+            # y_pre_train_3_20 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_20])[x_left_limit:x_right_limit+1]
+            # y_pre_train_3_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_10])[x_left_limit:x_right_limit+1]
+            # y_pre_train_1_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_10])[x_left_limit:x_right_limit+1]
+            # y_pre_train_1_5 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_5])[x_left_limit:x_right_limit+1]
+            # y_pre_train_1_1 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_1])[x_left_limit:x_right_limit+1]
+            # y_pre_train_5_1 = np.array([float(keys[i](node)) for node in nodes_pre_train_5_1])[x_left_limit:x_right_limit+1]
 
+            y_pre_train_val = {}
+            for key in f_pre_train:
+                y_pre_train_val[key] = np.array(
+                    [float(keys_val[i](node)) for node in nodes_pre_train[key]])[x_left_limit:x_right_limit+1]
+            # y_pre_train_3_40_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_40])[x_left_limit:x_right_limit+1]
+            # y_pre_train_3_20_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_20])[x_left_limit:x_right_limit+1]
+            # y_pre_train_3_10_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_10])[x_left_limit:x_right_limit+1]
+            # y_pre_train_1_10_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_10])[x_left_limit:x_right_limit+1]
+            # y_pre_train_1_5_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_5])[x_left_limit:x_right_limit+1]
+            # y_pre_train_1_1_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_1])[x_left_limit:x_right_limit+1]
+            # y_pre_train_5_1_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_5_1])[x_left_limit:x_right_limit+1]
 
-            y_pre_train_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train])[x_left_limit:x_right_limit+1]
-            y_pre_train_3_40_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_40])[x_left_limit:x_right_limit+1]
-            y_pre_train_3_20_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_20])[x_left_limit:x_right_limit+1]
-            y_pre_train_3_10_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_10])[x_left_limit:x_right_limit+1]
-            y_pre_train_1_10_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_10])[x_left_limit:x_right_limit+1]
-            y_pre_train_1_5_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_5])[x_left_limit:x_right_limit+1]
-            y_pre_train_1_1_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_1])[x_left_limit:x_right_limit+1]
-            y_pre_train_5_1_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_5_1])[x_left_limit:x_right_limit+1]
-
-            curves = [
-                {
-                    'rate':'3:30',
-                    'y_test':y_pre_train,
-                    'y_val':y_pre_train_val,
-                },
-                {
-                    'rate':'3:40',
-                    'y_test':y_pre_train_3_40,
-                    'y_val':y_pre_train_3_40_val,
-                },
-                {
-                    'rate':'3:20',
-                    'y_test':y_pre_train_3_20,
-                    'y_val':y_pre_train_3_20_val,
-                },
-                {
-                    'rate':'3:10',
-                    'y_test':y_pre_train_3_10,
-                    'y_val':y_pre_train_3_10_val,
-                },
-                {
-                    'rate':'1:10',
-                    'y_test':y_pre_train_1_10,
-                    'y_val':y_pre_train_1_10_val,
-                },
-                {
-                    'rate':'1:5',
-                    'y_test':y_pre_train_1_5,
-                    'y_val':y_pre_train_1_5_val,
-                },
-                {
-                    'rate':'1:1',
-                    'y_test':y_pre_train_1_1,
-                    'y_val':y_pre_train_1_1_val,
-                },
-                {
-                    'rate':'5:1',
-                    'y_test':y_pre_train_5_1,
-                    'y_val':y_pre_train_5_1_val,
-                },
-            ]
+            curves = []
+            for key in f_pre_train:
+                curve = {
+                    'rate':key,
+                    'y_test':y_pre_train[key],
+                    'y_val':y_pre_train_val[key],
+                }
+                curves.append(curve)
+            # curves = [
+            #     {
+            #         'rate':'3:30',
+            #         'y_test':y_pre_train,
+            #         'y_val':y_pre_train_val,
+            #     },
+            #     {
+            #         'rate':'3:40',
+            #         'y_test':y_pre_train_3_40,
+            #         'y_val':y_pre_train_3_40_val,
+            #     },
+            #     {
+            #         'rate':'3:20',
+            #         'y_test':y_pre_train_3_20,
+            #         'y_val':y_pre_train_3_20_val,
+            #     },
+            #     {
+            #         'rate':'3:10',
+            #         'y_test':y_pre_train_3_10,
+            #         'y_val':y_pre_train_3_10_val,
+            #     },
+            #     {
+            #         'rate':'1:10',
+            #         'y_test':y_pre_train_1_10,
+            #         'y_val':y_pre_train_1_10_val,
+            #     },
+            #     {
+            #         'rate':'1:5',
+            #         'y_test':y_pre_train_1_5,
+            #         'y_val':y_pre_train_1_5_val,
+            #     },
+            #     {
+            #         'rate':'1:1',
+            #         'y_test':y_pre_train_1_1,
+            #         'y_val':y_pre_train_1_1_val,
+            #     },
+            #     {
+            #         'rate':'5:1',
+            #         'y_test':y_pre_train_5_1,
+            #         'y_val':y_pre_train_5_1_val,
+            #     },
+            # ]
 
             for curve in curves: # each curve
                 fig = plt.figure()
@@ -511,18 +535,19 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
                         label=labels_prefix[i] + ' on val.')
                     if i == 2:
                         log_pre_train_early_stop = root + '/data/' + dataset_id + '.pretrain.early_stop.stop_point.json'
-                        if will_compute_early_stop == True:
-                            early_stop = -1
-                            moving_average = curve['y_val'][0]
-                            k = 20.
-                            th = 0.001
-                            for n in range(1,len(curve['y_val'])):
-                                av = curve['y_val'][n] * (1./k) + moving_average * (k - 1.) / k
-                                if moving_average - av <= th:
-                                    early_stop = n
-                                    break
-                                moving_average = av
+                        # if will_compute_early_stop == True:
+                        early_stop = -1
+                        moving_average = curve['y_val'][0]
+                        k = 20.
+                        th = 0.001
+                        for n in range(1,len(curve['y_val'])):
+                            av = curve['y_val'][n] * (1./k) + moving_average * (k - 1.) / k
+                            if moving_average - av <= th:
+                                early_stop = n
+                                break
+                            moving_average = av
 
+                        try:
                             with open(log_pre_train_early_stop) as fr :
                                 result = json.load(fr)
                                 if not result.has_key(dataset_id):
@@ -530,8 +555,10 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
                                 if not result[dataset_id].has_key(curve['rate']):
                                     result[dataset_id][curve['rate']] = {}
                                 result[dataset_id][curve['rate']]['mape_val'] = {'window':k,'threshold':th,'stop_point':early_stop}
-                            with open(log_pre_train_early_stop,'w') as fw :
-                                json.dump(result,fw)
+                        except:
+                            result = {dataset_id:{curve['rate']:{'mape_val':{'window':k,'threshold':th,'stop_point':early_stop}}}}
+                        with open(log_pre_train_early_stop,'w') as fw :
+                            json.dump(result,fw)
 
                         with open(log_pre_train_early_stop) as fr:
                             result = json.load(fr)
@@ -551,9 +578,9 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
                 plt.title('learning curve for ' + labels_prefix[i] + ' when $N_{em}:N_{grad}$=' + curve['rate'])
                 plt.gcf().set_size_inches(5., 5., forward=True)
 
-                if i == 0: key = '' + dataset_id + '.gan.pretrain.learning.NLL.' + curve['rate'] +'.png'
-                if i == 1: key = '' + dataset_id + '.gan.pretrain.learning.ACC.' + curve['rate'] +'.png'
-                if i == 2: key = '' + dataset_id + '.gan.pretrain.learning.MAPE.' + curve['rate'] +'.png'
+                if i == 0: key = '' + dataset_id + '.gan.pretrain.learning.NLL.' + to_ratio(key)[0] + '.' + to_ratio(key)[1] +'.png'
+                if i == 1: key = '' + dataset_id + '.gan.pretrain.learning.ACC.' + to_ratio(key)[0] + '.' + to_ratio(key)[1] +'.png'
+                if i == 2: key = '' + dataset_id + '.gan.pretrain.learning.MAPE.' + to_ratio(key)[0] + '.' + to_ratio(key)[1] +'.png'
                 if i == 0: plt.yticks(fontsize=11)
                 plt.savefig(root + '/pic/%s'%key)
 
@@ -1415,7 +1442,7 @@ if __name__ == '__main__' :
     for dataset_id in ['paper3']:
         # draw_fix_train_total_xiao(dataset_id,nb_type=event_types[dataset_id])
         # draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
-        # draw_hawkes_generator_pretrain_convergence(dataset_id,nb_type=event_types[dataset_id])
+        draw_hawkes_generator_pretrain_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_learning_mle_mse_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_mle_mse_mape_acc_constast(dataset_id,nb_type=event_types[dataset_id])
