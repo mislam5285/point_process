@@ -78,8 +78,8 @@ class HawkesGenerator(object):
 			# print 'step 1 : update Alpha,beta ...'
 
 			for times in range(alpha_iter):
-				D = numpy.mat([0.0]*num_feature) 
-				E = numpy.mat([0.0]*num_feature)
+				D = numpy.asmatrix(numpy.zeros([num_feature,nb_type]))# numpy.mat([0.0]*num_feature) 
+				E = numpy.asmatrix(numpy.zeros([num_feature,nb_type]))# numpy.mat([0.0]*num_feature)
 				for sam in range(train_count): 
 					s = sequences[sam]
 					s = [x for x in s if x[0] < train_times[sam]]
@@ -89,38 +89,111 @@ class HawkesGenerator(object):
 					sw2 = W2[sam]
 					salpha = Alpha[sam]
 
-					for inner_iter in range(max_iter+1):
-						# E-step
-						p1 = numpy.multiply(beta,fea) / (beta * fea.T) 
-						p2 = 0
-						old_sum2 = 0
-						for i in range(1,n): 
-							mu = beta * fea.T * numpy.exp(- sw1 * s[i])
-							sum1 = mu[0,0]
-							sum2 = (old_sum2 + salpha) * numpy.exp(- sw2 * (s[i] - s[i-1]))
-							old_sum2 = sum2
-							summ = sum1 + sum2
-							p1 += numpy.multiply(beta, fea) * numpy.exp(- sw1 * s[i]) / float(summ)
-							p2 += 1 - mu/float(summ)
-						# M-step
-						alpha1 = p2
-						alpha2 = (n - numpy.sum(numpy.exp(- sw2 * (T[sam] - numpy.array(s)))))/float(sw2)
-						salpha = (alpha1/float(alpha2))[0,0]
+					# for inner_iter in range(max_iter+1):
+						# psi = numpy.multiply(beta,fea) / (beta * fea.T) 
+					# betam = beta[:,m]
 
-					D += p1 
-					E += fea * (1 - numpy.exp(- sw1 * T[sam])) / float(sw1) 
-					Alpha[sam] = salpha
+					# Expectation-step
+					psi = [numpy.multiply(fea,beta[:,s[0][1]].T) / float(fea * beta[:,s[0][1]])] # all psi in AAAI paper
+					# phi = [0.] # all phi in the AAAI paper
+					Phi = numpy.asmatrix(numpy.zeros([nb_type,nb_type])) # sum of all phi
+					old_sum2 = 0.
+					for i in range(1,n):
+						w1 = sw1[s[i][1]]
+						w2 = sw2[s[i][1]]
+						alpha = salpha[s[i][1]][s[i-1][1]]
+						betam = beta[:,s[i][1]]
+						# mu = beta * fea.T * numpy.exp(- sw1 * s[i])
+						mu = float(fea * betam) * numpy.exp(-w1*s[i][0])
+						# sum1 = mu[0,0]
+						sum1 = mu
+						# sum2 = (old_sum2 + salpha) * numpy.exp(- sw2 * (s[i] - s[i-1]))
+						sum2 = (old_sum2 + alpha) * numpy.exp(-w2*(s[i][0]-s[i-1][0]))
+						old_sum2 = sum2
+						lambda_ = sum1 + sum2
+						# psi += numpy.multiply(beta, fea) * numpy.exp(- sw1 * s[i]) / float(lambda_)
+						psi += [numpy.multiply(fea,betam.T) * numpy.exp(-w1*s[i][0]) / float(lambda_)]
+						# phi += [1 - mu/float(lambda_)]
+						Phi[s[i][1],s[i-1][1]] += 1. - mu/float(lambda_)
+
+					# Minimization-step
+					for m in range(self.nb_type):
+						w1 = sw1[m]
+						D[:,m] += numpy.sum([x for (j,x) in enumerate(psi) if s[j][1] == m],axis=0).T
+						E[:,m] += fea.T * (1. - numpy.exp(- w1 * T[sam])) / float(w1)
+
+					for m in range(self.nb_type):
+						w2 = sw2[m]
+						for d in range(self.nb_type):
+							alpha1 = Phi[m,d]
+							# alpha2 = (n - numpy.sum(numpy.exp(- sw2 * (T[sam] - numpy.array(s)))))/float(sw2)
+							sm = numpy.mat([x[0] for x in s if x[1] == d])
+							alpha2 = numpy.sum(1. - numpy.exp(-w2*(T[sam] - sm))) / float(w2)
+							salpha[m][d] = alpha1/float(alpha2) if alpha2 != 0. else 1.
+							if alpha2 == 0.0:
+								sys.stderr.write(str({
+									'error info':'alpha2 == 0',
+									'seq_index':sam,
+									'pid':pids[sam],
+									'm':m,
+									'd':d,
+									'alpha2':alpha2,
+									'alpha1':alpha1,
+									'salpha':salpha,
+								}) + '\n')
+
+					Alpha[sam] = salpha # actually it's unnecessary because of referrence of list
+				# for sam in range(train_count): 
+				# 	s = sequences[sam]
+				# 	s = [x for x in s if x[0] < train_times[sam]]
+				# 	n = len(s)
+				# 	fea = numpy.mat(features[sam])
+				# 	sw1 = W1[sam]
+				# 	sw2 = W2[sam]
+				# 	salpha = Alpha[sam]
+
+				# 	# for inner_iter in range(max_iter+1):
+				# 	for m in range(self.nb_type):
+				# 		# E-step
+				# 		# psi = numpy.multiply(beta,fea) / (beta * fea.T) 
+				# 		betam = beta[:,m]
+				# 		psi = numpy.multiply(fea,betam.T) / float(fea * betam)
+				# 		phi = 0.
+				# 		old_sum2 = 0.
+				# 		for i in range(1,n): 
+				# 			spontaneous = spont[s[i][1]]
+				# 			w1 = sw1[s[i][1]]
+				# 			w2 = sw2[s[i][1]]
+				# 			# mu = beta * fea.T * numpy.exp(- sw1 * s[i])
+				# 			mu = float(fea * betam) * numpy.exp(- )
+				# 			sum1 = mu[0,0]
+				# 			sum2 = (old_sum2 + salpha) * numpy.exp(- sw2 * (s[i] - s[i-1]))
+				# 			old_sum2 = sum2
+				# 			lambda_ = sum1 + sum2
+				# 			psi += numpy.multiply(beta, fea) * numpy.exp(- sw1 * s[i]) / float(lambda_)
+				# 			phi += 1 - mu/float(lambda_)
+				# 		# M-step
+				# 		alpha1 = phi
+				# 		alpha2 = (n - numpy.sum(numpy.exp(- sw2 * (T[sam] - numpy.array(s)))))/float(sw2)
+				# 		salpha = (alpha1/float(alpha2))[0,0]
+
+
+					# D += p1 
+					# E += fea * (1 - numpy.exp(- sw1 * T[sam])) / float(sw1) 
+					# Alpha[sam] = salpha
 
 				penalty = 5.
 				reg_beta = 20.
-				# update beta, beta = ( - E + sqrt(E**2 + 4 * penalty * D) ) / (2 * penalty)
-				for find in range(num_feature): 
-					_E = E[0,find] + penalty * (U[0,find] - Z[0,find]) 
-					beta[0,find] = (numpy.sqrt(_E**2 + 4*penalty*D[0,find]) - _E) /float(2*penalty)
+				E_ = E + penalty * (U - Z)
+				beta = (numpy.sqrt(numpy.multiply(E_,E_) + 4 * penalty * D) - E_) / float(2 * penalty)
+				# for find in range(num_feature): 
+				# 	_E = E[0,find] + penalty * (U[0,find] - Z[0,find]) 
+				# 	beta[0,find] = (numpy.sqrt(_E**2 + 4*penalty*D[0,find]) - _E) /float(2*penalty)
 				
 				# z-update without relaxation
-				Z = self.shrinkage(beta+U, reg_beta/float(penalty)) 
-				U = U + beta - Z 
+				Z = self.shrinkage(beta + U, reg_beta/float(penalty)) 
+				# U = U + beta - Z
+				U += beta - Z
 
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,Alpha,sequences,train_times)
 				self.update_params(pids,Alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
@@ -150,44 +223,67 @@ class HawkesGenerator(object):
 
 			# print 'step 2 : update w by gradient descent ...'
 
-
 			step_size = 1e-2
 			for times in range(w_iter):
 				step_size /= 1 + 10 * step_size
 				for sam in range(train_count):
 					s = sequences[sam]
-					s = numpy.mat([x for x in s if x[0] < train_times[sam]])
-					n = s.shape[1]
+					# s = numpy.mat([x for x in s if x[0] < train_times[sam]])
+					s = [x for x in s if x[0] < train_times[sam]]
+					s_full = numpy.mat([x[0] for x in s])
+					# n = s.shape[1]
+					n = len(s)
 					fea = numpy.mat(features[sam])
 					sw1 = W1[sam]
 					sw2 = W2[sam]
 					salpha = Alpha[sam]
-					old_obj = 0
-					count = 0
+					# count = 0
 					# while 1:
-					pw1 = -s[0,0]
-					pw2 = numpy.mat(0.0)
-					old_sum2 = 0
+					# pw1 = -s[0,0]
+					pw1 = 0.
+					pw2 = 0.
+					# pw2 = numpy.mat(0.0)
+					old_sum2 = 0.
 					for i in range(1,n):
-						mu = beta * fea.T * numpy.exp(- sw1 * s[0,i])
-						sum1 = mu
-						sum2 = (old_sum2 + salpha) * numpy.exp(- sw2 *(s[0,i] - s[0,i-1]))
-						old_sum2 = sum2
-						summ = sum1 + sum2;
-						pw2t = salpha * numpy.sum(numpy.multiply(numpy.exp(- sw2 * \
-							(s[0,i] - s[0,0:i])),-(s[0,i]-s[0,0:i])))
-						pw1 = pw1 + beta * fea.T * numpy.exp(- sw1 * s[0,i]) * (-s[0,i]) / float(summ)
-						pw2 = pw2 + pw2t / float(summ)
-					pw1 = pw1 - beta * fea.T * (numpy.exp(-sw1*T[sam]) * T[sam] * sw1 - \
-						(1 - numpy.exp(-sw1*T[sam]))) /float(sw1**2)
-					upper = numpy.multiply(numpy.exp(-sw2*(T[sam]-s)),((T[sam]-s)*sw2))
-					lower = (1-numpy.exp(-sw2*(T[sam]-s)))
+						w1 = sw1[s[i][1]]
+						w2 = sw2[s[i][1]]
+						alpha = salpha[s[i][1]][s[i-1][1]]
+						betam = beta[:,s[i][1]]
+						s_past = numpy.mat([x[0] for x in s[0:i]])
 
-					pw2 = pw2 - salpha*numpy.sum(( upper - lower )/float(sw2**2))
-					sw1 += step_size*numpy.sign(pw1)[0,0]
-					sw2 += step_size*numpy.sign(pw2)[0,0]
-					W1[sam] = sw1
-					W2[sam] = sw2
+						# mu = beta * fea.T * numpy.exp(- sw1 * s[0,i])
+						mu = float(fea * betam) * numpy.exp(-w1*s[i][0])
+						sum1 = mu
+						# sum2 = (old_sum2 + salpha) * numpy.exp(- sw2 *(s[0,i] - s[0,i-1]))
+						sum2 = (old_sum2 + alpha) * numpy.exp(-w2*(s[i][0]-s[i-1][0]))
+						old_sum2 = sum2
+						lambda_ = sum1 + sum2
+						# pw2t = salpha * numpy.sum(numpy.multiply(numpy.exp(- sw2 * \
+							# (s[0,i] - s[0,0:i])),-(s[0,i] - s[0,0:i])))
+						pw2t = alpha * numpy.sum(numpy.multiply(
+							numpy.exp(-w2*(s[i][0]-s_past)),-(s[i][0]-s_past)))
+						# pw1 = pw1 + beta * fea.T * numpy.exp(- sw1 * s[0,i]) * (-s[0,i]) / float(lambda_)
+						pw1 += float(fea * betam) * numpy.exp(-w1*s[i][0]) * (-s[i][0]) / float(lambda_)
+						# pw2 = pw2 + pw2t / float(lambda_)
+						pw2 += float(pw2t) / float(lambda_)
+					# pw1 = pw1 - beta * fea.T * (numpy.exp(-sw1*T[sam]) * T[sam] * sw1 - \
+					# 	(1 - numpy.exp(-sw1*T[sam]))) /float(sw1**2)
+					pw1 -= float(fea * betam) * (
+						numpy.exp(-w1*T[sam]) * T[sam] * w1 - (1. - numpy.exp(-w1*T[sam]))) / float(w1**2)
+
+					# second_order = numpy.multiply(numpy.exp(-sw2*(T[sam]-s)),((T[sam]-s)*sw2))
+					second_order = numpy.multiply(numpy.exp(-w2*(T[sam]-s_full)),(T[sam]-s_full)*w2)
+					# first_order = (1-numpy.exp(-sw2*(T[sam]-s)))
+					first_order = 1. - numpy.exp(-w2*(T[sam]-s_full))
+					# pw2 = pw2 - salpha*numpy.sum(( second_order - first_order )/float(sw2**2))
+					pw2 -= alpha * numpy.sum((second_order - first_order) / float(w2**2))
+					# sw1 += step_size*numpy.sign(pw1)[0,0]
+					# sw2 += step_size*numpy.sign(pw2)[0,0]
+					# W1[sam] = sw1
+					# W2[sam] = sw2
+					W1[sam] = (numpy.array(sw1) + step_size*numpy.sign(pw1)).tolist()
+					W2[sam] = (numpy.array(sw2) + step_size*numpy.sign(pw2)).tolist()
+
 
 				likelihood = self.compute_likelihood(beta,train_count,features,W1,W2,Alpha,sequences,train_times)
 				self.update_params(pids,Alpha,features,sequences,publish_years,predict_year,beta,W1,W2,cut=cut)
@@ -281,14 +377,16 @@ class HawkesGenerator(object):
 
 
 	def shrinkage(self,vector,kappa):
-		mat1 = vector-kappa
-		mat2 = -vector-kappa
-		for i in range(mat1.shape[0]):
-			for j in range(mat1.shape[1]):
-				if mat1[i,j] < 0 :
-					mat1[i,j] = 0
-				if mat2[i,j] < 0 :
-					mat2[i,j] = 0
+		mat1 = vector - kappa
+		mat2 = -vector - kappa
+		# for i in range(mat1.shape[0]):
+		# 	for j in range(mat1.shape[1]):
+		# 		if mat1[i,j] < 0 :
+		# 			mat1[i,j] = 0
+		# 		if mat2[i,j] < 0 :
+		# 			mat2[i,j] = 0
+		mat1 = numpy.clip(mat1,0.,numpy.inf)
+		mat2 = numpy.clip(mat2,0.,numpy.inf)
 		return mat1 - mat2
 
 	def calculate_objective(self,spont,sw1,salpha,sw2,events,train_time):
