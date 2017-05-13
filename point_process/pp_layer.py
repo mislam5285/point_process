@@ -38,11 +38,12 @@ class HawkesLayer(Layer):
 
 		if sequence_weights:
 			assert len(sequence_weights) == self.nb_sequence
+			assert len(sequence_weights[0]['spont']) == self.nb_type
 
-			self.spont_initializer = Constant(np.array([[x['spont'] for j in range(self.nb_type)] for x in sequence_weights]))
-			self.Theta_initializer = Constant(np.array([[x['theta'] for j in range(self.nb_type)] for x in sequence_weights]))
-			self.W_initializer = Constant(np.array([[x['w'] for j in range(self.nb_type)] for x in sequence_weights]))
-			self.Alpha_initializer = Constant(np.array([[[x['alpha'] for k in range(self.nb_type)] for j in range(self.nb_type)] for x in sequence_weights]))
+			self.spont_initializer = Constant(np.array([x['spont'] for x in sequence_weights]))
+			self.Theta_initializer = Constant(np.array([x['theta'] for x in sequence_weights]))
+			self.W_initializer = Constant(np.array([x['w'] for x in sequence_weights]))
+			self.Alpha_initializer = Constant(np.array([x['alpha'] for x in sequence_weights]))
 		else:
 			self.spont_initializer = Constant(np.array([[1.3 for j in range(self.nb_type)] for i in range(self.nb_sequence)]))
 			self.Theta_initializer = Constant(np.array([[0.05 for j in range(self.nb_type)] for i in range(self.nb_sequence)]))
@@ -54,7 +55,7 @@ class HawkesLayer(Layer):
 	def build(self, input_shape):
 
 		assert len(input_shape) == 2
-		assert input_shape[1] == 1 # currenly only support one sample per batch
+		assert input_shape[1] == 1 # currenly only support one sequence id as input
 
 		self.sequences = self.add_weight(name='pp_sequences',
 									shape=(self.nb_sequence, self.nb_event, self.nb_type, self.nb_feature),

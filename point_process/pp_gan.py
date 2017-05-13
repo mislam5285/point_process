@@ -318,7 +318,7 @@ if __name__ == '__main__':
 			gan.gen.sequence_weights = json.load(open('../data/paper3.pretrain.sequence_weights.json'))
 		except:
 			loaded = gan.gen.load('../data/paper3.txt')
-			gan.gen.pre_train(*loaded,max_outer_iter=1)
+			gan.gen.pre_train(*loaded,max_outer_iter=1,alpha_iter=1,w_iter=1)
 			with open('../data/paper3.pretrain.sequence_weights.json','w') as fw:
 				json.dump(gan.gen.sequence_weights,fw)
 		# exit()

@@ -227,7 +227,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
     # will_train_hawkes_5_1 = False
     will_train_hawkes = {'1:1':False,'1:5':False,'5:1':False,'3:3':False}
     will_draw = True
-    will_draw_mle_curve = {'1:1':False,'1:5':False,'5:1':False,'3:3':False}
+    will_draw_mle_curve = {'1:1':True,'1:5':False,'5:1':False,'3:3':False}
 
     # preprocess
     dataset_path = root + '/data/' + dataset_id + '.txt'
@@ -507,14 +507,15 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
                     label=labels_prefix[i] + ' on test.')
                 if i == 2:
                     j = np.argmin(curve['y_test'])
-                    plt.plot([j,j],[y_lower_limit,curve['y_test'][j]+delta],'--',c=colors['test_best'],lw=1.2,
+                    plt.plot([j,j],[y_lower_limit,curve['y_test'][j]],'--',c=colors['test_best'],lw=1.2,
                         label='best point')
+                    plt.plot([0,j],[curve['y_test'][j],curve['y_test'][j]],'--',c=colors['test_best'],lw=1.2)
 
                 plt.xticks(fontsize=13)
-                plt.yticks(fontsize=13)
+                plt.yticks(fontsize=13,color=colors['test'])
                 plt.legend(loc='center right',fontsize=13)
 
-                if i > 0:
+                if i > 0: # draw another axis
                     # arrange layout
                     delta = max(np.max(curve['y_val']),np.max(curve['y_val'])) - min(np.min(curve['y_val']),np.min(curve['y_val']))
                     delta /= 30.
@@ -530,10 +531,11 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
                     # ax.ylim(y_lower_limit, y_upper_limit)
                     # ax.xlim(x_left_limit,x_right_limit)
                     ax.set_ylim(y_lower_limit, y_upper_limit)
+                    ax.set_xlim(x_left_limit,x_right_limit)
 
-                    ax.plot(np.arange(1,len(curve['y_val'])+1),curve['y_val'],'--',c=colors['val'],lw=1.2,
+                    ax.plot(np.arange(1,len(curve['y_val'])+1),curve['y_val'],'-',c=colors['val'],lw=1.2,
                         label=labels_prefix[i] + ' on val.')
-                    if i == 2:
+                    if i == 2: # draw early stop
                         log_pre_train_early_stop = root + '/data/' + dataset_id + '.pretrain.early_stop.stop_point.json'
                         # if will_compute_early_stop == True:
                         early_stop = -1
@@ -565,10 +567,12 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
                             early_stop = result[dataset_id][curve['rate']]['mape_val']['stop_point']
 
                         if early_stop > 0:
-                            ax.plot([early_stop,early_stop],[y_lower_limit,curve['y_val'][j]+delta],'--',c=colors['early_stop'],lw=1.2,
+                            ax.plot([early_stop,early_stop],[y_lower_limit,curve['y_val'][early_stop]],'--',c=colors['early_stop'],lw=1.2,
                                 label='signal of early stop')
+                            ax.plot([early_stop,x_right_limit+100],[curve['y_val'][early_stop],curve['y_val'][early_stop]],'--',
+                                c=colors['early_stop'],lw=1.2)
                     plt.xticks(fontsize=13)
-                    plt.yticks(fontsize=13)
+                    plt.yticks(fontsize=13,color=colors['val'])
                     # plt.legend()
                     plt.legend(loc='upper right',fontsize=13) #bbox_to_anchor=(0.31,0.8)
                     # plt.legend(fontsize=13)
@@ -1436,8 +1440,9 @@ if __name__ == '__main__' :
     screen()
     event_types = {
         'paper3':1,
-        'patent3':2,
-        'patent2':2,
+        'paper4':2, # paper4 is duplicate of paper3, while is interpreted in different way
+        'patent3':1,
+        'patent4':2,
     }
     for dataset_id in ['paper3']:
         # draw_fix_train_total_xiao(dataset_id,nb_type=event_types[dataset_id])

@@ -293,7 +293,7 @@ class HawkesGenerator(object):
 			seq['theta'] = W1[i]
 			seq['w'] = W2[i]
 			seq['alpha'] = Alpha[i]
-			seq['fea'] = features[item]
+			seq['fea'] = features[i]
 			seq['beta'] = beta.tolist()
 			seq['spont'] = (fea*beta).tolist()[0]
 			result.append(seq)
@@ -471,6 +471,12 @@ class HawkesGenerator(object):
 		from keras.models import Model
 
 		from pp_layer import HawkesLayer
+
+		if self.sequence_weights is None:
+			sys.stderr.write(str({
+				'error info':'unpretrained generator',
+			}) + '\n')
+			sys.stderr.flush()
 
 		x = Input(batch_shape=(1,1), dtype='int32')
 		hawkes_layer = HawkesLayer(sequences,pred_length,sequence_weights=self.sequence_weights,proxy_layer=proxy_layer,sample_stddev=sample_stddev)
