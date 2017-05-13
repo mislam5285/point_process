@@ -315,13 +315,13 @@ if __name__ == '__main__':
 		sys.stdout = f
 		gan = HawkesGAN()
 		try:
-			gan.gen.sequence_weights = json.load(open('../data/paper3.pretrain.sequence_weights.json'))
+			gan.gen.sequence_weights = json.load(open('../log/paper3.pretrain.early_stop.sequence_weights.json.log'))
 		except:
 			loaded = gan.gen.load('../data/paper3.txt')
 			gan.gen.pre_train(*loaded,max_outer_iter=1,alpha_iter=1,w_iter=1)
-			with open('../data/paper3.pretrain.sequence_weights.json','w') as fw:
+			with open('../log/paper3.pretrain.early_stop.sequence_weights.json.log','w') as fw:
 				json.dump(gan.gen.sequence_weights,fw)
 		# exit()
 		loaded = gan.load('../data/paper3.txt')
-		gan.full_train(*loaded)
+		gan.full_train(*loaded,mse_weight=1.,gan_weight=0.)
 		sys.stdout = old_stdout

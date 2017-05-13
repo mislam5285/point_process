@@ -217,14 +217,7 @@ def draw_fix_train_non_self_m_hawkes(dataset_id, nb_type=1):
             plt.savefig(root + '/pic/%s'%key)
 
 def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
-    # will_train_hawkes_3_40 = False
-    # will_train_hawkes_3_30 = False
-    # will_train_hawkes_3_20 = False
-    # will_train_hawkes_3_10 = False
-    # will_train_hawkes_1_10 = False
-    # will_train_hawkes_1_5 = False
-    # will_train_hawkes_1_1 = False
-    # will_train_hawkes_5_1 = False
+
     will_train_hawkes = {'1:1':False,'1:5':False,'5:1':False,'3:3':False}
     will_draw = True
     will_draw_mle_curve = {'1:1':True,'1:5':False,'5:1':False,'3:3':False}
@@ -237,13 +230,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
     log_pre_train = {}
     for key in will_train_hawkes:
         log_pre_train[key] = root + '/data/' + dataset_id + '.pretrain.log.' + to_ratio(key)[0] + '.' + to_ratio(key)[1] + '.txt'
-    # log_pre_train_3_40 = root + '/data/' + dataset_id + '.pretrain.log.3.40.txt'
-    # log_pre_train_3_20 = root + '/data/' + dataset_id + '.pretrain.log.3.20.txt'
-    # log_pre_train_3_10 = root + '/data/' + dataset_id + '.pretrain.log.3.10.txt'
-    # log_pre_train_1_10 = root + '/data/' + dataset_id + '.pretrain.log.1.10.txt'
-    # log_pre_train_1_5 = root + '/data/' + dataset_id + '.pretrain.log.1.5.txt'
-    # log_pre_train_1_1 = root + '/data/' + dataset_id + '.pretrain.log.1.1.txt'
-    # log_pre_train_5_1 = root + '/data/' + dataset_id + '.pretrain.log.5.1.txt'
+
 
     for key in will_train_hawkes:
         if will_train_hawkes[key] == True :
@@ -256,68 +243,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
                     alpha_iter=int(to_ratio(key)[0]),w_iter=int(to_ratio(key)[1]))
                 sys.stdout = old_stdout
 
-    # if will_train_hawkes_3_40 == True :
-    #     with open(log_pre_train_3_40,'w') as f:
-    #         old_stdout = sys.stdout
-    #         sys.stdout = f
-    #         predictor = HawkesGenerator()
-    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
-    #         model = predictor.pre_train(*loaded,max_outer_iter=12,alpha_iter=3,w_iter=40)
-    #         sys.stdout = old_stdout
 
-    # if will_train_hawkes_3_20 == True :
-    #     with open(log_pre_train_3_20,'w') as f:
-    #         old_stdout = sys.stdout
-    #         sys.stdout = f
-    #         predictor = HawkesGenerator()
-    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
-    #         model = predictor.pre_train(*loaded,max_outer_iter=25,alpha_iter=3,w_iter=20)
-    #         sys.stdout = old_stdout
-
-    # if will_train_hawkes_3_10 == True :
-    #     with open(log_pre_train_3_10,'w') as f:
-    #         old_stdout = sys.stdout
-    #         sys.stdout = f
-    #         predictor = HawkesGenerator()
-    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
-    #         model = predictor.pre_train(*loaded,max_outer_iter=40,alpha_iter=3,w_iter=10)
-    #         sys.stdout = old_stdout
-
-    # if will_train_hawkes_1_10 == True :
-    #     with open(log_pre_train_1_10,'w') as f:
-    #         old_stdout = sys.stdout
-    #         sys.stdout = f
-    #         predictor = HawkesGenerator()
-    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
-    #         model = predictor.pre_train(*loaded,max_outer_iter=45,alpha_iter=1,w_iter=10)
-    #         sys.stdout = old_stdout
-
-    # if will_train_hawkes_1_5 == True :
-    #     with open(log_pre_train_1_5,'w') as f:
-    #         old_stdout = sys.stdout
-    #         sys.stdout = f
-    #         predictor = HawkesGenerator()
-    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
-    #         model = predictor.pre_train(*loaded,max_outer_iter=90,alpha_iter=1,w_iter=5)
-    #         sys.stdout = old_stdout
-
-    # if will_train_hawkes_1_1 == True :
-    #     with open(log_pre_train_1_1,'w') as f:
-    #         old_stdout = sys.stdout
-    #         sys.stdout = f
-    #         predictor = HawkesGenerator()
-    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
-    #         model = predictor.pre_train(*loaded,max_outer_iter=450,alpha_iter=1,w_iter=1)
-    #         sys.stdout = old_stdout
-
-    # if will_train_hawkes_5_1 == True :
-    #     with open(log_pre_train_5_1,'w') as f:
-    #         old_stdout = sys.stdout
-    #         sys.stdout = f
-    #         predictor = HawkesGenerator()
-    #         loaded = predictor.load(dataset_path,nb_type=nb_type)
-    #         model = predictor.pre_train(*loaded,max_outer_iter=90,alpha_iter=5,w_iter=1)
-    #         sys.stdout = old_stdout
     # drawing
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
@@ -334,21 +260,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
             if will_draw_mle_curve[key] == True:
                 f_pre_train[key] = open(log_pre_train[key])
                 nodes_pre_train[key] = []
-        # f_pre_train_3_40 = open(log_pre_train_3_40)
-        # nodes_pre_train_3_40 = []
-        # f_pre_train_3_20 = open(log_pre_train_3_20)
-        # nodes_pre_train_3_20 = []
-        # f_pre_train_3_10 = open(log_pre_train_3_10)
-        # nodes_pre_train_3_10 = []
-        # f_pre_train_1_10 = open(log_pre_train_1_10)
-        # nodes_pre_train_1_10 = []
 
-        # f_pre_train_1_5 = open(log_pre_train_1_5)
-        # nodes_pre_train_1_5 = []
-        # f_pre_train_1_1 = open(log_pre_train_1_1)
-        # nodes_pre_train_1_1 = []
-        # f_pre_train_5_1 = open(log_pre_train_5_1)
-        # nodes_pre_train_5_1 = []
 
         for key in f_pre_train:
             for line in f_pre_train[key]:
@@ -358,54 +270,6 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
                 except:
                     print 'error'
 
-        # for line in f_pre_train_3_40:
-        #     try:
-        #         node = eval(line)
-        #         nodes_pre_train_3_40.append(node)
-        #     except:
-        #         print 'error'
-
-        # for line in f_pre_train_3_20:
-        #     try:
-        #         node = eval(line)
-        #         nodes_pre_train_3_20.append(node)
-        #     except:
-        #         print 'error'
-
-        # for line in f_pre_train_3_10:
-        #     try:
-        #         node = eval(line)
-        #         nodes_pre_train_3_10.append(node)
-        #     except:
-        #         print 'error'
-
-        # for line in f_pre_train_1_10:
-        #     try:
-        #         node = eval(line)
-        #         nodes_pre_train_1_10.append(node)
-        #     except:
-        #         print 'error'
-
-        # for line in f_pre_train_1_5:
-        #     try:
-        #         node = eval(line)
-        #         nodes_pre_train_1_5.append(node)
-        #     except:
-        #         print 'error'
-
-        # for line in f_pre_train_1_1:
-        #     try:
-        #         node = eval(line)
-        #         nodes_pre_train_1_1.append(node)
-        #     except:
-        #         print 'error'
-
-        # for line in f_pre_train_5_1:
-        #     try:
-        #         node = eval(line)
-        #         nodes_pre_train_5_1.append(node)
-        #     except:
-        #         print 'error'
 
         for i in range(3): # acc or mape or loss
             x_left_limit = 0
@@ -415,25 +279,11 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
             for key in f_pre_train:
                 y_pre_train[key] = np.array(
                     [float(keys[i](node)) for node in nodes_pre_train[key]])[x_left_limit:x_right_limit+1]
-            # y_pre_train_3_40 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_40])[x_left_limit:x_right_limit+1]
-            # y_pre_train_3_20 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_20])[x_left_limit:x_right_limit+1]
-            # y_pre_train_3_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_3_10])[x_left_limit:x_right_limit+1]
-            # y_pre_train_1_10 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_10])[x_left_limit:x_right_limit+1]
-            # y_pre_train_1_5 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_5])[x_left_limit:x_right_limit+1]
-            # y_pre_train_1_1 = np.array([float(keys[i](node)) for node in nodes_pre_train_1_1])[x_left_limit:x_right_limit+1]
-            # y_pre_train_5_1 = np.array([float(keys[i](node)) for node in nodes_pre_train_5_1])[x_left_limit:x_right_limit+1]
 
             y_pre_train_val = {}
             for key in f_pre_train:
                 y_pre_train_val[key] = np.array(
                     [float(keys_val[i](node)) for node in nodes_pre_train[key]])[x_left_limit:x_right_limit+1]
-            # y_pre_train_3_40_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_40])[x_left_limit:x_right_limit+1]
-            # y_pre_train_3_20_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_20])[x_left_limit:x_right_limit+1]
-            # y_pre_train_3_10_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_3_10])[x_left_limit:x_right_limit+1]
-            # y_pre_train_1_10_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_10])[x_left_limit:x_right_limit+1]
-            # y_pre_train_1_5_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_5])[x_left_limit:x_right_limit+1]
-            # y_pre_train_1_1_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_1_1])[x_left_limit:x_right_limit+1]
-            # y_pre_train_5_1_val = np.array([float(keys_val[i](node)) for node in nodes_pre_train_5_1])[x_left_limit:x_right_limit+1]
 
             curves = []
             for key in f_pre_train:
@@ -443,48 +293,7 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
                     'y_val':y_pre_train_val[key],
                 }
                 curves.append(curve)
-            # curves = [
-            #     {
-            #         'rate':'3:30',
-            #         'y_test':y_pre_train,
-            #         'y_val':y_pre_train_val,
-            #     },
-            #     {
-            #         'rate':'3:40',
-            #         'y_test':y_pre_train_3_40,
-            #         'y_val':y_pre_train_3_40_val,
-            #     },
-            #     {
-            #         'rate':'3:20',
-            #         'y_test':y_pre_train_3_20,
-            #         'y_val':y_pre_train_3_20_val,
-            #     },
-            #     {
-            #         'rate':'3:10',
-            #         'y_test':y_pre_train_3_10,
-            #         'y_val':y_pre_train_3_10_val,
-            #     },
-            #     {
-            #         'rate':'1:10',
-            #         'y_test':y_pre_train_1_10,
-            #         'y_val':y_pre_train_1_10_val,
-            #     },
-            #     {
-            #         'rate':'1:5',
-            #         'y_test':y_pre_train_1_5,
-            #         'y_val':y_pre_train_1_5_val,
-            #     },
-            #     {
-            #         'rate':'1:1',
-            #         'y_test':y_pre_train_1_1,
-            #         'y_val':y_pre_train_1_1_val,
-            #     },
-            #     {
-            #         'rate':'5:1',
-            #         'y_test':y_pre_train_5_1,
-            #         'y_val':y_pre_train_5_1_val,
-            #     },
-            # ]
+
 
             for curve in curves: # each curve
                 fig = plt.figure()
@@ -505,10 +314,15 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
 
                 plt.plot(np.arange(1,len(curve['y_test'])+1),curve['y_test'],c=colors['test'],lw=1.2,
                     label=labels_prefix[i] + ' on test.')
+                if i == 1:
+                    j = np.argmax(curve['y_test'])
+                    plt.plot([j,j],[y_lower_limit,curve['y_test'][j]],'--',c=colors['test_best'],lw=1.2,
+                        label='best ' + labels_prefix[i] + ' on test.')
+                    plt.plot([0,j],[curve['y_test'][j],curve['y_test'][j]],'--',c=colors['test_best'],lw=1.2)
                 if i == 2:
                     j = np.argmin(curve['y_test'])
                     plt.plot([j,j],[y_lower_limit,curve['y_test'][j]],'--',c=colors['test_best'],lw=1.2,
-                        label='best point')
+                        label='best ' + labels_prefix[i] + ' on test.')
                     plt.plot([0,j],[curve['y_test'][j],curve['y_test'][j]],'--',c=colors['test_best'],lw=1.2)
 
                 plt.xticks(fontsize=13)
@@ -528,8 +342,6 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
 
                     # draw curve
                     ax = plt.subplot(111).twinx()
-                    # ax.ylim(y_lower_limit, y_upper_limit)
-                    # ax.xlim(x_left_limit,x_right_limit)
                     ax.set_ylim(y_lower_limit, y_upper_limit)
                     ax.set_xlim(x_left_limit,x_right_limit)
 
@@ -590,46 +402,45 @@ def draw_hawkes_generator_pretrain_convergence(dataset_id, nb_type=1):
 
 
 def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
-    will_train_mle_only = False
+    will_pretrain_with_mle = False
     # will_train_gan_only = False
     # will_train_gan_only_noise = False
     # will_train_gan_noise_dropout = False
     # will_train_mle_gan_aternative = False
 
-    will_train_mle_to_wgan = False
+    # will_train_mle_to_wgan = False
     # will_train_wgan_only = False
     # will_train_wgan_only_noise = False
 
-    will_train_mse_noise_dropout = False
+    will_train_mse_noise_dropout = True
     will_train_wgan_noise_dropout = False
-    will_train_wgan_noise_sample = False
+
     will_train_mse_noise_sample = False
+    will_train_wgan_noise_sample = False
+
     will_train_mse_with_wgan_noise_sample = False
 
-
-
     will_draw = True
-    # preprocess
+
     dataset_path = root + '/data/' + dataset_id + '.txt'
 
     # pre-training
-    ratio = [3,30]
+    ratio = [1,1]
     log_mle_only = root + '/data/' + dataset_id + '.pretrain.log.' + str(ratio[0]) + '.' + str(ratio[1]) + '.txt'
 
-    if will_train_mle_only == True :
+    if will_pretrain_with_mle == True :
         with open(log_mle_only,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
             predictor = HawkesGenerator()
             loaded = predictor.load(dataset_path,nb_type=nb_type)
-            model = predictor.pre_train(*loaded,max_outer_iter=10)
+            model = predictor.pre_train(*loaded,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
             sys.stdout = old_stdout
 
-    # full-training
-    log_mle_to_wgan = root + '/data/' + dataset_id + '.fulltrain.wgan.log.txt'
 
-    alpha_iter = ratio[0]
-    w_iter = ratio[1]
+    # alpha_iter = ratio[0]
+    # w_iter = ratio[1]
 
     log_pre_train_early_stop = root + '/data/' + dataset_id + '.pretrain.early_stop.stop_point.json'
     with open(log_pre_train_early_stop) as fr:
@@ -640,27 +451,30 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
     full_train_start = early_stop
     assert full_train_start > 0
 
-    if will_train_mle_to_wgan == True :
-        mse_weight = 0.
-        gan_weight = 1.
-        with open(log_mle_to_wgan,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            gan = HawkesGAN()
-            try:
-                gan.gen.sequence_weights = json.load(
-                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json'))
-            except:
-                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
-                sys.stdout = open(root + '/log/pretrain.log','w')
-                gan.gen.pre_train(*loaded,early_stop=full_train_start)
-                sys.stdout = f
-                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json','w') as fw:
-                    json.dump(gan.gen.sequence_weights,fw)
-            # exit()
-            loaded = gan.load(dataset_path,nb_type=nb_type)
-            gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
-            sys.stdout = old_stdout
+    # full-training
+    # log_mle_to_wgan = root + '/data/' + dataset_id + '.fulltrain.wgan.log.txt'
+    # if will_train_mle_to_wgan == True :
+    #     mse_weight = 0.
+    #     gan_weight = 1.
+    #     with open(log_mle_to_wgan,'w') as f:
+    #         old_stdout = sys.stdout
+    #         sys.stdout = f
+    #         gan = HawkesGAN()
+    #         try:
+    #             gan.gen.sequence_weights = json.load(
+    #                 open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
+    #         except:
+    #             loaded = gan.gen.load(dataset_path,nb_type=nb_type)
+    #             sys.stdout = open(root + '/log/pretrain.log','w')
+    #             gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    # alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
+    #             sys.stdout = f
+    #             with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
+    #                 json.dump(gan.gen.sequence_weights,fw)
+    #         # exit()
+    #         loaded = gan.load(dataset_path,nb_type=nb_type)
+    #         gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight)
+    #         sys.stdout = old_stdout
 
     # log_gan_only = root + '/data/' + dataset_id + '.fulltrain.gan_only.log.txt'
     # if will_train_gan_only == True:
@@ -702,13 +516,14 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
     #         gan = HawkesGAN()
     #         try:
     #             gan.gen.sequence_weights = json.load(
-    #                 open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json'))
+    #                 open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
     #         except:
     #             loaded = gan.gen.load(dataset_path,nb_type=nb_type)
     #             sys.stdout = open(root + '/log/pretrain.log','w')
-    #             gan.gen.pre_train(*loaded,early_stop=full_train_start)
+    #             gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    # alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
     #             sys.stdout = f
-    #             with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json','w') as fw:
+    #             with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
     #                 json.dump(gan.gen.sequence_weights,fw)
     #         # exit()
     #         loaded = gan.load(dataset_path,nb_type=nb_type)
@@ -727,13 +542,14 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
             gan = HawkesGAN()
             try:
                 gan.gen.sequence_weights = json.load(
-                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json'))
+                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
             except:
                 loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 sys.stdout = open(root + '/log/pretrain.log','w')
-                gan.gen.pre_train(*loaded,early_stop=full_train_start)
+                gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
                 sys.stdout = f
-                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
             loaded = gan.load(dataset_path,nb_type=nb_type)
@@ -752,45 +568,19 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
             gan = HawkesGAN()
             try:
                 gan.gen.sequence_weights = json.load(
-                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json'))
+                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
             except:
                 loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 sys.stdout = open(root + '/log/pretrain.log','w')
-                gan.gen.pre_train(*loaded,early_stop=full_train_start)
+                gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
                 sys.stdout = f
-                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
             loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
                 stddev=stddev,wgan_clip=wgan_clip)
-            sys.stdout = old_stdout
-
-    log_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.wgan_noise_sample.log.txt'
-    if will_train_wgan_noise_sample == True:
-        mse_weight = 0.
-        gan_weight = 1.
-        stddev = 10.
-        sample_stddev = 10.
-        wgan_clip = 2.
-        with open(log_wgan_noise_sample,'w') as f:
-            old_stdout = sys.stdout
-            sys.stdout = f
-            gan = HawkesGAN()
-            try:
-                gan.gen.sequence_weights = json.load(
-                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json'))
-            except:
-                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
-                sys.stdout = open(root + '/log/pretrain.log','w')
-                gan.gen.pre_train(*loaded,early_stop=full_train_start)
-                sys.stdout = f
-                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json','w') as fw:
-                    json.dump(gan.gen.sequence_weights,fw)
-            # exit()
-            loaded = gan.load(dataset_path,nb_type=nb_type)
-            gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
-                stddev=stddev,sample_stddev=sample_stddev,wgan_clip=wgan_clip)
             sys.stdout = old_stdout
 
 
@@ -806,18 +596,47 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
             gan = HawkesGAN()
             try:
                 gan.gen.sequence_weights = json.load(
-                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json'))
+                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
             except:
                 loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 sys.stdout = open(root + '/log/pretrain.log','w')
-                gan.gen.pre_train(*loaded,early_stop=full_train_start)
+                gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
                 sys.stdout = f
-                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
             loaded = gan.load(dataset_path,nb_type=nb_type)
             gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
                 stddev=stddev,sample_stddev=sample_stddev)
+            sys.stdout = old_stdout
+
+    log_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.wgan_noise_sample.log.txt'
+    if will_train_wgan_noise_sample == True:
+        mse_weight = 0.
+        gan_weight = 1.
+        stddev = 10.
+        sample_stddev = 10.
+        wgan_clip = 2.
+        with open(log_wgan_noise_sample,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(
+                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
+                sys.stdout = open(root + '/log/pretrain.log','w')
+                gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
+                sys.stdout = f
+                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(dataset_path,nb_type=nb_type)
+            gan.full_train(*loaded,train_gan_method='wgan',max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
+                stddev=stddev,sample_stddev=sample_stddev,wgan_clip=wgan_clip)
             sys.stdout = old_stdout
 
     log_mse_with_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.mse_wgan.noise_sample.log.txt'
@@ -833,13 +652,14 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
             gan = HawkesGAN()
             try:
                 gan.gen.sequence_weights = json.load(
-                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json'))
+                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
             except:
                 loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 sys.stdout = open(root + '/log/pretrain.log','w')
-                gan.gen.pre_train(*loaded,early_stop=full_train_start)
+                gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
                 sys.stdout = f
-                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
             loaded = gan.load(dataset_path,nb_type=nb_type)
@@ -852,51 +672,45 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
         colors = {
             'mle_only':'red',
-            'mle_gan':'green',
-            'gan_only':'blue',
-            'wgan_noise':'purple',
-            'mse_noise':'orange',
-            'gan_only_noise':'yellow',
-            'gan_noise':'black',
-            'mse_with_wgan_noise_sample':'green',
-            'mse_noise_sample':'blue',
+            'mse_noise':'blue',
+            'wgan_noise':'green',
+            'mse_noise_sample':'purple',
+            'wgan_noise_sample':'orange',
+            'mse_with_wgan_noise_sample':'black',
         }
         keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
         labels_prefix = ['ACC','MAPE']
         labels_suffix = {
-            'mle_only':'MLE only',
-            'mle_gan':'GAN without noise',
-            'gan_only':'GAN only',# with optimal $\\beta$',
-            'wgan_noise':'WGAN',
-            'mse_noise':'MSE',
-            'gan_only_noise':'gan only noise',
-            'gan_noise':'gan_noise',
-            'mse_with_wgan_noise_sample':'ppGAN',
-            'mse_noise_sample':'MSE with noise',
+            'mle_only':'MLE pretrain',
+            'mse_noise':'MSE 1',
+            'wgan_noise':'WGAN 1',
+            'mse_noise_sample':'MSE 2',
+            'wgan_noise_sample':'WGAN 2',
+            'mse_with_wgan_noise_sample':'Mixture loss',
         }
 
         f_mle_only = open(log_mle_only)
-        f_mle_to_wgan = open(log_mle_to_wgan)
+        # f_mle_to_wgan = open(log_mle_to_wgan)
         # f_gan_only = open(log_gan_only)
         # f_gan_only_noise = open(log_gan_only_noise)
         # f_gan_noise = open(log_gan_noise)
-        f_wgan_noise = open(log_wgan_noise)
         f_mse_noise = open(log_mse_noise)
+        f_wgan_noise = open(log_wgan_noise)
 
-        f_wgan_noise_sample = open(log_wgan_noise_sample)
         f_mse_noise_sample = open(log_mse_noise_sample)
+        f_wgan_noise_sample = open(log_wgan_noise_sample)
         f_mse_with_wgan_noise_sample = open(log_mse_with_wgan_noise_sample)
 
         nodes_mle_only = []
-        nodes_mle_to_wgan = []
+        # nodes_mle_to_wgan = []
         # nodes_gan_only = []
         # nodes_gan_only_noise = []
         # nodes_gan_noise = []
-        nodes_wgan_noise = []
         nodes_mse_noise = []
+        nodes_wgan_noise = []
 
-        nodes_wgan_noise_sample = []
         nodes_mse_noise_sample = []
+        nodes_wgan_noise_sample = []
         nodes_mse_with_wgan_noise_sample = []
 
         for line in f_mle_only:
@@ -906,12 +720,12 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
             except:
                 print 'error'
 
-        for line in f_mle_to_wgan:
-            try:
-                node = eval(line)
-                nodes_mle_to_wgan.append(node)
-            except:
-                print 'error'
+        # for line in f_mle_to_wgan:
+        #     try:
+        #         node = eval(line)
+        #         nodes_mle_to_wgan.append(node)
+        #     except:
+        #         print 'error'
 
         # for line in f_gan_only:
         #     try:
@@ -975,7 +789,7 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 
             # arrange layout
             y_mle_only = np.array([float(keys[i](node)) for node in nodes_mle_only])
-            y_mle_to_wgan = np.array([float(keys[i](node)) for node in nodes_mle_to_wgan])
+            # y_mle_to_wgan = np.array([float(keys[i](node)) for node in nodes_mle_to_wgan])
             # y_gan_only = np.array([float(keys[i](node)) for node in nodes_gan_only])
             # y_gan_only_noise = np.array([float(keys[i](node)) for node in nodes_gan_only_noise])
             # y_gan_noise = np.array([float(keys[i](node)) for node in nodes_gan_noise])
@@ -1019,8 +833,8 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
             plt.plot(np.arange(full_train_start,len(y_mse_noise)+full_train_start),y_mse_noise,c=colors['mse_noise'],lw=1.2,
                 label=labels_suffix['mse_noise'])
 
-            plt.plot(np.arange(full_train_start,len(y_wgan_noise_sample)+full_train_start),y_wgan_noise_sample,c=colors['wgan_noise'],lw=1.2,
-                label=labels_suffix['wgan_noise'])
+            plt.plot(np.arange(full_train_start,len(y_wgan_noise_sample)+full_train_start),y_wgan_noise_sample,c=colors['wgan_noise_sample'],lw=1.2,
+                label=labels_suffix['wgan_noise_sample'])
             plt.plot(np.arange(full_train_start,len(y_mse_noise_sample)+full_train_start),y_mse_noise_sample,c=colors['mse_noise_sample'],lw=1.2,
                 label=labels_suffix['mse_noise_sample'])
             plt.plot(np.arange(full_train_start,len(y_mse_with_wgan_noise_sample)+full_train_start),y_mse_with_wgan_noise_sample,c=colors['mse_with_wgan_noise_sample'],lw=1.2,
@@ -1044,7 +858,7 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 
 
 def draw_full_train_learning_mle_mse_convergence(dataset_id, nb_type=1):
-    will_train_mle_only = False
+    will_pretrain_with_mle = False
     will_train_mle_to_mse = False
 
     will_train_mse_only = False
@@ -1057,10 +871,10 @@ def draw_full_train_learning_mle_mse_convergence(dataset_id, nb_type=1):
     dataset_path = root + '/data/' + dataset_id + '.txt'
 
     # pre-training
-    ratio = [3,30]
+    ratio = [1,1]
     log_mle_only = root + '/data/' + dataset_id + '.pretrain.log.' + str(ratio[0]) + '.' + str(ratio[1]) + '.txt'
 
-    if will_train_mle_only == True :
+    if will_pretrain_with_mle == True :
         with open(log_mle_only,'w') as f:
             old_stdout = sys.stdout
             sys.stdout = f
@@ -1093,13 +907,14 @@ def draw_full_train_learning_mle_mse_convergence(dataset_id, nb_type=1):
             gan = HawkesGAN()
             try:
                 gan.gen.sequence_weights = json.load(
-                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json'))
+                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
             except:
                 loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 sys.stdout = open(root + '/log/pretrain.log','w')
-                gan.gen.pre_train(*loaded,early_stop=full_train_start)
+                gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
                 sys.stdout = f
-                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
             loaded = gan.load(dataset_path,nb_type=nb_type)
@@ -1144,13 +959,14 @@ def draw_full_train_learning_mle_mse_convergence(dataset_id, nb_type=1):
     #         gan = HawkesGAN()
     #         try:
     #             gan.gen.sequence_weights = json.load(
-    #                 open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json'))
+    #                 open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
     #         except:
     #             loaded = gan.gen.load(dataset_path,nb_type=nb_type)
     #             sys.stdout = open(root + '/log/pretrain.log','w')
-    #             gan.gen.pre_train(*loaded,early_stop=full_train_start)
+    #             gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    # alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
     #             sys.stdout = f
-    #             with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json','w') as fw:
+    #             with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
     #                 json.dump(gan.gen.sequence_weights,fw)
     #         # exit()
     #         loaded = gan.load(dataset_path,nb_type=nb_type)
@@ -1167,13 +983,14 @@ def draw_full_train_learning_mle_mse_convergence(dataset_id, nb_type=1):
             gan = HawkesGAN()
             try:
                 gan.gen.sequence_weights = json.load(
-                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json'))
+                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
             except:
                 loaded = gan.gen.load(dataset_path,nb_type=nb_type)
                 sys.stdout = open(root + '/log/pretrain.log','w')
-                gan.gen.pre_train(*loaded,early_stop=full_train_start)
+                gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
                 sys.stdout = f
-                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.' + str(ratio[0]) + '.' + str(ratio[1]) + '.json','w') as fw:
+                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
                     json.dump(gan.gen.sequence_weights,fw)
             # exit()
             loaded = gan.load(dataset_path,nb_type=nb_type)
@@ -1307,7 +1124,7 @@ def draw_full_train_mle_mse_mape_acc_constast(dataset_id, nb_type=1):
     dataset_path = root + '/data/' + dataset_id + '.txt'
 
     # pre-training
-    ratio = [3,30]
+    ratio = [1,1]
     log_mle_only = root + '/data/' + dataset_id + '.pretrain.log.' + str(ratio[0]) + '.' + str(ratio[1]) + '.txt'
 
     # full-training
@@ -1447,8 +1264,8 @@ if __name__ == '__main__' :
     for dataset_id in ['paper3']:
         # draw_fix_train_total_xiao(dataset_id,nb_type=event_types[dataset_id])
         # draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
-        draw_hawkes_generator_pretrain_convergence(dataset_id,nb_type=event_types[dataset_id])
-        # draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
+        # draw_hawkes_generator_pretrain_convergence(dataset_id,nb_type=event_types[dataset_id])
+        draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_learning_mle_mse_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_mle_mse_mape_acc_constast(dataset_id,nb_type=event_types[dataset_id])
         pass

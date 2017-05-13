@@ -182,6 +182,7 @@ class HawkesGenerator(object):
 
 			# print 'step 2 : update w by gradient descent ...'
 
+			if early_stop is not None and iterations >= early_stop: break
 			step_size = 1e-2
 			for times in range(w_iter):
 				step_size /= 1 + 10 * step_size
