@@ -1102,8 +1102,8 @@ if __name__ == '__main__' :
         # draw_fix_train_total_xiao(dataset_id,nb_type=event_types[dataset_id])
         # draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
         # draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
-        draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
+        # draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_learning_discriminative_convergence(dataset_id,nb_type=event_types[dataset_id])
-        # draw_full_train_contrast_mape_acc(dataset_id,nb_type=event_types[dataset_id])
+        draw_full_train_contrast_mape_acc(dataset_id,nb_type=event_types[dataset_id])
         pass
     plt.show()

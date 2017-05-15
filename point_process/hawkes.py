@@ -6,15 +6,15 @@ numpy.random.seed(1337)
 
 class MHawkes(object):
 	def __init__(self):
-		pass
+		self.nb_type = None
 
-	def train(self, train_seq, test_seq, superparams, initparams,max_iter=0,max_outer_iter=100):
+	def train(self, train_seq, test_seq, config, initparams,max_iter=0,max_outer_iter=100):
 
 		model = {}
-		model['superparams'] = superparams
+		model['config'] = config
 		I = len(train_seq)
-		M = 2
-		sigma = superparams['sigma']
+		M = self.nb_type
+		sigma = config['sigma']
 		model['mu'] = numpy.random.random(M)
 		model['AA'] = numpy.random.random(M**2)
 		model['theta'] = initparams['theta']
@@ -67,7 +67,7 @@ class MHawkes(object):
 							psi = _lambda
 							t_k = times[0:j]
 							m_k = dims[0:j]
-							idx = [_idx for _idx in range(len(t_k)) if t_j - t_k[_idx] <= superparams['impact_period']]
+							idx = [_idx for _idx in range(len(t_k)) if t_j - t_k[_idx] <= config['impact_period']]
 							if len(idx) == 0:
 								psi /= _lambda
 							else:
@@ -106,7 +106,7 @@ class MHawkes(object):
 				iteration += 1
 
 				model['AA'] = AA
-				if iteration > max_iter or error < superparams['thres']:
+				if iteration > max_iter or error < config['thres']:
 					Q_converge = True
 					break
 				else:
@@ -126,7 +126,7 @@ class MHawkes(object):
 	def g(self,w,t):
 		return numpy.exp(- w * t)
 
-	def predict(self, model, train_seq, test_seq, superparams, initparams):
+	def predict(self, model, train_seq, test_seq, config, initparams):
 		M = model['M']
 		pred_seqs = []
 		pred_seqs_self = []
@@ -147,16 +147,17 @@ class MHawkes(object):
 			dims = numpy.array(train_seq[i]['dims'],dtype=int)
 			features = numpy.array(train_seq[i]['features'],dtype=float)
 			N = len(times)
-			N_self = len([x for x in dims if x == 0])
-			N_nonself = len([x for x in dims if x == 1])
-			if N != N_self + N_nonself:
-				print 'N != N_self + N_nonself'
-				exit()
+			N_d = [0.] * self.nb_type
+			# N_self = len([x for x in dims if x == 0])
+			# N_nonself = len([x for x in dims if x == 1])
+			# if N != N_self + N_nonself:
+			# 	print 'N != N_self + N_nonself'
+			# 	exit()
 
 			AA = model['AA'].reshape(M,M)
 			w = model['w']
 
-			duration = model['superparams']['duration']
+			duration = model['config']['duration']
 			mape = []
 			mape_self = []
 			mape_nonself = []
@@ -170,67 +171,75 @@ class MHawkes(object):
 			real_seq_nonself = []
 
 			for year in range(duration+1):
-				LL = 0
-				LL_self = 0
-				LL_nonself = 0
+				LL = 0.
+				LL_d = [0.] * self.nb_type
+				# LL_self = 0
+				# LL_nonself = 0
 				for j in range(N):
 					m_j = dims[j]
 					int_g = self.G(w,T + year - times[j]) - self.G(w,T - times[j])
 					LL += numpy.sum(int_g * AA[:,m_j])
-					LL_self += int_g * AA[0,m_j]
-					LL_nonself += int_g * AA[1,m_j]
+					for m in range(self.nb_type):
+						LL_d[m] += int_g * AA[m,m_j]
+					# LL_self += int_g * AA[0,m_j]
+					# LL_nonself += int_g * AA[1,m_j]
 
 				LL += year * numpy.sum(model['mu'])
-				LL_self += year * numpy.sum(model['mu'])
-				LL_nonself += year * numpy.sum(model['mu'])
+				for m in range(self.nb_type):
+					LL_d[m] += year * numpy.sum(model['mu'])
+				# LL_self += year * numpy.sum(model['mu'])
+				# LL_nonself += year * numpy.sum(model['mu'])
 
 
 				pred = N + LL
-				pred_self = N_self + LL_self
-				pred_nonself = N_nonself + LL_nonself
-				real = N + len([x for x in test_seq[i]['times'] if x + model['superparams']['cut_point'] < T + year])
-				real_self = N_self + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['superparams']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 0])
-				real_nonself = N_nonself + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['superparams']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 1])
+				pred_d = [0.] * self.nb_type
+				for m in range(self.nb_type):
+					pred_d[m] = N_d[m] + LL_d[m]
+				# pred_self = N_self + LL_self
+				# pred_nonself = N_nonself + LL_nonself
+				real = N + len([x for x in test_seq[i]['times'] if x + model['config']['cut_point'] < T + year])
+				# real_self = N_self + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['config']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 0])
+				# real_nonself = N_nonself + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['config']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 1])
 				mape.append(abs(pred - real) / float(real + 0.001))
-				mape_self.append(abs(pred_self - real_self) / float(real_self + 0.001))
-				mape_nonself.append(abs(pred_nonself - real_nonself) / float(real_nonself + 0.001))
+				# mape_self.append(abs(pred_self - real_self) / float(real_self + 0.001))
+				# mape_nonself.append(abs(pred_nonself - real_nonself) / float(real_nonself + 0.001))
 
 				pred_seq.append(pred)
-				pred_seq_self.append(pred_self)
-				pred_seq_nonself.append(pred_nonself)
+				# pred_seq_self.append(pred_self)
+				# pred_seq_nonself.append(pred_nonself)
 
 				real_seq.append(real)
-				real_seq_self.append(real_self)
-				real_seq_nonself.append(real_nonself)
+				# real_seq_self.append(real_self)
+				# real_seq_nonself.append(real_nonself)
 
 			mapes.append(mape)
-			mapes_self.append(mape_self)
-			mapes_nonself.append(mape_nonself)
+			# mapes_self.append(mape_self)
+			# mapes_nonself.append(mape_nonself)
 
 			pred_seqs.append(pred_seq)
-			pred_seqs_self.append(pred_seq_self)
-			pred_seqs_nonself.append(pred_seq_nonself)
+			# pred_seqs_self.append(pred_seq_self)
+			# pred_seqs_nonself.append(pred_seq_nonself)
 
 			real_seqs.append(real_seq)
-			real_seqs_self.append(real_seq_self)
-			real_seqs_nonself.append(real_seq_nonself)
+			# real_seqs_self.append(real_seq_self)
+			# real_seqs_nonself.append(real_seq_nonself)
 
 		av_mape = numpy.mean(numpy.array(mapes),0)
-		av_acc = numpy.mean(numpy.array(mapes) < model['superparams']['epsilon'],0)
+		av_acc = numpy.mean(numpy.array(mapes) < model['config']['epsilon'],0)
 
-		av_mape_self = numpy.mean(numpy.array(mapes_self),0)
-		av_acc_self = numpy.mean(numpy.array(mapes_self) < model['superparams']['epsilon'],0)
+		# av_mape_self = numpy.mean(numpy.array(mapes_self),0)
+		# av_acc_self = numpy.mean(numpy.array(mapes_self) < model['config']['epsilon'],0)
 
-		av_mape_nonself = numpy.mean(numpy.array(mapes_nonself),0)
-		av_acc_nonself = numpy.mean(numpy.array(mapes_nonself) < model['superparams']['epsilon'],0)
+		# av_mape_nonself = numpy.mean(numpy.array(mapes_nonself),0)
+		# av_acc_nonself = numpy.mean(numpy.array(mapes_nonself) < model['config']['epsilon'],0)
 
 		return {
 			'av_mape':av_mape.tolist(),
 			'av_acc':av_acc.tolist(),
-			'av_mape_self':av_mape_self.tolist(),
-			'av_acc_self':av_acc_self.tolist(),
-			'av_mape_nonself':av_mape_nonself.tolist(),
-			'av_acc_nonself':av_acc_nonself.tolist(),
+			# 'av_mape_self':av_mape_self.tolist(),
+			# 'av_acc_self':av_acc_self.tolist(),
+			# 'av_mape_nonself':av_mape_nonself.tolist(),
+			# 'av_acc_nonself':av_acc_nonself.tolist(),
 			# 'mapes':mapes,
 			# 'mapes_self':mapes_self,
 			# 'mapes_nonself':mapes_nonself,
@@ -245,7 +254,8 @@ class MHawkes(object):
 	def predict_one(self,patent_id):
 		pass
 
-	def load(self,f,cut=15):
+	def load(self,f,cut=15,nb_type=2):
+		self.nb_type = nb_type
 		data = []
 		for i,row in enumerate(csv.reader(file(f,'r'))):
 			if i % 4 == 2:
@@ -279,9 +289,9 @@ class MHawkes(object):
 			dim_seq = [x[1] for x in S]
 			cut_point = T
 			time_train = [y for y in Y if y <= cut_point]
-			dim_train = [e for i,e in enumerate(dim_seq) if Y[i] <= cut_point]
-			if len(time_train) < 5:
-				continue
+			dim_train = [e if nb_type > 1 else 0 for i,e in enumerate(dim_seq) if Y[i] <= cut_point]
+			# if len(time_train) < 5:
+				# continue
 			_dict = {}
 			_dict['times'] = time_train
 			_dict['dims'] = dim_train
@@ -292,24 +302,24 @@ class MHawkes(object):
 
 			_dict = {}
 			_dict['times'] = [y - cut_point for y in Y if y > cut_point]
-			_dict['dims'] = [e for i,e in enumerate(dim_seq) if Y[i] > cut_point]
+			_dict['dims'] = [e if nb_type > 1 else 0 for i,e in enumerate(dim_seq) if Y[i] > cut_point]
 			_dict['features'] = feature
 			_dict['varying'] = varying
 			_dict['publish_year'] = publish_year
 			test_seq.append(_dict)
 
 
-		superparams = {}
-		superparams['M'] = 2
-		superparams['outer'] = 20
-		superparams['inner'] = 10
-		superparams['K'] = len(train_seq[0]['features'])
-		superparams['impact_period'] = 5
-		superparams['sigma'] = 1
-		superparams['thres'] = 1e-3
-		superparams['cut_point'] = cut_point
-		superparams['duration'] = 10
-		superparams['epsilon'] = 0.3
+		config = {}
+		config['M'] = nb_type
+		config['outer'] = 20
+		config['inner'] = 10
+		config['K'] = len(train_seq[0]['features'])
+		config['impact_period'] = 5
+		config['sigma'] = 1
+		config['thres'] = 1e-3
+		config['cut_point'] = cut_point
+		config['duration'] = 10
+		config['epsilon'] = 0.3
 
 		initparams = {}
 		initparams['theta'] = 0.2
@@ -317,7 +327,7 @@ class MHawkes(object):
 		initparams['b'] = 0.5
 
 
-		return train_seq,test_seq,superparams,initparams
+		return train_seq,test_seq,config,initparams
 
 
 
@@ -326,14 +336,14 @@ class MHawkes(object):
 # 	def __init__(self):
 # 		pass
 
-# 	def train(self, train_seq, test_seq, superparams, initparams,max_iter=0,max_outer_iter=100):
+# 	def train(self, train_seq, test_seq, config, initparams,max_iter=0,max_outer_iter=100):
 
 # 		model = {}
-# 		model['superparams'] = superparams
+# 		model['config'] = config
 # 		I = len(train_seq)
 # 		K = len(train_seq[0]['features'])
 # 		M = 2
-# 		sigma = superparams['sigma']
+# 		sigma = config['sigma']
 # 		model['beta'] = numpy.random.random((M,K))
 # 		model['Gamma'] = numpy.random.random((M**2,I))
 # 		model['theta'] = initparams['theta']
@@ -393,7 +403,7 @@ class MHawkes(object):
 # 							psi = init_intensities[m_j,:] * self.g(theta,t_j,b)
 # 							t_k = times[0:j]
 # 							m_k = dims[0:j]
-# 							# idx = [_idx for _idx in range(len(t_k)) if t_j - t_k[_idx] <= superparams['impact_period']]
+# 							# idx = [_idx for _idx in range(len(t_k)) if t_j - t_k[_idx] <= config['impact_period']]
 # 							if len(m_k) == 0:
 # 								psi /= _lambda
 # 							else:
@@ -437,7 +447,7 @@ class MHawkes(object):
 
 # 				model['Gamma'] = Gamma
 # 				model['beta'] = beta
-# 				if iteration > max_iter or error < superparams['thres']:
+# 				if iteration > max_iter or error < config['thres']:
 # 					Q_converge = True
 # 					break
 # 				else:
@@ -479,7 +489,7 @@ class MHawkes(object):
 # 			# 			# psi = init_intensities[m_j,:] * self.g(theta,t_j,b)
 # 			# 			t_k = times[0:j]
 # 			# 			m_k = dims[0:j]
-# 			# 			# idx = [_idx for _idx in range(len(t_k)) if t_j - t_k[_idx] <= superparams['impact_period']]
+# 			# 			# idx = [_idx for _idx in range(len(t_k)) if t_j - t_k[_idx] <= config['impact_period']]
 # 			# 			if len(m_k) == 0:
 # 			# 				pass
 # 			# 			else:
@@ -497,7 +507,7 @@ class MHawkes(object):
 # 			else:
 # 				L_converge = False
 # 			outer_times += 1
-# 			# if iteration > max_iter or error < superparams['thres']:
+# 			# if iteration > max_iter or error < config['thres']:
 # 			# 	L_converge = True
 # 			# else:
 # 			# 	L_converge = False
@@ -512,7 +522,7 @@ class MHawkes(object):
 # 	def f(self,w,x):
 # 		return x * numpy.exp(- w * x)
 
-# 	def predict(self, model, train_seq, test_seq, superparams, initparams):
+# 	def predict(self, model, train_seq, test_seq, config, initparams):
 # 		M = model['M']
 # 		pred_seqs = []
 # 		pred_seqs_self = []
@@ -545,7 +555,7 @@ class MHawkes(object):
 # 			w = model['w']
 # 			b = model['b']
 			
-# 			duration = model['superparams']['duration']
+# 			duration = model['config']['duration']
 # 			mape = []
 # 			mape_self = []
 # 			mape_nonself = []
@@ -575,9 +585,9 @@ class MHawkes(object):
 # 				pred = N + LL
 # 				pred_self = N_self + LL_self
 # 				pred_nonself = N_nonself + LL_nonself
-# 				real = N + len([x for x in test_seq[i]['times'] if x + model['superparams']['cut_point'] < T + year])
-# 				real_self = N_self + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['superparams']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 0])
-# 				real_nonself = N_nonself + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['superparams']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 1])
+# 				real = N + len([x for x in test_seq[i]['times'] if x + model['config']['cut_point'] < T + year])
+# 				real_self = N_self + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['config']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 0])
+# 				real_nonself = N_nonself + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['config']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 1])
 # 				mape.append(abs(pred - real) / float(real + 0.01))
 # 				mape_self.append(abs(pred_self - real_self) / float(real_self + 0.01))
 # 				mape_nonself.append(abs(pred_nonself - real_nonself) / float(real_nonself + 0.01))
@@ -603,13 +613,13 @@ class MHawkes(object):
 # 			real_seqs_nonself.append(real_seq_nonself)
 
 # 		av_mape = numpy.mean(numpy.array(mapes),0)
-# 		av_acc = numpy.mean(numpy.array(mapes) < model['superparams']['epsilon'],0)
+# 		av_acc = numpy.mean(numpy.array(mapes) < model['config']['epsilon'],0)
 
 # 		av_mape_self = numpy.mean(numpy.array(mapes_self),0)
-# 		av_acc_self = numpy.mean(numpy.array(mapes_self) < model['superparams']['epsilon'],0)
+# 		av_acc_self = numpy.mean(numpy.array(mapes_self) < model['config']['epsilon'],0)
 
 # 		av_mape_nonself = numpy.mean(numpy.array(mapes_nonself),0)
-# 		av_acc_nonself = numpy.mean(numpy.array(mapes_nonself) < model['superparams']['epsilon'],0)
+# 		av_acc_nonself = numpy.mean(numpy.array(mapes_nonself) < model['config']['epsilon'],0)
 
 # 		return {
 # 			'av_mape':av_mape.tolist(),
@@ -686,17 +696,17 @@ class MHawkes(object):
 # 			test_seq.append(_dict)
 
 
-# 		superparams = {}
-# 		superparams['M'] = 2
-# 		superparams['outer'] = 20
-# 		superparams['inner'] = 10
-# 		superparams['K'] = len(train_seq[0]['features'])
-# 		superparams['impact_period'] = 5
-# 		superparams['sigma'] = 1
-# 		superparams['thres'] = 1e-3
-# 		superparams['cut_point'] = cut_point
-# 		superparams['duration'] = 10
-# 		superparams['epsilon'] = 0.3
+# 		config = {}
+# 		config['M'] = 2
+# 		config['outer'] = 20
+# 		config['inner'] = 10
+# 		config['K'] = len(train_seq[0]['features'])
+# 		config['impact_period'] = 5
+# 		config['sigma'] = 1
+# 		config['thres'] = 1e-3
+# 		config['cut_point'] = cut_point
+# 		config['duration'] = 10
+# 		config['epsilon'] = 0.3
 
 # 		initparams = {}
 # 		initparams['theta'] = 0.2
@@ -704,7 +714,7 @@ class MHawkes(object):
 # 		initparams['b'] = 0.5
 
 
-# 		return train_seq,test_seq,superparams,initparams
+# 		return train_seq,test_seq,config,initparams
 
 
 
@@ -1103,10 +1113,10 @@ if __name__ == '__main__':
 	# print result['av_acc']
 	print result
 
-	predictor = RPP()
-	loaded = predictor.load('../data/paper3.txt')
-	result = predictor.predict(predictor.train(*loaded,max_iter=2),*loaded)
-	print result
+	# predictor = RPP()
+	# loaded = predictor.load('../data/paper3.txt')
+	# result = predictor.predict(predictor.train(*loaded,max_iter=2),*loaded)
+	# print result
 
 	# predictor = MTPP()
 	# loaded = predictor.load('../data/paper3.txt')
