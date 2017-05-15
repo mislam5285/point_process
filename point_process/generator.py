@@ -465,6 +465,19 @@ class HawkesGenerator(object):
 
 		return pred_seq
 
+	def compute_early_stopping(curve):
+		early_stop = -1
+		moving_average = curve[0]
+		k = 20.
+		th = 0.001
+		for n in range(1,len(curve)):
+			av = curve[n] * (1./k) + moving_average * (k - 1.) / k
+			if moving_average - av <= th:
+				early_stop = n
+				break
+			moving_average = av
+		self.early_stop = early_stop
+		return early_stop
 
 
 	def create_trainable_model(self,sequences, pred_length, proxy_layer=None, need_noise_dropout=False, stddev=5.,sample_stddev=None):
