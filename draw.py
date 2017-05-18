@@ -142,16 +142,16 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
                 plt.xlim(x_left_limit,x_right_limit)
 
                 plt.plot(np.arange(1,len(curve['y_test'])+1),curve['y_test'],c=colors['test'],lw=1.2,
-                    label=labels_prefix[i] + ' on test.')
+                    label=labels_prefix[i] + ' (on test.)')
                 if i == 1:
                     j = np.argmax(curve['y_test'])
                     plt.plot([j,j],[y_lower_limit,curve['y_test'][j]],':',c=colors['test_best'],lw=1.2,
-                        label='best ' + labels_prefix[i] + ' on test.')
+                        label='best ' + labels_prefix[i] + ' (on test.)')
                     plt.plot([0,j],[curve['y_test'][j],curve['y_test'][j]],':',c=colors['test_best'],lw=1.2)
                 if i == 2:
                     j = np.argmin(curve['y_test'])
                     plt.plot([j,j],[y_lower_limit,curve['y_test'][j]],':',c=colors['test_best'],lw=1.2,
-                        label='best ' + labels_prefix[i] + ' on test.')
+                        label='best ' + labels_prefix[i] + ' (on test.)')
                     plt.plot([0,j],[curve['y_test'][j],curve['y_test'][j]],':',c=colors['test_best'],lw=1.2)
 
                 plt.xticks(fontsize=13)
@@ -175,7 +175,7 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
                     ax.set_xlim(x_left_limit,x_right_limit)
 
                     ax.plot(np.arange(1,len(curve['y_val'])+1),curve['y_val'],'-',c=colors['val'],lw=1.2,
-                        label=labels_prefix[i] + ' on val.')
+                        label=labels_prefix[i] + ' (on val.)')
                     if i == 2: # draw early stop
                         log_pre_train_early_stop = root + '/data/' + dataset_id + '.pretrain.early_stop.stop_point.json'
                         # if will_compute_early_stop == True:
@@ -240,17 +240,27 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
     will_train_wgan_noise_sample = False
 
     will_train_mse_with_wgan_noise_sample = False
-
+    will_train_mae_with_wgan_noise_sample = False
     will_draw = True
     will_draw_curve = {
             'mle_only':True,
-            'mse_noise':True,
+            'mse_noise':False,
             'wgan_noise':False,
             'mse_noise_sample':False,
-            'wgan_noise_sample':False,
-            'mse_with_wgan_noise_sample':False,
+            'wgan_noise_sample':True,
+            'mse_with_wgan_noise_sample':True,
+            'mae_with_wgan_noise_sample':True,
         }
     will_draw_val = True
+    will_draw_val_curve = {
+            'mle_only':True,
+            'mse_noise':False,
+            'wgan_noise':False,
+            'mse_noise_sample':False,
+            'wgan_noise_sample':True,
+            'mse_with_wgan_noise_sample':True,
+            'mae_with_wgan_noise_sample':True,
+        }
 
     dataset_path = root + '/data/' + dataset_id + '.txt'
 
@@ -415,6 +425,34 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
                 stddev=stddev,sample_stddev=sample_stddev,wgan_clip=wgan_clip)
             sys.stdout = old_stdout
 
+    log_mae_with_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.mae_wgan.noise_sample.log.txt'
+    if will_train_mae_with_wgan_noise_sample == True:
+        mse_weight = 0.5
+        gan_weight = 0.5
+        stddev = 15.
+        sample_stddev = 15.
+        wgan_clip = 2.
+        with open(log_mae_with_wgan_noise_sample,'w') as f:
+            old_stdout = sys.stdout
+            sys.stdout = f
+            gan = HawkesGAN()
+            try:
+                gan.gen.sequence_weights = json.load(
+                    open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json'))
+            except:
+                loaded = gan.gen.load(dataset_path,nb_type=nb_type)
+                sys.stdout = open(root + '/log/pretrain.log','w')
+                gan.gen.pre_train(*loaded,early_stop=full_train_start,max_outer_iter=500/(int(ratio[0])+int(ratio[1])),
+                    alpha_iter=int(ratio[0]),w_iter=int(ratio[1]))
+                sys.stdout = f
+                with open(root + '/data/' + dataset_id + '.pretrain.early_stop.sequence_weights.json','w') as fw:
+                    json.dump(gan.gen.sequence_weights,fw)
+            # exit()
+            loaded = gan.load(dataset_path,nb_type=nb_type)
+            gan.full_train(*loaded,max_fulltrain_iter=400,mse_weight=mse_weight,gan_weight=gan_weight,need_noise_dropout=True,
+                stddev=stddev,sample_stddev=sample_stddev,wgan_clip=wgan_clip,hawkes_output_loss='mae')
+            sys.stdout = old_stdout
+
     # drawing
     if will_draw == True :
         # plt.figure(figsize=(8,6), dpi=72, facecolor="white")
@@ -424,7 +462,8 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
             'wgan_noise':'green',
             'mse_noise_sample':'purple',
             'wgan_noise_sample':'orange',
-            'mse_with_wgan_noise_sample':'black',
+            'mse_with_wgan_noise_sample':'blue',
+            'mae_with_wgan_noise_sample':'purple',
             'early_stop':'green',
         }
         keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
@@ -435,8 +474,9 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
             'mse_noise':'ppGAN 1',
             'wgan_noise':'ppGAN 2',
             'mse_noise_sample':'ppGAN 3',
-            'wgan_noise_sample':'ppGAN 4',
-            'mse_with_wgan_noise_sample':'Mixture loss',
+            'wgan_noise_sample':'MSE',
+            'mse_with_wgan_noise_sample':'MSE+WGAN',
+            'mae_with_wgan_noise_sample':'MAE+WGAN',
         }
         log_full_train = {
             'mle_only':log_mle_only,
@@ -445,6 +485,7 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
             'mse_noise_sample':log_mse_noise_sample,
             'wgan_noise_sample':log_wgan_noise_sample,
             'mse_with_wgan_noise_sample':log_mse_with_wgan_noise_sample,
+            'mae_with_wgan_noise_sample':log_mae_with_wgan_noise_sample,
         }
 
         f_full_train = {}
@@ -498,12 +539,12 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
             for curve_key in y_full_train:
                 if curve_key == 'mle_only':
                     plt.plot(np.arange(1,len(y_full_train['mle_only'])+1),y_full_train['mle_only'],c=colors['mle_only'],lw=1.2,
-                        label=labels_suffix['mle_only'] + ' on test.')
+                        label=labels_suffix['mle_only'] + ' (on test.)')
                 else:
                     plt.plot(np.arange(full_train_start,len(y_full_train[curve_key])+full_train_start),y_full_train[curve_key],c=colors[curve_key],lw=1.2,
-                        label=labels_suffix[curve_key] + ' on test.')
+                        label=labels_suffix[curve_key] + ' (on test.)')
 
-            plt.legend(loc='lower right')#,fontsize=13)
+            plt.legend(loc='upper right')#,fontsize=13)
             plt.ylabel(labels_prefix[i] + ' on the last year of test.')
             plt.xlabel('iterations')
 
@@ -512,7 +553,8 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
                 # arrange layout
                 y_full_train_val = {}
                 for curve_key in nodes_full_train:
-                    y_full_train_val[curve_key] = np.array([float(keys_val[i](node)) for node in nodes_full_train[curve_key]])
+                    if will_draw_val_curve[curve_key] == True:
+                        y_full_train_val[curve_key] = np.array([float(keys_val[i](node)) for node in nodes_full_train[curve_key]])
 
                 true_upper = 0.
                 true_lower = min(y_full_train_val['mle_only'])
@@ -541,10 +583,10 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
                 for curve_key in y_full_train_val:
                     if curve_key == 'mle_only':
                         ax.plot(np.arange(1,len(y_full_train_val['mle_only'])+1),y_full_train_val['mle_only'],'--',c=colors['mle_only'],lw=1.2,
-                            label=labels_suffix['mle_only'] + ' on val.')
+                            label=labels_suffix['mle_only'] + ' (on val.)')
                     else:
                         ax.plot(np.arange(full_train_start,len(y_full_train_val[curve_key])+full_train_start),y_full_train_val[curve_key],'--',c=colors[curve_key],lw=1.2,
-                            label=labels_suffix[curve_key] + ' on val.')
+                            label=labels_suffix[curve_key] + ' (on val.)')
                     #print y_full_train_val[curve_key][-1]
                     if early_stop > 0 and curve_key == 'mle_only':
                         ax.plot([early_stop,early_stop],[y_lower_limit,y_upper_limit],':',c=colors['early_stop'],lw=1.2,
@@ -561,7 +603,8 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 
             plt.title('learning curve for ' + labels_prefix[i])
             plt.ylabel(labels_prefix[i] + ' on the last year of val.')
-            plt.legend(loc='upper right')
+            plt.legend(loc='lower right')
+            if i == 1: plt.legend(loc='center right')
             plt.gcf().set_size_inches(5.9, 5., forward=True)
 
             #plt.show()
@@ -923,7 +966,12 @@ def draw_full_train_contrast_mape_acc(dataset_id, nb_type=1):
     will_draw = True
     will_draw_curve = {
         'mle_only':True,
-        'mse_noise':True,
+        'mse_noise':False,
+        'wgan_noise':False,
+        'mse_noise_sample':False,
+        'wgan_noise_sample':True,
+        'mse_with_wgan_noise_sample':True,
+        'mae_with_wgan_noise_sample':False,
     }
     # preprocess
     dataset_path = root + '/data/' + dataset_id + '.txt'
@@ -944,11 +992,12 @@ def draw_full_train_contrast_mape_acc(dataset_id, nb_type=1):
     full_train_start = early_stop
     assert full_train_start > 0
 
-    # log_mse_only = root + '/data/' + dataset_id + '.fulltrain.mse_only.log.txt'
-
-    # log_mse_only_noise = root + '/data/' + dataset_id + '.fulltrain.mse_only_noise.log.txt'
-
     log_mse_noise = root + '/data/' + dataset_id + '.fulltrain.mse_noise.log.txt'
+    log_wgan_noise = root + '/data/' + dataset_id + '.fulltrain.wgan_noise.log.txt'
+    log_mse_noise_sample = root + '/data/' + dataset_id + '.fulltrain.mse_noise_sample.log.txt'
+    log_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.wgan_noise_sample.log.txt'
+    log_mse_with_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.mse_wgan.noise_sample.log.txt'
+    log_mae_with_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.mae_wgan.noise_sample.log.txt'
 
 
     # drawing
@@ -957,74 +1006,34 @@ def draw_full_train_contrast_mape_acc(dataset_id, nb_type=1):
         colors = {
             'mle_only':'red',
             'mse_noise':'blue',
+            'wgan_noise':'green',
+            'mse_noise_sample':'purple',
+            'wgan_noise_sample':'orange',
+            'mse_with_wgan_noise_sample':'blue',
+            'mae_with_wgan_noise_sample':'purple',
+            'early_stop':'green',
         }
         keys = ['acc','mape']
         labels_prefix = ['ACC','MAPE']
+        legend_loc = ['upper right','lower right']
         labels_suffix = {
-            'mle_only':'MLE only',
-            'mse_noise':'ppGAN',
+            'mle_only':'MLE pretrain',
+            'mse_noise':'ppGAN 1',
+            'wgan_noise':'ppGAN 2',
+            'mse_noise_sample':'ppGAN 3',
+            'wgan_noise_sample':'MSE',
+            'mse_with_wgan_noise_sample':'MSE+WGAN',
+            'mae_with_wgan_noise_sample':'MAE+WGAN',
         }
         log_full_train = {
             'mle_only':log_mle_only,
             'mse_noise':log_mse_noise,
+            'wgan_noise':log_wgan_noise,
+            'mse_noise_sample':log_mse_noise_sample,
+            'wgan_noise_sample':log_wgan_noise_sample,
+            'mse_with_wgan_noise_sample':log_mse_with_wgan_noise_sample,
+            'mae_with_wgan_noise_sample':log_mae_with_wgan_noise_sample,
         }
-
-        # f_mle_only = open(log_mle_only)
-        # # f_mle_to_mse = open(log_mle_to_mse)
-        # # f_mse_only = open(log_mse_only)
-        # # f_mse_only_noise = open(log_mse_only_noise)
-        # f_mse_noise = open(log_mse_noise)
-        # nodes_mle_only = []
-        # # nodes_mle_to_mse = []
-        # # nodes_mse_only = []
-        # # nodes_mse_only_noise = []
-        # nodes_mse_noise = []
-
-        # for line in f_mle_only:
-        #     try:
-        #         node = eval(line)
-        #         nodes_mle_only.append(node)
-        #     except:
-        #         print 'error'
-
-        # for line in f_mle_to_mse:
-        #     try:
-        #         node = eval(line)
-        #         nodes_mle_to_mse.append(node)
-        #     except:
-        #         print 'error'
-
-        # for line in f_mse_only:
-        #     try:
-        #         node = eval(line)
-        #         nodes_mse_only.append(node)
-        #     except:
-        #         print 'error'
-
-        # for line in f_mse_only_noise:
-        #     try:
-        #         node = eval(line)
-        #         nodes_mse_only_noise.append(node)
-        #     except:
-        #         print 'error'
-
-        # for line in f_mse_noise:
-        #     try:
-        #         node = eval(line)
-        #         nodes_mse_noise.append(node)
-        #     except:
-        #         print 'error'
-
-        # for i in range(len(keys)):
-        #     plt.figure()
-
-        #     # arrange layout
-            # epoch_limit = 420
-        #     y_mle_only = np.array(nodes_mle_only[epoch_limit][keys[i]])
-        #     # y_mle_to_mse = np.array(nodes_mle_to_mse[epoch_limit - full_train_start][keys[i]])
-        #     # y_mse_only = np.array(nodes_mse_only[epoch_limit][keys[i]])
-        #     # y_mse_only_noise = np.array(nodes_mse_only_noise[epoch_limit][keys[i]])
-        #     y_mse_noise = np.array(nodes_mse_noise[epoch_limit - full_train_start][keys[i]])
 
 
         f_full_train = {}
@@ -1059,25 +1068,13 @@ def draw_full_train_contrast_mape_acc(dataset_id, nb_type=1):
             # draw curve
             for curve_key in y_full_train:
                 plt.plot(np.arange(1,len(y_full_train[curve_key])+1),y_full_train[curve_key],c=colors[curve_key],lw=1.2,
-                    label=labels_suffix[curve_key] + ' on test.')
+                    label=labels_suffix[curve_key] + ' (on test.)')
                 plt.scatter(np.arange(1,len(y_full_train[curve_key])+1),y_full_train[curve_key],c=colors[curve_key],lw=0)
-            # plt.plot(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=1.2,
-            #     label=labels_suffix['mle_only'])
-            # plt.scatter(np.arange(1,len(y_mle_only)+1),y_mle_only,c=colors['mle_only'],lw=0) 
-            # plt.plot(np.arange(1,len(y_mse_only)+1),y_mse_only,c=colors['mse_only'],lw=1.2,
-            #     label=labels_suffix['mse_only'])
-            # plt.scatter(np.arange(1,len(y_mse_only)+1),y_mse_only,c=colors['mse_only'],lw=0)
-            # plt.plot(np.arange(1,len(y_mse_noise)+1),y_mse_noise,c=colors['mse_noise'],lw=1.2,
-            #     label=labels_suffix['mse_noise'])
-            # plt.scatter(np.arange(1,len(y_mse_noise)+1),y_mse_noise,c=colors['mse_noise'],lw=0)
-            # plt.plot(np.arange(1,len(y_mle_to_mse)+1),y_mle_to_mse,c=colors['mle_mse'],lw=1.2,
-            #     label=labels_suffix['mle_mse'])
-            # plt.scatter(np.arange(1,len(y_mle_to_mse)+1),y_mle_to_mse,c=colors['mle_mse'],lw=0)
 
 
             plt.xlabel('years')
             plt.title('metrics by ' + labels_prefix[i])
-            plt.legend(loc='upper right')
+            plt.legend(loc=legend_loc[i])
             plt.gcf().set_size_inches(5.9, 5., forward=True)
 
             #plt.show()
@@ -1087,6 +1084,125 @@ def draw_full_train_contrast_mape_acc(dataset_id, nb_type=1):
             # plt.yticks(fontsize=13)
             # plt.legend(fontsize=13)
             plt.savefig(root + '/pic/%s'%key)
+
+def print_full_train_contrast_acc_epsilon(dataset_id, nb_type=1):
+    will_print = True
+    will_print_curve = {
+        'mle_only':True,
+        'mse_noise':False,
+        'wgan_noise':False,
+        'mse_noise_sample':False,
+        'wgan_noise_sample':True,
+        'mse_with_wgan_noise_sample':True,
+        'mae_with_wgan_noise_sample':False,
+    }
+    # preprocess
+    dataset_path = root + '/data/' + dataset_id + '.txt'
+
+    # pre-training
+    ratio = [1,1]
+    log_mle_only = root + '/data/' + dataset_id + '.pretrain.log.' + str(ratio[0]) + '.' + str(ratio[1]) + '.txt'
+
+    # full-training
+    # log_mle_to_mse = root + '/data/' + dataset_id + '.fulltrain.mse.log.txt'
+
+    log_pre_train_early_stop = root + '/data/' + dataset_id + '.pretrain.early_stop.stop_point.json'
+    with open(log_pre_train_early_stop) as fr:
+        result = json.load(fr)
+        ratio_key = str(ratio[0]) + ':' + str(ratio[1])
+        early_stop = result[dataset_id][ratio_key]['mape_val']['stop_point']
+
+    full_train_start = early_stop
+    assert full_train_start > 0
+
+    log_mse_noise = root + '/data/' + dataset_id + '.fulltrain.mse_noise.log.txt'
+    log_wgan_noise = root + '/data/' + dataset_id + '.fulltrain.wgan_noise.log.txt'
+    log_mse_noise_sample = root + '/data/' + dataset_id + '.fulltrain.mse_noise_sample.log.txt'
+    log_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.wgan_noise_sample.log.txt'
+    log_mse_with_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.mse_wgan.noise_sample.log.txt'
+    log_mae_with_wgan_noise_sample = root + '/data/' + dataset_id + '.fulltrain.mae_wgan.noise_sample.log.txt'
+
+
+    # drawing
+    if will_print == True :
+        colors = {
+            'mle_only':'red',
+            'mse_noise':'blue',
+            'wgan_noise':'green',
+            'mse_noise_sample':'purple',
+            'wgan_noise_sample':'orange',
+            'mse_with_wgan_noise_sample':'blue',
+            'mae_with_wgan_noise_sample':'purple',
+            'early_stop':'green',
+        }
+        keys = ['acc','mape']
+        labels_prefix = ['ACC','MAPE']
+        legend_loc = ['upper right','lower right']
+        labels_suffix = {
+            'mle_only':'MLE pretrain',
+            'mse_noise':'ppGAN 1',
+            'wgan_noise':'ppGAN 2',
+            'mse_noise_sample':'ppGAN 3',
+            'wgan_noise_sample':'MSE',
+            'mse_with_wgan_noise_sample':'MSE+WGAN',
+            'mae_with_wgan_noise_sample':'MAE+WGAN',
+        }
+        log_full_train = {
+            'mle_only':log_mle_only,
+            'mse_noise':log_mse_noise,
+            'wgan_noise':log_wgan_noise,
+            'mse_noise_sample':log_mse_noise_sample,
+            'wgan_noise_sample':log_wgan_noise_sample,
+            'mse_with_wgan_noise_sample':log_mse_with_wgan_noise_sample,
+            'mae_with_wgan_noise_sample':log_mae_with_wgan_noise_sample,
+        }
+
+
+        f_full_train = {}
+        nodes_full_train = {}
+        for curve_key in will_print_curve:
+            if will_print_curve[curve_key] == True:
+                f_full_train[curve_key] = open(log_full_train[curve_key])
+                nodes_full_train[curve_key] = []
+
+
+        for curve_key in f_full_train:
+            for line in f_full_train[curve_key]:
+                try:
+                    node = eval(line)
+                    nodes_full_train[curve_key].append(node)
+                except:
+                    print 'error'
+
+
+        #for i in range(len(keys)):
+
+        # arrange layout
+        y_full_train = {}
+        for curve_key in nodes_full_train:
+            epoch_limit = 400 - full_train_start
+            if curve_key in ['mle_only']:
+                epoch_limit += full_train_start
+            y_full_train[curve_key] = np.array(nodes_full_train[curve_key][epoch_limit]['acc_vary'])#np.array([float(keys[i](node)) for node in nodes_full_train[curve_key]])
+
+
+        # draw curve
+        result = ''
+        for epsilon in [0.1,0.2,0.3]:
+            for curve_key in y_full_train:
+                value = str(y_full_train[curve_key][str(epsilon)])
+                result += '&' + value
+            result += '\\\\'
+            # plt.plot(np.arange(1,len(y_full_train[curve_key])+1),y_full_train[curve_key],c=colors[curve_key],lw=1.2,
+            #     label=labels_suffix[curve_key] + ' (on test.)')
+            # plt.scatter(np.arange(1,len(y_full_train[curve_key])+1),y_full_train[curve_key],c=colors[curve_key],lw=0)
+
+
+        key = '' + dataset_id + '.fulltrain.contrast.acc_epsilon.txt'
+        with open(root + '/data/%s'%key,'w') as fw:
+            fw.write(result)
+        with open(root + '/data/%s'%key) as f:
+            print f.read()
 
 
 
@@ -1099,11 +1215,11 @@ if __name__ == '__main__' :
         'patent4':2,
     }
     for dataset_id in ['paper3']:
-        # draw_fix_train_total_xiao(dataset_id,nb_type=event_types[dataset_id])
         # draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
         # draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_learning_discriminative_convergence(dataset_id,nb_type=event_types[dataset_id])
-        draw_full_train_contrast_mape_acc(dataset_id,nb_type=event_types[dataset_id])
+        # draw_full_train_contrast_mape_acc(dataset_id,nb_type=event_types[dataset_id])
+        print_full_train_contrast_acc_epsilon(dataset_id,nb_type=event_types[dataset_id])
         pass
     plt.show()

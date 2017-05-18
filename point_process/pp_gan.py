@@ -13,6 +13,7 @@ class HawkesGAN(object):
 	def __init__(self):
 		self.gen = HawkesGenerator()
 		self.gen_full = HawkesGenerator()
+		self.gen_observed = HawkesGenerator()
 		self.dis = CNNDiscriminator()
 
 	def full_train(self,full_sequences,observed_sequences,train_sequences,features,publish_years,pids,superparams,
@@ -37,6 +38,7 @@ class HawkesGAN(object):
 		# self.gen.create_trainable_model(observed_sequences,test_length)
 		self.gen.create_trainable_model(train_sequences,val_length,need_noise_dropout=need_noise_dropout,stddev=stddev,sample_stddev=sample_stddev)
 		self.gen_full.create_trainable_model(observed_sequences,test_length,proxy_layer=self.gen.hawkes_layer)
+		self.gen_observed.create_trainable_model(train_sequences,val_length,proxy_layer=self.gen.hawkes_layer)
 
 		# build keras models
 		# self.gen.model.compile(optimizer='adam', loss='mape', metrics=['accuracy'])
@@ -52,11 +54,11 @@ class HawkesGAN(object):
 			for l in self.dis.model.layers: l.trainable = False
 			z = Input(batch_shape=(1,1), dtype='int32')
 			g_z = self.gen.model(z)
-			full_g_z = self.gen_full.model(z)
+			# full_g_z = self.gen_full.model(z)
 			noised_g_z = Noise(train_sequences,val_length)(g_z)
 			y = self.dis.model(g_z)
 			noised_gen_model = Model(inputs=[z], outputs=[noised_g_z])
-			full_gen_model = Model(inputs=[z], outputs=[full_g_z])
+			# full_gen_model = Model(inputs=[z], outputs=[full_g_z])
 			gan_model = Model(inputs=[z], outputs=[g_z,y])
 			gan_model.compile(optimizer='rmsprop', 
 				loss={'dis_output':'categorical_crossentropy','hawkes_output':hawkes_output_loss},
@@ -71,11 +73,11 @@ class HawkesGAN(object):
 			for l in self.dis.model.layers: l.trainable = False
 			z = Input(batch_shape=(1,1), dtype='int32')
 			g_z = self.gen.model(z)
-			full_g_z = self.gen_full.model(z)
+			# full_g_z = self.gen_full.model(z)
 			noised_g_z = Noise(train_sequences,val_length)(g_z)
 			y = self.dis.model(g_z)
 			noised_gen_model = Model(inputs=[z], outputs=[noised_g_z])
-			full_gen_model = Model(inputs=[z], outputs=[full_g_z])
+			# full_gen_model = Model(inputs=[z], outputs=[full_g_z])
 			gan_model = Model(inputs=[z], outputs=[g_z,y])
 			gan_model.compile(optimizer='rmsprop', 
 				loss={'dis_output':wasserstein_g_loss,'hawkes_output':hawkes_output_loss},
@@ -98,12 +100,13 @@ class HawkesGAN(object):
 
 		likelihood = self.compute_likelihood()
 		mape_acc_test = self.compute_mape_acc(self.gen_full.model,Z,X_full,test_length)
-		mape_acc_val = self.compute_mape_acc(self.gen.model,Z,X,val_length)
+		mape_acc_val = self.compute_mape_acc(self.gen_observed.model,Z,X,val_length)
 		weights = self.get_weights_value(self.gen.hawkes_layer)
 		print {
 			'source':'before pre-training discriminator',
 			'mape':mape_acc_test['mape'],
 			'acc':mape_acc_test['acc'],
+			'acc_vary':mape_acc_test['acc_vary'],
 			'mape_val':mape_acc_val['mape'],
 			'acc_val':mape_acc_val['acc'],
 			'LL':likelihood,
@@ -158,7 +161,7 @@ class HawkesGAN(object):
 
 			likelihood = self.compute_likelihood()
 			mape_acc_test = self.compute_mape_acc(self.gen_full.model,Z,X_full,test_length)
-			mape_acc_val = self.compute_mape_acc(self.gen.model,Z,X,val_length)
+			mape_acc_val = self.compute_mape_acc(self.gen_observed.model,Z,X,val_length)
 			weights = self.get_weights_value(self.gen.hawkes_layer)
 			print {
 				'source':'full train one batch',
@@ -168,6 +171,7 @@ class HawkesGAN(object):
 				'loss_gan':gan_his.history['loss'],
 				'mape':mape_acc_test['mape'],
 				'acc':mape_acc_test['acc'],
+				'acc_vary':mape_acc_test['acc_vary'],
 				'mape_val':mape_acc_val['mape'],
 				'acc_val':mape_acc_val['acc'],
 				'LL':likelihood,
@@ -197,10 +201,14 @@ class HawkesGAN(object):
 
 		mape = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1),0)
 		acc = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1) < 0.3,0)
+		acc_v = {}
+		for key in [0.35,0.3,0.25,0.2,0.1]:
+			acc_v[str(key)] = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1) < key,0).tolist()
 
 		return {
 			'mape':mape.tolist(),
 			'acc':acc.tolist(),
+			'acc_vary':acc_v,
 		}
 
 	def get_weights_value(self,layer):
@@ -216,6 +224,21 @@ class HawkesGAN(object):
 			'mean_w':mean_w,
 			'mean_theta':theta,
 			'mean_spont':spont,
+		}
+
+	def save_weights_value(self,layer):
+
+		import keras.backend as K
+		Alpha = K.eval(layer.Alpha)
+		W = K.eval(layer.W)
+		Theta = K.eval(layer.Theta)
+		spont = K.eval(layer.spontaneous)
+
+		return {
+			'Alpha':Alpha,
+			'W':W,
+			'Theta':Theta,
+			'spont':spont,
 		}
 
 
@@ -315,7 +338,7 @@ if __name__ == '__main__':
 		sys.stdout = f
 		gan = HawkesGAN()
 		try:
-			gan.gen.sequence_weights = json.load(open('../log/paper3.pretrain.early_stop.sequence_weights.json.log'))
+			gan.gen.sequence_weights = json.load(open('../data/paper3.pretrain.early_stop.sequence_weights.json'))
 		except:
 			loaded = gan.gen.load('../data/paper3.txt')
 			gan.gen.pre_train(*loaded,max_outer_iter=1,alpha_iter=1,w_iter=1)

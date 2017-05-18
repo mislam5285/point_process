@@ -80,6 +80,7 @@ class HawkesGenerator(object):
 			'mean_beta':numpy.mean(beta),
 			'mape':mape_acc['mape'],
 			'acc':mape_acc['acc'],
+			'acc_vary':mape_acc['acc_vary'],
 			'mape_val':mape_acc_val['mape'],
 			'acc_val':mape_acc_val['acc'],
 		}
@@ -173,6 +174,7 @@ class HawkesGenerator(object):
 					'mean_beta':numpy.mean(beta),
 					'mape':mape_acc['mape'],
 					'acc':mape_acc['acc'],
+					'acc_vary':mape_acc['acc_vary'],
 					'mape_val':mape_acc_val['mape'],
 					'acc_val':mape_acc_val['acc'],
 				}
@@ -245,6 +247,7 @@ class HawkesGenerator(object):
 					'mean_beta':numpy.mean(beta),
 					'mape':mape_acc['mape'],
 					'acc':mape_acc['acc'],
+					'acc_vary':mape_acc['acc_vary'],
 					'mape_val':mape_acc_val['mape'],
 					'acc_val':mape_acc_val['acc'],
 				}
@@ -389,10 +392,14 @@ class HawkesGenerator(object):
 
 		mape = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1),0)
 		acc = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1) < 0.3,0)
+		acc_v = {}
+		for key in [0.35,0.3,0.25,0.2,0.1]:
+			acc_v[str(key)] = np.mean(np.abs(count_g_z - count_x)/(count_x + 0.1) < key,0).tolist()
 
 		return {
 			'mape':mape.tolist(),
 			'acc':acc.tolist(),
+			'acc_vary':acc_v,
 		}
 
 
