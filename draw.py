@@ -50,6 +50,7 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
     will_train_hawkes = {'1:1':False,'1:5':False,'5:1':False,'3:3':False}
     will_draw = True
     will_draw_mle_curve = {'1:1':True,'1:5':False,'5:1':False,'3:3':False}
+    will_draw_val = False
 
     # preprocess
     dataset_path = root + '/data/' + dataset_id + '.txt'
@@ -81,7 +82,7 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
         keys_val = [lambda x:x['LL'], lambda x:x['acc_val'][-1], lambda x:x['mape_val'][-1]]
         colors = {'test':'red','val':'blue','early_stop':'green','test_best':'purple'}
         # keys = [lambda x:x['acc'][-1], lambda x:x['mape'][-1]]
-        labels_prefix = ['Loss','ACC','MAPE']
+        labels_prefix = ['NLL Loss','ACC','MAPE']
 
         f_pre_train = {}
         nodes_pre_train = {}
@@ -100,7 +101,7 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
                     print 'error'
 
 
-        for i in range(3): # acc or mape or loss
+        for i in range(3): # loss or acc or mape
             x_left_limit = 0
             x_right_limit = 200
 
@@ -136,13 +137,19 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
                 else:
                     y_lower_limit = 0.8 * np.max(curve['y_test']) + 0.2 * np.min(curve['y_test'])
                     y_upper_limit = max(np.max(curve['y_test']),np.max(curve['y_test'])) + delta
-
+                if i == 0:#loss
+                    y_lower_limit = min(np.min(curve['y_test']),np.min(curve['y_test'])) - delta
+                    y_upper_limit = 0.8 * np.max(curve['y_test']) + 0.2 * np.min(curve['y_test'])
                 # draw curve
                 plt.ylim(y_lower_limit, y_upper_limit)
                 plt.xlim(x_left_limit,x_right_limit)
 
-                plt.plot(np.arange(1,len(curve['y_test'])+1),curve['y_test'],c=colors['test'],lw=1.2,
-                    label=labels_prefix[i] + ' (on test.)')
+                if i == 0:
+                    plt.plot(np.arange(1,len(curve['y_test'])+1),curve['y_test'],c=colors['test'],lw=1.2,
+                        label=labels_prefix[i] + ' (on observed.)')
+                else:
+                    plt.plot(np.arange(1,len(curve['y_test'])+1),curve['y_test'],c=colors['test'],lw=1.2,
+                        label=labels_prefix[i] + ' (on test.)')
                 if i == 1:
                     j = np.argmax(curve['y_test'])
                     plt.plot([j,j],[y_lower_limit,curve['y_test'][j]],':',c=colors['test_best'],lw=1.2,
@@ -158,7 +165,7 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
                 plt.yticks(fontsize=13,color=colors['test'])
                 plt.legend(loc='center right',fontsize=13)
 
-                if i > 0: # draw another axis
+                if i > 0 and will_draw_val == True: # draw another axis
                     # arrange layout
                     delta = max(np.max(curve['y_val']),np.max(curve['y_val'])) - min(np.min(curve['y_val']),np.min(curve['y_val']))
                     delta /= 30.
@@ -220,7 +227,7 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
                     # plt.gca().add_artist(legend_test)
 
                 plt.xlabel('iterations')
-                plt.title('learning curve for ' + labels_prefix[i] + ' when $N_{em}:N_{grad}$=' + curve['rate'])
+                plt.title('learning curve for ' + labels_prefix[i] + ' ($n_{{em}}:n_{{grad}}$=' + curve['rate'] + ')')
                 plt.gcf().set_size_inches(5.9, 5., forward=True)
 
                 if i == 0: key = '' + dataset_id + '_gan_pretrain_learning_NLL_' + to_ratio(key)[0] + '_' + to_ratio(key)[1] +'.png'
@@ -545,7 +552,8 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
                         label=labels_suffix[curve_key] + ' (on test.)')
 
             plt.legend(loc='upper right')#,fontsize=13)
-            plt.ylabel(labels_prefix[i] + ' on the last year of test.')
+            if i == 0: plt.legend(loc='lower right')#,fontsize=13)
+            plt.ylabel(labels_prefix[i] + ' as of the last year of test.')
             plt.xlabel('iterations')
 
 
@@ -602,8 +610,8 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 
 
             plt.title('learning curve for ' + labels_prefix[i])
-            plt.ylabel(labels_prefix[i] + ' on the last year of val.')
-            plt.legend(loc='lower right')
+            plt.ylabel(labels_prefix[i] + ' as of the last year of val.')
+            plt.legend(loc='upper right')
             if i == 1: plt.legend(loc='center right')
             plt.gcf().set_size_inches(5.9, 5., forward=True)
 
@@ -971,7 +979,7 @@ def draw_full_train_contrast_mape_acc(dataset_id, nb_type=1):
         'mse_noise_sample':False,
         'wgan_noise_sample':True,
         'mse_with_wgan_noise_sample':True,
-        'mae_with_wgan_noise_sample':False,
+        'mae_with_wgan_noise_sample':True,
     }
     # preprocess
     dataset_path = root + '/data/' + dataset_id + '.txt'
@@ -1062,6 +1070,8 @@ def draw_full_train_contrast_mape_acc(dataset_id, nb_type=1):
                 epoch_limit = 400 - full_train_start
                 if curve_key in ['mle_only']:
                     epoch_limit += full_train_start
+                if epoch_limit >= len(nodes_full_train[curve_key]):
+                    epoch_limit = -1
                 y_full_train[curve_key] = np.array(nodes_full_train[curve_key][epoch_limit][keys[i]])#np.array([float(keys[i](node)) for node in nodes_full_train[curve_key]])
 
 
@@ -1094,7 +1104,7 @@ def print_full_train_contrast_acc_epsilon(dataset_id, nb_type=1):
         'mse_noise_sample':False,
         'wgan_noise_sample':True,
         'mse_with_wgan_noise_sample':True,
-        'mae_with_wgan_noise_sample':False,
+        'mae_with_wgan_noise_sample':True,
     }
     # preprocess
     dataset_path = root + '/data/' + dataset_id + '.txt'
@@ -1179,20 +1189,57 @@ def print_full_train_contrast_acc_epsilon(dataset_id, nb_type=1):
 
         # arrange layout
         y_full_train = {}
+        y_full_train_mape= {}
         for curve_key in nodes_full_train:
             epoch_limit = 400 - full_train_start
             if curve_key in ['mle_only']:
                 epoch_limit += full_train_start
-            y_full_train[curve_key] = np.array(nodes_full_train[curve_key][epoch_limit]['acc_vary'])#np.array([float(keys[i](node)) for node in nodes_full_train[curve_key]])
+            if epoch_limit >= len(nodes_full_train[curve_key]):
+                epoch_limit = -1
+            y_full_train[curve_key] = nodes_full_train[curve_key][epoch_limit]['acc_vary']
+            y_full_train_mape[curve_key] = nodes_full_train[curve_key][epoch_limit]['mape']
 
 
         # draw curve
         result = ''
-        for epsilon in [0.1,0.2,0.3]:
+        result += 'MAPE'
+        min_mape = {}
+        for curve_key in y_full_train_mape:
+            for year in [5,10]:
+                value = str(float('%.4f'%y_full_train_mape[curve_key][year-1]))
+                if min_mape.has_key(str(year)) and min_mape[str(year)][1] > float(value):
+                    min_mape[str(year)] = [curve_key,float(value)]
+                if not min_mape.has_key(str(year)) :
+                    min_mape[str(year)] = [curve_key,float(value)]
+
+        for curve_key in y_full_train_mape:
+            for year in [5,10]:
+                value = str(float('%.4f'%y_full_train_mape[curve_key][year-1]))
+                if curve_key == min_mape[str(year)][0]:
+                    result += '&\\textbf{' + value + '}'
+                else:
+                    result += '&' + value
+        result += '\\\\\n'
+
+        for epsilon in [0.35,0.3,0.2,0.1]:
+            max_acc = {}
             for curve_key in y_full_train:
-                value = str(y_full_train[curve_key][str(epsilon)])
-                result += '&' + value
-            result += '\\\\'
+                for year in [5,10]:
+                    value = str(float('%.4f'%y_full_train[curve_key][str(epsilon)][year-1]))
+                    if max_acc.has_key(str(year)) and max_acc[str(year)][1] < float(value):
+                        max_acc[str(year)] = [curve_key,float(value)]
+                    if not max_acc.has_key(str(year)) :
+                        max_acc[str(year)] = [curve_key,float(value)]
+
+            result += 'ACC($\\epsilon$=' + str(epsilon) + ')'
+            for curve_key in y_full_train:
+                for year in [5,10]:
+                    value = str(y_full_train[curve_key][str(epsilon)][year-1])
+                    if curve_key == max_acc[str(year)][0]:
+                        result += '&\\textbf{' + value + '}'
+                    else:
+                        result += '&' + value
+            result += '\\\\\n'
             # plt.plot(np.arange(1,len(y_full_train[curve_key])+1),y_full_train[curve_key],c=colors[curve_key],lw=1.2,
             #     label=labels_suffix[curve_key] + ' (on test.)')
             # plt.scatter(np.arange(1,len(y_full_train[curve_key])+1),y_full_train[curve_key],c=colors[curve_key],lw=0)
@@ -1217,9 +1264,9 @@ if __name__ == '__main__' :
     for dataset_id in ['paper3']:
         # draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
         # draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
-        # draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
+        draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_learning_discriminative_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_contrast_mape_acc(dataset_id,nb_type=event_types[dataset_id])
-        print_full_train_contrast_acc_epsilon(dataset_id,nb_type=event_types[dataset_id])
+        # print_full_train_contrast_acc_epsilon(dataset_id,nb_type=event_types[dataset_id])
         pass
     plt.show()
