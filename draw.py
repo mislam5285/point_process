@@ -131,12 +131,14 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
                 # arrange layout
                 delta = max(np.max(curve['y_test']),np.max(curve['y_test'])) - min(np.min(curve['y_test']),np.min(curve['y_test']))
                 delta /= 30.
-                if curve['y_test'][0] > curve['y_test'][-1]:
+                if i == 2: # mape #curve['y_test'][0] > curve['y_test'][-1]:
                     y_lower_limit = min(np.min(curve['y_test']),np.min(curve['y_test'])) - delta
                     y_upper_limit = 0.15 * np.max(curve['y_test']) + 0.85 * np.min(curve['y_test'])
-                else:
-                    y_lower_limit = 0.8 * np.max(curve['y_test']) + 0.2 * np.min(curve['y_test'])
+                    y_upper_limit = max(y_upper_limit,np.mean(curve['y_test'][-len(curve['y_test'])/3:]) * 1.5 - 0.5 * y_lower_limit)
+                if i == 1:
                     y_upper_limit = max(np.max(curve['y_test']),np.max(curve['y_test'])) + delta
+                    y_lower_limit = 0.8 * np.max(curve['y_test']) + 0.2 * np.min(curve['y_test'])
+                    y_lower_limit = min(y_lower_limit,np.mean(curve['y_test'][-len(curve['y_test'])/3:]) * 1.5 - 0.5 * y_upper_limit)
                 if i == 0:#loss
                     y_lower_limit = min(np.min(curve['y_test']),np.min(curve['y_test'])) - delta
                     y_upper_limit = 0.8 * np.max(curve['y_test']) + 0.2 * np.min(curve['y_test'])
@@ -1259,12 +1261,12 @@ if __name__ == '__main__' :
         'paper3':1,
         'paper4':2, # paper4 is duplicate of paper3, while is interpreted in different way
         'patent3':1,
-        'patent4':2,
+        'patent4':2, # patent4 is duplicate of patent3
     }
-    for dataset_id in ['paper3']:
+    for dataset_id in ['patent3']:
         # draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
-        # draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
-        draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
+        draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
+        # draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_learning_discriminative_convergence(dataset_id,nb_type=event_types[dataset_id])
         # draw_full_train_contrast_mape_acc(dataset_id,nb_type=event_types[dataset_id])
         # print_full_train_contrast_acc_epsilon(dataset_id,nb_type=event_types[dataset_id])
