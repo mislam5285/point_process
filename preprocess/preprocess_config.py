@@ -40,7 +40,7 @@ class PatentConfig(object):
 		self.converge = 0.05
 		self.predict_year = 1991
 
-		print 'train_count =',train_count, 'converge =',converge
+		# print 'train_count =',train_count, 'converge =',converge
 
 		# train
 		self.train_sequence = os.path.dirname(os.path.abspath(__file__)) + '/data_new/train_sequence.txt'
@@ -53,6 +53,11 @@ class PatentConfig(object):
 
 		self.draw_json = os.path.dirname(os.path.abspath(__file__)) + '/data_new/draw.json'
 
+class ATMErrorConfig(object):
+	def __init__(self):
+		self.dataset_file = 'd:/data/atm/ATM/data/Errors[20140901-20150401].xlsx' # 212 days in total, therefore observe on a weekly basis
+		self.preprocessed_dataset_file = 'd:/data/atm/errors'
 
 paper_config = PaperConfig()
 patent_config = PatentConfig()
+atm_config = ATMErrorConfig()

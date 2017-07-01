@@ -623,7 +623,7 @@ if __name__ == '__main__':
 		sys.stdout = f
 		predictor = HawkesGenerator()
 		# loaded = predictor.load('../data/paper3.txt')
-		loaded = predictor.load('../data/paper3.txt',nb_type=2)
+		loaded = predictor.load('../data/atmerror2.txt',nb_type=1)
 		# print loaded[0][0]
 		# print loaded[0][1]
 		# print loaded[0][2]
