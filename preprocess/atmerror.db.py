@@ -26,43 +26,53 @@ def prepare_data(augument_data = True, hierarchy = True, bptt = 5):
 	# pickle.dump([device_id,error_day,error_sec,error_type1,error_type2,book.datemode], open(atm_config.preprocessed_dataset_file,'wb'), protocol=0)
    
 	# # get error info
-	device_id,error_day,error_sec,error_type1,error_type2,book_datemode = pickle.load(open(atm_config.preprocessed_dataset_file,'rb'))
-	print str(error_type1[0])
-	# exit()
-	print {
-		'len_device_id':len(device_id),
-		'len_error_day':len(error_day),
-		'error_day':error_day[0],
-		}
-	error_day = map(lambda x:datetime(*xlrd.xldate_as_tuple(x, book_datemode)),error_day)
-	error_sec = map(lambda x:datetime(*xlrd.xldate_as_tuple(x, book_datemode)),error_sec)
-	error_time = map(lambda x,y:x.replace(hour=y.hour,minute=y.minute,second=y.second),error_day,error_sec)
-	print str(error_time[0])
-	error_type1 = map(lambda x:str(x),error_type1)
-	error_type2 = map(lambda x:str(x),error_type2)
+	# device_id,error_day,error_sec,error_type1,error_type2,book_datemode = pickle.load(open(atm_config.preprocessed_dataset_file,'rb'))
+	# print str(error_type1[0])
+	# # exit()
+	# print {
+	# 	'len_device_id':len(device_id),
+	# 	'len_error_day':len(error_day),
+	# 	'error_day':error_day[0],
+	# 	}
+	# error_day = map(lambda x:datetime(*xlrd.xldate_as_tuple(x, book_datemode)),error_day)
+	# error_sec = map(lambda x:datetime(*xlrd.xldate_as_tuple(x, book_datemode)),error_sec)
+	# error_time = map(lambda x,y:x.replace(hour=y.hour,minute=y.minute,second=y.second),error_day,error_sec)
+	# print str(error_time[0])
+	# error_type1 = map(lambda x:str(x),error_type1)
+	# error_type2 = map(lambda x:str(x),error_type2)
 	# pickle.dump([device_id,error_time,error_type1,error_type2], open('errors2','w'), protocol=0)
-	result = {}
-	for i,id_ in enumerate(device_id):
-		id_ = str(id_)
-		if not result.has_key(id_): result[id_] = []
-		result[id_].append(error_time[i])
-	data = []
-	for id_ in result:
-		result[id_].sort()
-		begin = result[id_][0]
-		line = str(id_)
-		for time in result[id_]:
-			line += ',' + '%.1f'%((int((time - begin).days) + (time - begin).seconds / float(24 * 60 * 60))/7.0) # weekly
-		data.append(line + '\n')
+	# result = {}
+	# for i,id_ in enumerate(device_id):
+	# 	id_ = str(id_)
+	# 	if not result.has_key(id_): result[id_] = []
+	# 	result[id_].append(error_time[i])
+	# data = []
+	# for id_ in result:
+	# 	result[id_].sort()
+	# 	begin = result[id_][0]
+	# 	line = str(id_)
+	# 	for time in result[id_]:
+			# line += ',' + '%.1f'%((int((time - begin).days) + (time - begin).seconds / float(24 * 60 * 60))/7.0) # weekly
+	# 	data.append(line + '\n')
 		
-		line = str(id_)
-		line += ',' + replace_time_format(str(begin))
-		data.append(line + '\n')
+	# 	line = str(id_)
+	# 	line += ',' + replace_time_format(str(begin))
+	# 	data.append(line + '\n')
 
-		line = str(id_)
-		line += ',0.0,1.0'
-		data.append(line + '\n')
+	# 	line = str(id_)
+	# 	line += ',0.0,1.0'
+	# 	data.append(line + '\n')
 	
+	# with open('../data/atmerror2.txt', 'w') as fw:
+	# 	fw.writelines(data)
+
+	with open('../data/atmerror2.txt') as fr:
+		data = []
+		for i,line in enumerate(fr):
+			if i % 3 == 0:
+				data.append(line.strip().split(',')[0] + ',0.0\n')
+			data.append(line)
+
 	with open('../data/atmerror2.txt', 'w') as fw:
 		fw.writelines(data)
 		

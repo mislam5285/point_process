@@ -138,8 +138,8 @@ class HawkesGAN(object):
 		X = np.array(observed_sequences)
 		X_full = np.array(full_sequences)
 		Y = np.array([[1.,0.] for i in range(nb_sequence)])
-		b_size_dis = 32
-		b_size_gan = 512
+		b_size_dis = int(32. * nb_sequence / 10000.)
+		b_size_gan = int(512. * nb_sequence / 10000.)
 		it_dis = 0
 		it_gan = 0
 		epoch_dis = 1 if train_gan_method == 'gan' else 5

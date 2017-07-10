@@ -1264,7 +1264,7 @@ if __name__ == '__main__' :
 		'patent4':2, # patent4 is duplicate of patent3
 		'atmerror2':1,
 	}
-	for dataset_id in ['patent3']:
+	for dataset_id in ['atmerror2']:
 		# draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
 		draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
 		# draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
