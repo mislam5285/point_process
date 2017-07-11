@@ -50,7 +50,7 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
 	will_train_hawkes = {'1:1':False,'1:5':False,'5:1':False,'3:3':False}
 	will_draw = True
 	will_draw_mle_curve = {'1:1':True,'1:5':False,'5:1':False,'3:3':False}
-	will_draw_val = False
+	will_draw_val = True
 
 	# preprocess
 	dataset_path = root + '/data/' + dataset_id + '.txt'
@@ -185,19 +185,23 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
 
 					ax.plot(np.arange(1,len(curve['y_val'])+1),curve['y_val'],'-',c=colors['val'],lw=1.2,
 						label=labels_prefix[i] + ' (on val.)')
-					if i == 2: # draw early stop
+					if i == 1: # draw early stop
 						log_pre_train_early_stop = root + '/data/' + dataset_id + '.pretrain.early_stop.stop_point.json'
-						# if will_compute_early_stop == True:
-						early_stop = -1
-						moving_average = curve['y_val'][0]
-						k = 20.
-						th = 0.001
-						for n in range(1,len(curve['y_val'])):
-							av = curve['y_val'][n] * (1./k) + moving_average * (k - 1.) / k
-							if moving_average - av <= th:
-								early_stop = n
-								break
-							moving_average = av
+						
+						# if compute_early_stop_way == 'mape':
+						# early_stop = -1
+						# moving_average = curve['y_val'][0]
+						# k = 20.
+						# th = 0.001
+						# for n in range(1,len(curve['y_val'])):
+						# 	av = curve['y_val'][n] * (1./k) + moving_average * (k - 1.) / k
+						# 	if moving_average - av <= th:
+						# 		early_stop = n
+						# 		break
+						# 	moving_average = av
+
+						# use maximum acc to find early stop point, always exists
+						early_stop = numpy.argmax(curve['y_val'])
 
 						try:
 							with open(log_pre_train_early_stop) as fr :
@@ -206,15 +210,16 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
 									result[dataset_id] = {}
 								if not result[dataset_id].has_key(curve['rate']):
 									result[dataset_id][curve['rate']] = {}
-								result[dataset_id][curve['rate']]['mape_val'] = {'window':k,'threshold':th,'stop_point':early_stop}
+								result[dataset_id][curve['rate']]['acc_val'] = {'stop_point':early_stop}
 						except:
-							result = {dataset_id:{curve['rate']:{'mape_val':{'window':k,'threshold':th,'stop_point':early_stop}}}}
+							result = {dataset_id:{curve['rate']:{'acc_val':{'stop_point':early_stop}}}}
+						
 						with open(log_pre_train_early_stop,'w') as fw :
 							json.dump(result,fw)
 
 						with open(log_pre_train_early_stop) as fr:
 							result = json.load(fr)
-							early_stop = result[dataset_id][curve['rate']]['mape_val']['stop_point']
+							early_stop = result[dataset_id][curve['rate']]['acc_val']['stop_point']
 
 						if early_stop > 0:
 							ax.plot([early_stop,early_stop],[y_lower_limit,curve['y_val'][early_stop]],':',c=colors['early_stop'],lw=1.2,
@@ -292,7 +297,7 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 	log_pre_train_early_stop = root + '/data/' + dataset_id + '.pretrain.early_stop.stop_point.json'
 	with open(log_pre_train_early_stop) as fr:
 		result = json.load(fr)
-		early_stop = result[dataset_id][ratio_key]['mape_val']['stop_point']
+		early_stop = result[dataset_id][ratio_key]['acc_val']['stop_point']
 
 	full_train_start = early_stop
 	assert full_train_start > 0
@@ -664,7 +669,7 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 #     with open(log_pre_train_early_stop) as fr:
 #         result = json.load(fr)
 #         ratio_key = str(ratio[0]) + ':' + str(ratio[1])
-#         early_stop = result[dataset_id][ratio_key]['mape_val']['stop_point']
+#         early_stop = result[dataset_id][ratio_key]['acc_val']['stop_point']
 
 #     full_train_start = early_stop
 #     assert full_train_start > 0
@@ -997,7 +1002,7 @@ def draw_full_train_contrast_mape_acc(dataset_id, nb_type=1):
 	with open(log_pre_train_early_stop) as fr:
 		result = json.load(fr)
 		ratio_key = str(ratio[0]) + ':' + str(ratio[1])
-		early_stop = result[dataset_id][ratio_key]['mape_val']['stop_point']
+		early_stop = result[dataset_id][ratio_key]['acc_val']['stop_point']
 
 	full_train_start = early_stop
 	assert full_train_start > 0
@@ -1122,7 +1127,7 @@ def print_full_train_contrast_acc_epsilon(dataset_id, nb_type=1):
 	with open(log_pre_train_early_stop) as fr:
 		result = json.load(fr)
 		ratio_key = str(ratio[0]) + ':' + str(ratio[1])
-		early_stop = result[dataset_id][ratio_key]['mape_val']['stop_point']
+		early_stop = result[dataset_id][ratio_key]['acc_val']['stop_point']
 
 	full_train_start = early_stop
 	assert full_train_start > 0
@@ -1266,8 +1271,8 @@ if __name__ == '__main__' :
 	}
 	for dataset_id in ['atmerror2']:
 		# draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
-		draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
-		# draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
+		# draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
+		draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
 		# draw_full_train_learning_discriminative_convergence(dataset_id,nb_type=event_types[dataset_id])
 		# draw_full_train_contrast_mape_acc(dataset_id,nb_type=event_types[dataset_id])
 		# print_full_train_contrast_acc_epsilon(dataset_id,nb_type=event_types[dataset_id])

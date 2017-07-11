@@ -1,1 +1,1 @@
-{"paper3": {"1:1": {"mape_val": {"threshold": 0.001, "stop_point": 62, "window": 20.0}}, "1:5": {"mape_val": {"threshold": 0.001, "stop_point": 58, "window": 20.0}}, "3:3": {"mape_val": {"threshold": 0.001, "stop_point": 63, "window": 20.0}}, "5:1": {"mape_val": {"threshold": 0.001, "stop_point": 71, "window": 20.0}}}}
+{"paper3": {"1:1": {"acc_val": {"stop_point": 31}}}}
