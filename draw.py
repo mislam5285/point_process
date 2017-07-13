@@ -171,7 +171,7 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
 					# arrange layout
 					delta = max(np.max(curve['y_val']),np.max(curve['y_val'])) - min(np.min(curve['y_val']),np.min(curve['y_val']))
 					delta /= 30.
-					if curve['y_val'][0] > curve['y_val'][-1]:
+					if i == 2: #curve['y_val'][0] > curve['y_val'][-1]:
 						y_lower_limit = min(np.min(curve['y_val']),np.min(curve['y_val'])) - delta
 						y_upper_limit = 0.25 * np.max(curve['y_val']) + 0.75 * np.min(curve['y_val'])
 					else:
@@ -261,9 +261,9 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 			'mse_noise':False,
 			'wgan_noise':False,
 			'mse_noise_sample':False,
-			'wgan_noise_sample':True,
+			'wgan_noise_sample':False,
 			'mse_with_wgan_noise_sample':True,
-			'mae_with_wgan_noise_sample':True,
+			'mae_with_wgan_noise_sample':False,
 		}
 	will_draw_val = True
 	will_draw_val_curve = {
@@ -271,9 +271,9 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 			'mse_noise':False,
 			'wgan_noise':False,
 			'mse_noise_sample':False,
-			'wgan_noise_sample':True,
+			'wgan_noise_sample':False,
 			'mse_with_wgan_noise_sample':True,
-			'mae_with_wgan_noise_sample':True,
+			'mae_with_wgan_noise_sample':False,
 		}
 
 	dataset_path = root + '/data/' + dataset_id + '.txt'
@@ -1113,6 +1113,7 @@ def print_full_train_contrast_acc_epsilon(dataset_id, nb_type=1):
 		'mse_with_wgan_noise_sample':True,
 		'mae_with_wgan_noise_sample':True,
 	}
+
 	# preprocess
 	dataset_path = root + '/data/' + dataset_id + '.txt'
 
@@ -1209,6 +1210,17 @@ def print_full_train_contrast_acc_epsilon(dataset_id, nb_type=1):
 
 		# draw curve
 		result = ''
+
+		for curve_key in y_full_train_mape:
+			for year in [5,10]:
+				# value = str(float('%.4f'%y_full_train_mape[curve_key][year-1]))
+				# if curve_key == min_mape[str(year)][0]:
+				# 	result += '&\\textbf{' + value + '}'
+				# else:
+				# 	result += '&' + value
+				result += '&' + str(curve_key)
+		result += '\\\\\n'
+
 		result += 'MAPE'
 		min_mape = {}
 		for curve_key in y_full_train_mape:
@@ -1269,7 +1281,7 @@ if __name__ == '__main__' :
 		'patent4':2, # patent4 is duplicate of patent3
 		'atmerror2':1,
 	}
-	for dataset_id in ['atmerror2']:
+	for dataset_id in ['paper3']:
 		# draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
 		# draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
 		draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
