@@ -201,7 +201,7 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
 						# 	moving_average = av
 
 						# use maximum acc to find early stop point, always exists
-						early_stop = numpy.argmax(curve['y_val'])
+						early_stop = int(numpy.argmax(curve['y_val']))
 
 						try:
 							with open(log_pre_train_early_stop) as fr :
@@ -215,6 +215,8 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
 							result = {dataset_id:{curve['rate']:{'acc_val':{'stop_point':early_stop}}}}
 						
 						with open(log_pre_train_early_stop,'w') as fw :
+							# print result
+							# print json.dumps(result)
 							json.dump(result,fw)
 
 						with open(log_pre_train_early_stop) as fr:
@@ -244,7 +246,7 @@ def draw_pretrain_learning_generator_convergence(dataset_id, nb_type=1):
 				plt.savefig(root + '/pic/%s'%key)
 
 
-def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
+def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1, limit_y=True):
 	will_pretrain_with_mle = False
 
 	will_train_mse_noise_dropout = False
@@ -261,9 +263,9 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 			'mse_noise':False,
 			'wgan_noise':False,
 			'mse_noise_sample':False,
-			'wgan_noise_sample':False,
+			'wgan_noise_sample':True,
 			'mse_with_wgan_noise_sample':True,
-			'mae_with_wgan_noise_sample':False,
+			'mae_with_wgan_noise_sample':True,
 		}
 	will_draw_val = True
 	will_draw_val_curve = {
@@ -271,9 +273,9 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 			'mse_noise':False,
 			'wgan_noise':False,
 			'mse_noise_sample':False,
-			'wgan_noise_sample':False,
+			'wgan_noise_sample':True,
 			'mse_with_wgan_noise_sample':True,
-			'mae_with_wgan_noise_sample':False,
+			'mae_with_wgan_noise_sample':True,
 		}
 
 	dataset_path = root + '/data/' + dataset_id + '.txt'
@@ -546,7 +548,7 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 				y_lower_limit = 0.85 * true_upper + 0.15 * true_lower
 				y_upper_limit = true_upper + delta
 
-			plt.ylim(y_lower_limit, y_upper_limit)
+			if limit_y == True: plt.ylim(y_lower_limit, y_upper_limit)
 			plt.xlim(0,x_right_limit)
 
 			# draw curve
@@ -591,7 +593,7 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1):
 
 
 				ax = plt.subplot(111).twinx()
-				ax.set_ylim(y_lower_limit, y_upper_limit)
+				if limit_y == True: ax.set_ylim(y_lower_limit, y_upper_limit)
 				ax.set_xlim(x_left_limit,x_right_limit)
 
 				# draw curve
@@ -1284,7 +1286,7 @@ if __name__ == '__main__' :
 	for dataset_id in ['paper3']:
 		# draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id])
 		# draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
-		draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id])
+		draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id],limit_y=True)
 		# draw_full_train_learning_discriminative_convergence(dataset_id,nb_type=event_types[dataset_id])
 		# draw_full_train_contrast_mape_acc(dataset_id,nb_type=event_types[dataset_id])
 		# print_full_train_contrast_acc_epsilon(dataset_id,nb_type=event_types[dataset_id])
