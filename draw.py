@@ -897,15 +897,15 @@ def draw_full_train_learning_gan_convergence(dataset_id, nb_type=1, limit_y=True
 #             plt.savefig(root + '/pic/%s'%key)
 
 		
-def draw_fix_train_non_self_m_hawkes(dataset_id, nb_type=1, max_iter=0, cut=15):
+def draw_fix_train_non_self_m_hawkes(dataset_id, nb_type=1, max_iter=0, cut=15, early_stop_iter=None):
 	will_train_rpp = False
-	will_train_hawkes = True
+	will_train_hawkes = False
 	will_draw = True
 	# preprocess
 	dataset_path = root + '/data/' + dataset_id + '.txt'
 	
 	# training
-	mape_acc_data = root + '/data/' + dataset_id + 'pretrain.contrast.mape_acc.json'
+	mape_acc_data = root + '/data/' + dataset_id + '.pretrain.contrast.mape_acc.json'
 	if will_train_rpp == True :
 		predictor = RPP()
 		# loaded = predictor.load(dataset_path,cut=10,nb_type=nb_type)
@@ -943,38 +943,94 @@ def draw_fix_train_non_self_m_hawkes(dataset_id, nb_type=1, max_iter=0, cut=15):
 		with open(mape_acc_data,'w') as fw :
 			json.dump(result,fw)
 
+	# pre-trained proposed model
+	ratio = [1,1]
+	ratio_key = str(ratio[0]) + ':' + str(ratio[1])
+	log_mle_only = root + '/data/' + dataset_id + '.pretrain.log.' + str(ratio[0]) + '.' + str(ratio[1]) + '.txt'
+
+	log_pre_train_early_stop = root + '/data/' + dataset_id + '.pretrain.early_stop.stop_point.json'
+	with open(log_pre_train_early_stop) as fr:
+		result = json.load(fr)
+		early_stop = result[dataset_id][ratio_key]['acc_val']['stop_point']
+
+	contrast_point = early_stop_iter or early_stop
+	assert contrast_point > 0
+
+	proposed_result = {}
+	log_full_train = {
+		'mle_only':log_mle_only,
+	}
+
+	f_full_train = {}
+	nodes_full_train = {}
+	for curve_key in log_full_train:
+		f_full_train[curve_key] = open(log_full_train[curve_key])
+		nodes_full_train[curve_key] = []
+
+	for curve_key in f_full_train:
+		for line in f_full_train[curve_key]:
+			try:
+				node = eval(line)
+				nodes_full_train[curve_key].append(node)
+			except:
+				print 'error'
+
+	# keys = ['acc','mape']
+	proposed_result['av_mape'] = nodes_full_train[curve_key][contrast_point]['mape']
+	proposed_result['av_acc'] = nodes_full_train[curve_key][contrast_point]['acc']
+
+
+	try:
+		with open(mape_acc_data) as fr :
+			result = json.load(fr)
+	except:
+		result = {}
+		result['fix_train'] = {}
+		result['fix_train']['mape'] = {}
+		result['fix_train']['acc'] = {}
+
+	result['fix_train']['mape']['proposed-total'] = proposed_result['av_mape']
+	# result['fix_train']['mape']['proposed-self'] = proposed_result['av_mape_self']
+	# result['fix_train']['mape']['proposed-nonself'] = proposed_result['av_mape_nonself']
+	result['fix_train']['acc']['proposed-total'] = proposed_result['av_acc']
+	# result['fix_train']['acc']['proposed-self'] = proposed_result['av_acc_self']
+	# result['fix_train']['acc']['proposed-nonself'] = proposed_result['av_acc_nonself']
+	with open(mape_acc_data,'w') as fw :
+		json.dump(result,fw)
+
+
 	# drawing
 	if will_draw == True :
 		with open(mape_acc_data) as f:
 			graph = json.load(f)
 			subgraphs = [graph['fix_train']['mape'],graph['fix_train']['acc']]
-		colors = ['red','blue','green']
+		colors = ['red','green','blue']
 		titles = ['total','non-self','self']
 		keys = [
 			['proposed-total','proposed-nonself','proposed-self'],
 			['mhawkes-total','mhawkes-nonself','mhawkes-self'],
 		]
 		line_type = ['-','--']
-		model_name = ['Proposed','m-hawks']
+		model_name = ['Proposed point process','m-Hawks model']
 
 		for i in [0,1] : # mape graph or acc graph
 			plt.figure()
 			for j in [0]: # total or self or nonself
-				for k in [1] : # proposed or hawkes
+				for k in [0,1] : # proposed or hawkes
 					_curve = subgraphs[i][keys[k][j]]
 					y = np.array([float(e) for e in _curve])
-					plt.plot(np.arange(1,len(y)+1),y,line_type[k],c=colors[j],lw=1.2,label=model_name[k] + "(" + titles[j] + ")")
-					plt.scatter(np.arange(1,len(y)+1),y,c=colors[j],lw=0)
+					plt.plot(np.arange(1,len(y)+1),y,line_type[k],c=colors[k],lw=1.2,label=model_name[k])
+					plt.scatter(np.arange(1,len(y)+1),y,c=colors[k],lw=0)
 			if i == 0:
 				plt.xlabel('')
 				plt.ylabel('')
 				plt.legend(loc='upper left')
-				plt.title('MAPE(10 years of training)')
+				plt.title('MAPE')
 			if i == 1:
 				plt.xlabel('')
 				plt.ylabel('')
 				plt.legend(loc='lower left')
-				plt.title('ACC(10 years of training)')
+				plt.title('ACC')
 
 			plt.gcf().set_size_inches(5.9, 5., forward=True)
 			# plt.show()
@@ -1307,6 +1363,13 @@ def print_full_train_contrast_acc_epsilon(dataset_id, nb_type=1):
 		with open(root + '/data/%s'%key) as f:
 			print f.read()
 
+def print_average_citation(dataset_id):
+	dataset_path = root + '/data/' + dataset_id + '.txt'
+	predictor = HawkesGenerator()
+	loaded = predictor.load(dataset_path)
+	sequences = loaded[0]
+	avg_count = numpy.mean([len(x) for x in sequences])
+	print {dataset_id:avg_count}
 
 
 if __name__ == '__main__' :
@@ -1314,16 +1377,17 @@ if __name__ == '__main__' :
 	event_types = {
 		'paper3':1,
 		'paper4':2, # paper4 is duplicate of paper3, while is interpreted in different way
-		'patent3':1, # limit_y=False, max_iter=5, cut=20, max_proposed_iter=1
+		'patent3':1, # limit_y=False, cut=15, early_stop_iter=1
 		'patent4':2, # patent4 is duplicate of patent3
 		'atmerror2':1,
 	}
 	for dataset_id in ['patent3']:
-		draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id],cut=20)
+		draw_fix_train_non_self_m_hawkes(dataset_id,nb_type=event_types[dataset_id],cut=15,early_stop_iter=1)
 		# draw_pretrain_learning_generator_convergence(dataset_id,nb_type=event_types[dataset_id])
 		# draw_full_train_learning_gan_convergence(dataset_id,nb_type=event_types[dataset_id],limit_y=False)
 		# draw_full_train_learning_discriminative_convergence(dataset_id,nb_type=event_types[dataset_id])
 		# draw_full_train_contrast_mape_acc(dataset_id,nb_type=event_types[dataset_id])
 		# print_full_train_contrast_acc_epsilon(dataset_id,nb_type=event_types[dataset_id])
+		# print_average_citation(dataset_id)
 		pass
 	plt.show()

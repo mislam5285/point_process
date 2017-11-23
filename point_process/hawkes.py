@@ -191,9 +191,9 @@ class MHawkes(object):
 				real = N + len([x for x in test_seq[i]['times'] if x + model['superparams']['cut_point'] < T + year])
 				real_self = N_self + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['superparams']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 0])
 				real_nonself = N_nonself + len([x for _x,x in enumerate(test_seq[i]['times']) if x + model['superparams']['cut_point'] < T + year and test_seq[i]['dims'][_x] == 1])
-				mape.append(abs(pred - real) / float(real + 0.001))
-				mape_self.append(abs(pred_self - real_self) / float(real_self + 0.001))
-				mape_nonself.append(abs(pred_nonself - real_nonself) / float(real_nonself + 0.001))
+				mape.append(abs(pred - real) / float(real + 0.1))
+				mape_self.append(abs(pred_self - real_self) / float(real_self + 0.1))
+				mape_nonself.append(abs(pred_nonself - real_nonself) / float(real_nonself + 0.1))
 
 				pred_seq.append(pred)
 				pred_seq_self.append(pred_self)
@@ -224,7 +224,7 @@ class MHawkes(object):
 		av_mape_nonself = numpy.mean(numpy.array(mapes_nonself),0)
 		av_acc_nonself = numpy.mean(numpy.array(mapes_nonself) < model['superparams']['epsilon'],0)
 
-		return {
+		result = {
 			'av_mape':av_mape.tolist(),
 			'av_acc':av_acc.tolist(),
 			'av_mape_self':av_mape_self.tolist(),
@@ -241,6 +241,11 @@ class MHawkes(object):
 			# 'real_seqs_self':real_seqs_self,
 			# 'real_seqs_nonself':real_seqs_nonself,
 			}
+		
+		for key in result:
+			result[key].pop(0)
+		
+		return result
 
 	def predict_one(self,patent_id):
 		pass
@@ -259,7 +264,7 @@ class MHawkes(object):
 				row = [(x - _min)/float(_max - _min) for x in _row]
 			data.append(row)
 
-		T = cut
+		T = cut - 1
 		lines = 4
 		I = int(len(data)/lines)
 		train_seq = []
@@ -277,7 +282,7 @@ class MHawkes(object):
 			S = sorted(S,key=lambda x:x[0])
 			Y = [x[0] for x in S]
 			dim_seq = [x[1] for x in S]
-			cut_point = T
+			cut_point = T - 1
 			time_train = [y for y in Y if y <= cut_point]
 			dim_train = [e for i,e in enumerate(dim_seq) if Y[i] <= cut_point]
 			if len(time_train) < 5:
