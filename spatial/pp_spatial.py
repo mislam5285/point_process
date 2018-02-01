@@ -7,6 +7,7 @@ import tensorflow as tf
 from data_iterator import PaddedDataIterator
 from data_loader import *
 
+NAME_SCOPE = ''
 BATCH_SIZE = 256 # Batch size
 MAX_STEPS = 300 # maximum length of your sequence
 ITERS = 30000 # how many generator iterations to train for
@@ -21,7 +22,7 @@ tf.set_random_seed(SEED)
 np.random.seed(SEED)
 
 DATA_MODE = 'real' or 'simulate'
-DATASET = open('../data/crime2.txt')
+DATASET = None
 
 # load data
 def load():
@@ -58,7 +59,7 @@ def spatial_temporal(rnn_inputs_event, #dims batch_size x num_steps x input_size
 
 	epilson = tf.constant(1e-3,tf.float32)
 
-	with tf.variable_scope("spatial_temporal") as scope:
+	with tf.variable_scope("spatial_temporal" + NAME_SCOPE) as scope:
 		if scope_reuse:
 			scope.reuse_variables()
 		
@@ -177,8 +178,8 @@ def run():
 
 
 	train_variables = tf.trainable_variables()
-	joint_variables = [v for v in train_variables if v.name.startswith("spatial_temporal")]
-	print(map(lambda x: x.op.name, joint_variables))
+	joint_variables = [v for v in train_variables if v.name.startswith("spatial_temporal" + NAME_SCOPE)]
+	# print(map(lambda x: x.op.name, joint_variables))
 
 	train_op = tf.train.RMSPropOptimizer(learning_rate=LR).minimize(total_loss, var_list=joint_variables)
 
@@ -204,6 +205,7 @@ def run():
 				'mark_loss':mark_loss_curr,
 				'time_loss':time_loss_curr,
 			}
+			sys.stdout.flush()
 			# print ('Iter: {};  Total loss: {:.4};  Mark loss: {:.4};  Time loss: {:.4}'.format(it, total_loss_curr,mark_loss_curr,time_loss_curr))
 			
 		# if TYPE=='event':
@@ -222,4 +224,6 @@ def run():
 		# 	print ('Iter: {};  Total loss: {:.4};  Mark loss: {:.4};  Time loss: {:.4}'.format(it, total_loss_curr,mark_loss_curr,time_loss_curr))
 
 if __name__ == '__main__':
-	run()
+	with open('../log/spatial.log','w') as fw:
+		sys.stdout = fw
+		run()

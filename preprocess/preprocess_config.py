@@ -59,12 +59,14 @@ class ATMErrorConfig(object):
 		self.preprocessed_dataset_file = 'd:/data/atm/errors'
 
 class CrimeConfig(object):
-	def __init__(self):
-		self.dataset_file = '/home/xin/data/crime/COBRA-YTD2016.xlsx' # 212 days in total, therefore observe on a weekly basis
+	def __init__(self,year):
+		self.dataset_file = '/home/xin/data/crime/COBRA-YTD'+str(year)+'.xlsx' # 212 days in total, therefore observe on a weekly basis
 		self.preprocessed_dataset_file = '/home/xin/data/crime/crimes'
 		self.preprocessed_dataset_file2 = '/home/xin/data/crime/crimes2'
+		self.data = os.path.dirname(os.path.abspath(__file__)) + '/../data/crime2.'+str(year)+'.txt'
+
 
 paper_config = PaperConfig()
 patent_config = PatentConfig()
 atm_config = ATMErrorConfig()
-crime_config = CrimeConfig()
+crime_config = CrimeConfig(2016)

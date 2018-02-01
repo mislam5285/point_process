@@ -1,6 +1,8 @@
 #coding=utf8
 
-from preprocess_config import crime_config
+# from preprocess_config import crime_config
+from preprocess_config import CrimeConfig
+crime_config = CrimeConfig(2013)
 import os,re,matplotlib,xlrd,csv
 import cPickle as pickle
 from itertools import islice
@@ -46,11 +48,13 @@ def prepare_data(augument_data = True, hierarchy = True, bptt = 5):
 			loc = (len(x_cali) - 1) * y_loc + x_loc
 			error_type2.append(loc)
 
-		pickle.dump([device_id,error_day,error_sec,error_type1,error_type2,book.datemode], open(crime_config.preprocessed_dataset_file,'wb'), protocol=0)
+		pickle.dump([device_id,error_day,error_sec,error_type1,error_type2,book.datemode], open(
+			crime_config.preprocessed_dataset_file,'wb'), protocol=0)
 
 
 	# get error info
-	device_id,error_day,error_sec,error_type1,error_type2,book_datemode = pickle.load(open(crime_config.preprocessed_dataset_file,'rb'))
+	device_id,error_day,error_sec,error_type1,error_type2,book_datemode = pickle.load(open(
+		crime_config.preprocessed_dataset_file,'rb'))
 
 	error_day = map(lambda x:datetime.strptime(x,'%m/%d/%Y'),error_day)
 	print error_sec[0]
@@ -77,14 +81,14 @@ def prepare_data(augument_data = True, hierarchy = True, bptt = 5):
 				line.append([float('%.4f'%(int((time['time'] - begin).days) * 24 + (time['time'] - begin).seconds / float(60 * 60))), time['mark']]) # weekly
 			data.append(line)
 	
-		with open('../data/crime2.txt', 'w') as fw:
+		with open(crime_config.data, 'w') as fw:
 			stdout_old = sys.stdout
 			sys.stdout = fw
 			for line in data:
 				print line
 			sys.stdout = stdout_old
 
-	with open('../data/crime2.txt') as fr:
+	with open(crime_config.data) as fr:
 		data = []
 		for i,line in enumerate(fr):
 			line = eval(line)
