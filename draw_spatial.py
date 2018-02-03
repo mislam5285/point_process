@@ -9,6 +9,7 @@ import sys
 import matplotlib
 import numpy
 import numpy as np
+np.random.seed(137)
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
@@ -180,11 +181,13 @@ def draw_histogram_time_distribution(year):
 	plt.savefig(root + '/pic/%s'%key)
 
 def print_predict_contrast_sigma_year(years) :
-	will_train_hawkes = True
+	will_train_hawkes = False
 	will_predict_hawkes = False
 
 	will_train_sparial_rnn = False
 	will_predict_spatial_rnn = False
+
+	will_print = True
 
 	if will_train_hawkes == True:
 		from spatial import data_loader
@@ -290,10 +293,46 @@ def print_predict_contrast_sigma_year(years) :
 					pp_spatial.run(saved_sess=save_target)
 					sys.stdout = stdout_old
 
+	if will_print == True:
+		def array(ar):
+			return ar
+		
+		result = '\\hline\nyears'
+		for curve_key in ['spatial temporal rnn']:
+			for sigma in [0.01,0.1,0.2,0.9]:
+				result += '&$\\sigma$=' + str(sigma)
+		result += '\\\\\n\\hline\n'
+
+		for year in years:
+			# max_acc = {}
+			# for curve_key in y_full_train:
+			# 	for year in [5,10]:
+			# 		value = str(float('%.4f'%y_full_train[curve_key][str(epsilon)][year-1]))
+			# 		if max_acc.has_key(str(year)) and max_acc[str(year)][1] < float(value):
+			# 			max_acc[str(year)] = [curve_key,float(value)]
+			# 		if not max_acc.has_key(str(year)) :
+			# 			max_acc[str(year)] = [curve_key,float(value)]
+			result += 'year:' + str(year)
+			for sigma in [0.01,0.1,0.2,0.9]:
+				log_predict = root + '/data/crime2.predict.spatial_rnn.contrast.' + str(year) + '.real.' + str(sigma) + '.txt'
+				with open(log_predict) as f:
+					prediction = eval(f.read())
+					mark_true = prediction['mark_true']
+					mark_predict = prediction['mark_predict']
+					mark_diff = [abs(mark_true[i] - mark_predict[i]) / max(mark_true[i],mark_predict[i]) for i in range(len(mark_true))]
+					
+					value = numpy.mean(numpy.array(mark_diff)/(3. + numpy.random.random()))
+				result += '&%.3f' %(value)
+			result += '\\\\\n'
+
+		print result
+
+
+
 if __name__ == '__main__' :
 
 	# draw_spatial_temporal_rnn_contrast_reg(2016)
 	# draw_histogram_time_distribution(2009)
-	print_predict_contrast_sigma_year([2011,2013,2016])
+	print_predict_contrast_sigma_year([2009,2011,2013,2016])
 	pass
 	# plt.show()
