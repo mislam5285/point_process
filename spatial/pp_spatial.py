@@ -135,6 +135,8 @@ def spatial_temporal(rnn_inputs_event, #dims batch_size x num_steps x input_size
 		
 		mark_logits = tf.matmul(rnn_outputs, W_l) + b_l
 		mark_true = tf.one_hot(tf.cast(y[:,0],tf.int32),num_classes)
+		mark_predict_one = tf.argmax(mark_logits)
+		mark_true_one = tf.argmax(mark_true)
 		mark_loss = tf.nn.softmax_cross_entropy_with_logits(logits=mark_logits, labels=mark_true)
 		
 		total_loss = mark_loss + reg*time_loss
@@ -161,11 +163,11 @@ def spatial_temporal(rnn_inputs_event, #dims batch_size x num_steps x input_size
 		
 		time_loss = total_loss - mark_loss
 
-	return total_loss,mark_loss,time_loss
+	return total_loss,mark_loss,time_loss,mark_predict_one,mark_true_one
 
 
 # run
-def run():
+def run(saved_sess=None,will_print_train_log=True,save_target=None,will_print_predict_log=True):
 	event_iterator = load()
 
 	event_sequence = tf.placeholder(tf.float32, shape=[BATCH_SIZE, None, 2])
@@ -174,7 +176,7 @@ def run():
 	seqlen = tf.placeholder(tf.int32, shape=[BATCH_SIZE])
 	lower_triangular_ones = tf.constant(np.tril(np.ones([MAX_STEPS,MAX_STEPS])),dtype=tf.float32)
 
-	total_loss,mark_loss,time_loss =  spatial_temporal(event_sequence,time_series,seqlen,lower_triangular_ones)
+	total_loss,mark_loss,time_loss,mark_predict,mark_true =  spatial_temporal(event_sequence,time_series,seqlen,lower_triangular_ones)
 
 
 	train_variables = tf.trainable_variables()
@@ -187,43 +189,50 @@ def run():
 	saver = tf.train.Saver()
 
 	gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=1.0, allow_growth=True)
+
 	sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, gpu_options=gpu_options))
 
 	sess.run(tf.global_variables_initializer())
 
-	# train
-	for it in range(ITERS):
-		if TYPE=='joint':
+	# train and save
+	if not saved_sess:
+		for it in range(ITERS):
 			real_batch = event_iterator.next_batch(BATCH_SIZE)
 			time_series_data = np.ones((BATCH_SIZE,real_batch[0].shape[1],NUM_steps_timeseries,4))
 			total_loss_curr,mark_loss_curr,time_loss_curr, _= sess.run([total_loss,mark_loss,time_loss,train_op],
 									feed_dict={event_sequence:real_batch[0], seqlen:real_batch[1], time_series:time_series_data})
 			
+			if will_print_train_log == True:
+				print {
+					'iter':it,
+					'total_loss':total_loss_curr,
+					'mark_loss':mark_loss_curr,
+					'time_loss':time_loss_curr,
+				}
+				sys.stdout.flush()
+		if save_target:
+			saver.save(sess,save_target)
+
+	# load and predict
+	if saved_sess:
+		saver.restore(sess,saved_sess)
+		real_batch = event_iterator.next_batch(BATCH_SIZE)
+		time_series_data = np.ones((BATCH_SIZE,real_batch[0].shape[1],NUM_steps_timeseries,4))
+		total_loss_curr,mark_loss_curr,time_loss_curr,mark_predict_curr,mark_true_curr = sess.run([total_loss,mark_loss,time_loss,mark_predict,mark_true],
+									feed_dict={event_sequence:real_batch[0], seqlen:real_batch[1], time_series:time_series_data})
+		if will_print_predict_log == True:
 			print {
-				'iter':it,
 				'total_loss':total_loss_curr,
 				'mark_loss':mark_loss_curr,
 				'time_loss':time_loss_curr,
+				'mark_predict':mark_predict_curr,
+				'mark_true':mark_true_curr,
 			}
 			sys.stdout.flush()
-			# print ('Iter: {};  Total loss: {:.4};  Mark loss: {:.4};  Time loss: {:.4}'.format(it, total_loss_curr,mark_loss_curr,time_loss_curr))
-			
-		# if TYPE=='event':
-		# 	real_batch = event_iterator.next_batch(BATCH_SIZE)
-		# 	total_loss_curr,mark_loss_curr,time_loss_curr, _= sess.run([total_loss,mark_loss,time_loss,train_op],
-		# 							feed_dict={event_sequence:real_batch[0], seqlen:real_batch[1]})
-			
-		# 	print ('Iter: {};  Total loss: {:.4};  Mark loss: {:.4};  Time loss: {:.4}'.format(it, total_loss_curr,mark_loss_curr,time_loss_curr))
-				
-		# if TYPE=='timeseries':
-		# 	real_batch = event_iterator.next_batch(BATCH_SIZE)
-		# 	time_series_data = np.ones((BATCH_SIZE,real_batch[0].shape[1],NUM_steps_timeseries,4))
-		# 	total_loss_curr,mark_loss_curr,time_loss_curr, _= sess.run([total_loss,mark_loss,time_loss,train_op],
-		# 							feed_dict={event_sequence:real_batch[0], seqlen:real_batch[1], time_series:time_series_data})
-			
-		# 	print ('Iter: {};  Total loss: {:.4};  Mark loss: {:.4};  Time loss: {:.4}'.format(it, total_loss_curr,mark_loss_curr,time_loss_curr))
+
 
 if __name__ == '__main__':
+	saved_sess = None
 	with open('../log/spatial.log','w') as fw:
 		sys.stdout = fw
-		run()
+		run(saved_sess)

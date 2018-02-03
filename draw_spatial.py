@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #coding:utf-8
 
 import json
@@ -171,11 +172,93 @@ def draw_histogram_time_distribution(year):
 
 	key = 'crime2_distribution_time_'+str(year)+'.png'
 	plt.savefig(root + '/pic/%s'%key)
-	
+
+def print_predict_contrast_sigma_year(years) :
+	will_train_sparial_rnn = True
+	will_predict_spatial_rnn = False
+
+	if will_train_sparial_rnn == True:
+		for year in years:
+			crime_configs = [
+				{
+					'DATA_MODE':'real',
+					'DATASET':root + '/data/crime2.'+str(year)+'.txt',
+					'REG':0.01,
+				},
+				{
+					'DATA_MODE':'real',
+					'DATASET':root + '/data/crime2.'+str(year)+'.txt',
+					'REG':0.1,
+				},
+				{
+					'DATA_MODE':'real',
+					'DATASET':root + '/data/crime2.'+str(year)+'.txt',
+					'REG':0.2,
+				},
+				{
+					'DATA_MODE':'real',
+					'DATASET':root + '/data/crime2.'+str(year)+'.txt',
+					'REG':0.9,
+				},
+			]
+			for config in crime_configs:
+				pp_spatial.DATAMODE = config['DATA_MODE']
+				pp_spatial.DATASET = open(config['DATASET'])
+				pp_spatial.REG = config['REG']
+				pp_spatial.NAME_SCOPE = str(config['DATA_MODE']) + '.' + str(config['REG'])
+				pp_spatial.ITERS = 2000
+				
+				log_train = root + '/log/train_spatial.log'
+				save_target = root + '/log/sess.' + '.' + str(year) + '.' + str(config['DATA_MODE']) + '.' + str(config['REG']) + '.model.log'
+				# if config['will_train'] == True:
+				with open(log_train,'w') as fw:
+					stdout_old = sys.stdout
+					sys.stdout = fw
+					pp_spatial.run(save_target=save_target)
+					sys.stdout = stdout_old
+		
+	if will_predict_spatial_rnn == True:
+		for year in years:
+			crime_configs = [
+				{
+					'DATA_MODE':'real',
+					'DATASET':root + '/data/crime2.'+str(year)+'.txt',
+					'REG':0.01,
+				},
+				{
+					'DATA_MODE':'real',
+					'DATASET':root + '/data/crime2.'+str(year)+'.txt',
+					'REG':0.1,
+				},
+				{
+					'DATA_MODE':'real',
+					'DATASET':root + '/data/crime2.'+str(year)+'.txt',
+					'REG':0.2,
+				},
+				{
+					'DATA_MODE':'real',
+					'DATASET':root + '/data/crime2.'+str(year)+'.txt',
+					'REG':0.9,
+				},
+			]
+			for config in crime_configs:
+				pp_spatial.DATAMODE = config['DATA_MODE']
+				pp_spatial.DATASET = open(config['DATASET'])
+				pp_spatial.REG = config['REG']
+				pp_spatial.NAME_SCOPE = str(config['DATA_MODE']) + '.' + str(config['REG'])
+				pp_spatial.ITERS = 2000
+				log_predict = root + '/data/crime2.predict.spatial_rnn.contrast.' + str(year) + '.' + str(config['DATA_MODE']) + '.' + str(config['REG']) + '.txt'
+				save_target = root + '/log/sess.' + '.' + str(year) + '.' + str(config['DATA_MODE']) + '.' + str(config['REG']) + '.model.log'
+				with open(log_predict,'w') as fw:
+					stdout_old = sys.stdout
+					sys.stdout = fw
+					pp_spatial.run(saved_sess=save_target)
+					sys.stdout = stdout_old
 
 if __name__ == '__main__' :
 
 	# draw_spatial_temporal_rnn_contrast_reg(2016)
-	draw_histogram_time_distribution(2009)
+	# draw_histogram_time_distribution(2009)
+	print_predict_contrast_sigma_year([2009,2011,2013,2016])
 	pass
 	# plt.show()
