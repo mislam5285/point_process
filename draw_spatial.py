@@ -12,13 +12,16 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
-from spatial import pp_spatial
-from spatial import data_loader
-
 import os, sys
+
+from point_process.generator import HawkesGenerator
+
 root = os.path.abspath(os.path.dirname(__file__))
 
 def draw_spatial_temporal_rnn_contrast_reg(year):
+	from spatial import pp_spatial
+	from spatial import data_loader
+
 	crime_configs = [
 		{
 			'DATA_MODE':'real',
@@ -135,6 +138,9 @@ def draw_spatial_temporal_rnn_contrast_reg(year):
 			plt.savefig(root + '/pic/%s'%key)
 
 def draw_histogram_time_distribution(year):
+	from spatial import pp_spatial
+	from spatial import data_loader
+
 	sequences = data_loader.load_crime_samples(open(root + '/data/crime2.'+str(year)+'.txt'))
 	sequence = [0.]
 	for seq in sequences:
@@ -174,8 +180,37 @@ def draw_histogram_time_distribution(year):
 	plt.savefig(root + '/pic/%s'%key)
 
 def print_predict_contrast_sigma_year(years) :
-	will_train_sparial_rnn = True
+	will_train_hawkes = True
+	will_predict_hawkes = False
+
+	will_train_sparial_rnn = False
 	will_predict_spatial_rnn = False
+
+	if will_train_hawkes == True:
+		from spatial import data_loader
+
+		for year in years:
+			sequences = data_loader.load_crime_samples(open(root + '/data/crime2.'+str(year)+'.txt'))
+		
+			N = len(sequences)
+			features = [[0.5,0.5] for i in range(N)]
+			publish_years = [0.] * N
+			pids = range(N)
+			threshold = 0.01
+
+			log_hawkes_train = root + '/log/train_hawkes.'+str(year)+'.log'
+			loaded = sequences,features,publish_years,pids,threshold
+			predictor = HawkesGenerator()
+			predictor.nb_type=36
+			with open(log_hawkes_train,'w') as f:
+				old_stdout = sys.stdout
+				sys.stdout = f
+				model = predictor.pre_train(*loaded,max_outer_iter=20,alpha_iter=1,w_iter=1)
+				sys.stdout = old_stdout
+
+	if will_train_sparial_rnn == True or will_predict_spatial_rnn == True:
+		from spatial import pp_spatial
+		from spatial import data_loader
 
 	if will_train_sparial_rnn == True:
 		for year in years:

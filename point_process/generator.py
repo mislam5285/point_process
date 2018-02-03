@@ -382,6 +382,7 @@ class HawkesGenerator(object):
 		x = numpy.array(x)
 		g_z = numpy.array(g_z)
 		assert g_z.shape == x.shape
+		print g_z
 		count_g_z = np.sum(g_z,2)
 		count_x = np.sum(x,2)
 		for i in range(1,g_z.shape[1]):
@@ -623,7 +624,7 @@ if __name__ == '__main__':
 		sys.stdout = f
 		predictor = HawkesGenerator()
 		# loaded = predictor.load('../data/paper3.txt')
-		loaded = predictor.load('../data/atmerror2.txt',nb_type=1)
+		loaded = predictor.load('../data/atmerror2.txt',nb_type=2)
 		# print loaded[0][0]
 		# print loaded[0][1]
 		# print loaded[0][2]
