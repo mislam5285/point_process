@@ -240,8 +240,8 @@ def print_predict_contrast_sigma_year(years) :
 				pp_spatial.DATAMODE = config['DATA_MODE']
 				pp_spatial.DATASET = open(config['DATASET'])
 				pp_spatial.REG = config['REG']
-				pp_spatial.NAME_SCOPE = str(config['DATA_MODE']) + '.' + str(config['REG'])
-				pp_spatial.ITERS = 2000
+				pp_spatial.NAME_SCOPE = str(year) + '.' + str(config['DATA_MODE']) + '.' + str(config['REG'])
+				pp_spatial.ITERS = 1000
 				
 				log_train = root + '/log/train_spatial.log'
 				save_target = root + '/log/sess.' + '.' + str(year) + '.' + str(config['DATA_MODE']) + '.' + str(config['REG']) + '.model.log'
@@ -280,8 +280,8 @@ def print_predict_contrast_sigma_year(years) :
 				pp_spatial.DATAMODE = config['DATA_MODE']
 				pp_spatial.DATASET = open(config['DATASET'])
 				pp_spatial.REG = config['REG']
-				pp_spatial.NAME_SCOPE = str(config['DATA_MODE']) + '.' + str(config['REG'])
-				pp_spatial.ITERS = 2000
+				pp_spatial.NAME_SCOPE = str(year) + '.' +  str(config['DATA_MODE']) + '.' + str(config['REG'])
+				pp_spatial.ITERS = 1000
 				log_predict = root + '/data/crime2.predict.spatial_rnn.contrast.' + str(year) + '.' + str(config['DATA_MODE']) + '.' + str(config['REG']) + '.txt'
 				save_target = root + '/log/sess.' + '.' + str(year) + '.' + str(config['DATA_MODE']) + '.' + str(config['REG']) + '.model.log'
 				with open(log_predict,'w') as fw:
@@ -294,6 +294,6 @@ if __name__ == '__main__' :
 
 	# draw_spatial_temporal_rnn_contrast_reg(2016)
 	# draw_histogram_time_distribution(2009)
-	print_predict_contrast_sigma_year([2009,2011,2013,2016])
+	print_predict_contrast_sigma_year([2011,2013,2016])
 	pass
 	# plt.show()

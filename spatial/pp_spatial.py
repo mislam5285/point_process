@@ -229,6 +229,7 @@ def run(saved_sess=None,will_print_train_log=True,save_target=None,will_print_pr
 				'mark_true':mark_true_curr,
 			}
 			sys.stdout.flush()
+		
 
 
 if __name__ == '__main__':
