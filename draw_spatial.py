@@ -1,5 +1,6 @@
-#!/usr/bin/env python
 #coding:utf-8
+
+# note: use python 2.7
 
 import json
 import operator
@@ -20,8 +21,8 @@ from point_process.generator import HawkesGenerator
 root = os.path.abspath(os.path.dirname(__file__))
 
 def draw_spatial_temporal_rnn_contrast_reg(year):
-	from spatial import pp_spatial
-	from spatial import data_loader
+	from spatial_temporal import pp_spatial
+	from spatial_temporal import data_loader
 
 	crime_configs = [
 		{
@@ -139,15 +140,15 @@ def draw_spatial_temporal_rnn_contrast_reg(year):
 			plt.savefig(root + '/pic/%s'%key)
 
 def draw_histogram_time_distribution(year):
-	from spatial import pp_spatial
-	from spatial import data_loader
+	from spatial_temporal import pp_spatial
+	from spatial_temporal import data_loader
 
 	sequences = data_loader.load_crime_samples(open(root + '/data/crime2.'+str(year)+'.txt'))
 	sequence = [0.]
 	for seq in sequences:
 		seq2 = [sequence[-1] + x[0] for x in seq]
 		sequence.extend(seq2)
-	# with open(root + '/log/spatial.log','w') as fw:
+	# with open(root + '/log/spatial_temporal.log','w') as fw:
 	# 	fw.write(str(sequence))
 	curve = {
 		'label':'Occur Time Distribution',
@@ -190,7 +191,7 @@ def print_predict_contrast_sigma_year(years) :
 	will_print = True
 
 	if will_train_hawkes == True:
-		from spatial import data_loader
+		from spatial_temporal import data_loader
 
 		for year in years:
 			sequences = data_loader.load_crime_samples(open(root + '/data/crime2.'+str(year)+'.txt'))
@@ -212,8 +213,8 @@ def print_predict_contrast_sigma_year(years) :
 				sys.stdout = old_stdout
 
 	if will_train_sparial_rnn == True or will_predict_spatial_rnn == True:
-		from spatial import pp_spatial
-		from spatial import data_loader
+		from spatial_temporal import pp_spatial
+		from spatial_temporal import data_loader
 
 	if will_train_sparial_rnn == True:
 		for year in years:
@@ -298,20 +299,12 @@ def print_predict_contrast_sigma_year(years) :
 			return ar
 		
 		result = '\\hline\nyears'
-		for curve_key in ['spatial temporal rnn']:
+		for curve_key in ['spatial_temporal temporal rnn']:
 			for sigma in [0.01,0.1,0.2,0.9]:
 				result += '&$\\sigma$=' + str(sigma)
 		result += '\\\\\n\\hline\n'
 
 		for year in years:
-			# max_acc = {}
-			# for curve_key in y_full_train:
-			# 	for year in [5,10]:
-			# 		value = str(float('%.4f'%y_full_train[curve_key][str(epsilon)][year-1]))
-			# 		if max_acc.has_key(str(year)) and max_acc[str(year)][1] < float(value):
-			# 			max_acc[str(year)] = [curve_key,float(value)]
-			# 		if not max_acc.has_key(str(year)) :
-			# 			max_acc[str(year)] = [curve_key,float(value)]
 			result += 'year:' + str(year)
 			for sigma in [0.01,0.1,0.2,0.9]:
 				log_predict = root + '/data/crime2.predict.spatial_rnn.contrast.' + str(year) + '.real.' + str(sigma) + '.txt'
@@ -320,7 +313,6 @@ def print_predict_contrast_sigma_year(years) :
 					mark_true = prediction['mark_true']
 					mark_predict = prediction['mark_predict']
 					mark_diff = [abs(mark_true[i] - mark_predict[i]) / max(mark_true[i],mark_predict[i]) for i in range(len(mark_true))]
-					
 					value = numpy.mean(numpy.array(mark_diff)/(3. + numpy.random.random()))
 				result += '&%.3f' %(value)
 			result += '\\\\\n'
