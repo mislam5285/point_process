@@ -29,7 +29,7 @@ Firstly, we train our point process by maximizing log likelihood on observed seq
 
 We can see that the objective declines as the training proceeds, that the objective decreases dramatically each time we employ our efficient EM algorithm. However, pure MLE may lead to overfitting quickly, i.e. too much training on observed sequence leads to performance degredation on long-term prediction.
 
-To perform pre-training experiment, go to foler 'point_process/' , run:
+To perform pre-training experiment, go to foler 'pp_gan/' , run:
 
 	$ python generator.py
 

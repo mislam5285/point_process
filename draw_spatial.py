@@ -16,7 +16,7 @@ from matplotlib.ticker import FuncFormatter
 
 import os, sys
 
-from point_process.generator import HawkesGenerator
+from pp_gan.generator import HawkesGenerator
 
 root = os.path.abspath(os.path.dirname(__file__))
 

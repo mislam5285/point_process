@@ -17,7 +17,7 @@ def getFileExtensions():
 def getSubdirectories():
 	root = getCurrentDir()
 	return [
-		root + '/../point_process',
+		root + '/../pp_gan',
 		root + '/../preprocess',
 		root + '/../spatial_temporal',
 		root + '/../tools',

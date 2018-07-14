@@ -13,9 +13,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
-from point_process.hawkes import MHawkes#, RPP
-from point_process.generator import HawkesGenerator
-from point_process.pp_gan import HawkesGAN
+from pp_gan.hawkes import MHawkes#, RPP
+from pp_gan.generator import HawkesGenerator
+from pp_gan.pp_gan import HawkesGAN
 
 from preprocess.screen import Screenor
 
